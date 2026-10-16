@@ -4,6 +4,9 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
+import { LoadingProfileScreen, ProfileErrorScreen } from '@/features/auth/GateScreens';
+import { initCrashlytics } from '@/services/crashlytics';
+import { sessionStore, useSession } from '@/stores';
 import { INTER, INTER_FONT_MAP } from '@/theme/fonts';
 import { colors } from '@/theme/tokens';
 
@@ -29,23 +32,42 @@ const navigationTheme: Theme = {
 };
 
 /**
- * Root navigator: loads Inter, keeps the splash screen until fonts are ready and applies the
- * Obsidian dark theme. The auth/app gate and tabs are added in M2 (LLD §4.1–4.2).
+ * Root: loads Inter, starts the auth session and applies the app gate (LLD §4.2) with protected
+ * route groups. The splash screen stays up until fonts and the first auth state are ready.
  */
 export default function RootLayout(): React.JSX.Element | null {
   const [fontsLoaded, fontError] = useFonts(INTER_FONT_MAP);
-  const ready = fontsLoaded || fontError !== null;
+  const gate = useSession((s) => s.gate);
+  const fontsReady = fontsLoaded || fontError !== null;
 
   useEffect(() => {
-    if (ready) void SplashScreen.hideAsync();
-  }, [ready]);
+    void initCrashlytics();
+    return sessionStore.getState().start();
+  }, []);
 
-  if (!ready) return null;
+  useEffect(() => {
+    if (fontsReady && gate !== 'booting') void SplashScreen.hideAsync();
+  }, [fontsReady, gate]);
+
+  if (!fontsReady || gate === 'booting') return null;
 
   return (
     <ThemeProvider value={navigationTheme}>
       <StatusBar style="light" />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.canvas } }} />
+      {gate === 'loadingProfile' ? (
+        <LoadingProfileScreen />
+      ) : gate === 'profileError' ? (
+        <ProfileErrorScreen />
+      ) : (
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.canvas } }}>
+          <Stack.Protected guard={gate === 'ready'}>
+            <Stack.Screen name="(app)" />
+          </Stack.Protected>
+          <Stack.Protected guard={gate === 'signedOut' || gate === 'unverified'}>
+            <Stack.Screen name="(auth)" />
+          </Stack.Protected>
+        </Stack>
+      )}
     </ThemeProvider>
   );
 }

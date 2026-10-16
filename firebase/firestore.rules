@@ -1,25 +1,80 @@
 rules_version = '2';
 
-// Baseline per docs/HLD.md §11. Per-collection field validation is added in the LLD.
+// LLD §1.11. Rules enforce ownership, document shape and basic types; full semantic validation
+// (date ranges, whole-number Indian quantities, rule-variable whitelist) is done by zod in the app.
+// Every change here needs a matching test in firebase/tests/ (Firestore emulator).
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isOwner(uid) {
-      return request.auth != null && request.auth.uid == uid;
-    }
 
-    // All user data lives under users/{uid}/...
+    function signedIn() { return request.auth != null; }
+    function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+    function data() { return request.resource.data; }
+    function onlyKeys(keys) { return data().keys().hasOnly(keys); }
+    function v1() { return data().schemaVersion == 1; }
+    function isExchange(x) { return x in ['NSE', 'BSE', 'NASDAQ', 'NYSE', 'NYSE_ARCA', 'NYSE_AMERICAN', 'CBOE']; }
+    function isIsoDate(s) { return s is string && s.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'); }
+    function posNum(n) { return (n is int || n is float) && n > 0; }
+    function shortStr(s, max) { return s is string && s.size() > 0 && s.size() <= max; }
+
     match /users/{uid} {
-      allow read, write: if isOwner(uid);
+      allow read, delete: if isOwner(uid);
+      allow create, update: if isOwner(uid) && v1()
+        && onlyKeys(['schemaVersion', 'displayName', 'email', 'authProvider', 'settings', 'platforms', 'sectorOverrides', 'createdAt', 'updatedAt'])
+        && shortStr(data().displayName, 80)
+        && data().authProvider in ['google', 'password']
+        && data().settings is map
+        && data().platforms is list && data().platforms.size() <= 30
+        && data().sectorOverrides is map;
 
-      match /{document=**} {
-        allow read, write: if isOwner(uid);
+      match /transactions/{txId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid) && v1()
+          && onlyKeys(['schemaVersion', 'type', 'symbol', 'exchange', 'name', 'platform', 'quantity', 'price', 'tradeDate', 'source', 'importBatchId', 'createdAt', 'updatedAt'])
+          && data().type == 'BUY'
+          && isExchange(data().exchange)
+          && shortStr(data().symbol, 20) && shortStr(data().name, 120) && shortStr(data().platform, 40)
+          && posNum(data().quantity) && posNum(data().price)
+          && isIsoDate(data().tradeDate)
+          && data().source in ['CSV', 'MANUAL'];
+      }
+
+      match /watchlists/{wid} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid) && v1()
+          && onlyKeys(['schemaVersion', 'name', 'sortOrder', 'createdAt', 'updatedAt'])
+          && shortStr(data().name, 40);
+
+        match /items/{key} {
+          allow read, delete: if isOwner(uid);
+          allow create, update: if isOwner(uid) && v1()
+            && onlyKeys(['schemaVersion', 'symbol', 'exchange', 'targetEntryPrice', 'targetExitPrice', 'notes', 'addedAt', 'updatedAt'])
+            && isExchange(data().exchange)
+            && key == data().exchange + ':' + data().symbol;
+        }
+      }
+
+      match /rules/{ruleId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid) && v1()
+          && onlyKeys(['schemaVersion', 'name', 'naturalPrompt', 'compiledLogicJson', 'readBack', 'variables', 'appliesToPortfolio', 'appliesToWatchlists', 'enabled', 'compiledWith', 'createdAt', 'updatedAt'])
+          && shortStr(data().naturalPrompt, 500)
+          && data().compiledLogicJson is string && data().compiledLogicJson.size() <= 10000
+          && (data().appliesToPortfolio == true || data().appliesToWatchlists == true);
+      }
+
+      match /ruleResults/{resultId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid) && v1()
+          && onlyKeys(['schemaVersion', 'ruleId', 'sessionDate', 'matches', 'evaluatedAt'])
+          && isIsoDate(data().sessionDate)
+          && resultId == data().sessionDate + '_' + data().ruleId
+          && data().matches is list && data().matches.size() <= 200;
       }
     }
 
-    // Shared instrument master list (HLD §15): read-only for signed-in users.
-    // Written only by the weekly sync job via the Admin SDK, which bypasses rules.
+    // Instrument master list (HLD §15): read-only; written only by the sync (Admin SDK bypasses rules).
     match /reference/{document=**} {
-      allow read: if request.auth != null;
+      allow read: if signedIn();
       allow write: if false;
     }
 
