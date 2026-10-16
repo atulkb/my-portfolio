@@ -37,7 +37,9 @@ import {
   usePortfolio,
   useSession,
   useUi,
+  watchlistStore,
 } from '@/stores';
+import { allWatchedKeys } from '@/stores/watchlistStore';
 import type { AnalysisEntry } from '@/stores/analysisStore';
 
 /** Placeholder rate while no FX is known: converted totals become NaN and display as "—". */
@@ -77,11 +79,11 @@ function earliestBuyByMarket(txs: readonly BuyTransaction[]): Partial<Record<Mar
   return out;
 }
 
-/** Refs for every held instrument. */
+/** Refs for every held instrument, then watchlist-only ones (portfolio renders first, LLD §3.8). */
 export function currentRefs(): InstrumentRef[] {
-  return holdingKeys(portfolioStore.getState().transactions)
-    .map(refFor)
-    .filter((r): r is InstrumentRef => r !== null);
+  const keys = new Set(holdingKeys(portfolioStore.getState().transactions));
+  for (const k of allWatchedKeys(watchlistStore.getState())) keys.add(k);
+  return [...keys].map(refFor).filter((r): r is InstrumentRef => r !== null);
 }
 
 /** Shows cached prices immediately (LLD §3.8 step 0). */
@@ -89,7 +91,7 @@ export function hydrateMarket(): void {
   marketStore.getState().hydrate(currentRefs());
 }
 
-/** Runs the refresh pipeline for the current holdings (pull to refresh, app open). */
+/** Runs the refresh pipeline for holdings and watchlists (pull to refresh, app open). */
 export function refreshPortfolio(force: boolean): Promise<void> {
   const txs = portfolioStore.getState().transactions;
   return marketStore.getState().runRefresh({
@@ -100,10 +102,21 @@ export function refreshPortfolio(force: boolean): Promise<void> {
   });
 }
 
-/** True when a held instrument has no snapshot yet (e.g. just added). */
-export function hasUnpricedHoldings(): boolean {
+/** True when a held or watched instrument has no snapshot yet (e.g. just added). */
+export function hasUnpricedRefs(): boolean {
   const snaps = marketStore.getState().snapshots;
-  return holdingKeys(portfolioStore.getState().transactions).some((k) => !snaps.has(k));
+  return currentRefs().some((r) => !snaps.has(r.key as InstrumentKey));
+}
+
+/**
+ * Prices instruments that were just added (holding or watchlist). If a refresh is running it
+ * waits for it, then fetches only what is still missing (the cache skips the rest).
+ */
+export async function refreshMissing(): Promise<void> {
+  if (!hasUnpricedRefs()) return;
+  const running = marketStore.getState().refresh.running;
+  if (running) await refreshPortfolio(false);
+  if (hasUnpricedRefs()) await refreshPortfolio(false);
 }
 
 /** Inputs of {@link buildPricingContext}. */

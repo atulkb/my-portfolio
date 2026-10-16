@@ -26,12 +26,15 @@ const SIGNAL_TONE: Readonly<Record<SignalLabel, keyof typeof labelColors>> = {
 export function SignalBadge({
   label,
   confidencePct,
+  compact = false,
 }: {
   readonly label: SignalLabel;
   readonly confidencePct: number;
+  /** "Buy · AI conf. 84%" for list rows (S07). */
+  readonly compact?: boolean;
 }): React.JSX.Element {
   const c = labelColors[SIGNAL_TONE[label]];
-  const text = `${SIGNAL_TEXT[label]} · AI confidence ${Math.round(confidencePct)}%`;
+  const text = `${SIGNAL_TEXT[label]} · AI ${compact ? 'conf.' : 'confidence'} ${Math.round(confidencePct)}%`;
   return (
     <Text
       style={[styles.label, { color: c.fg, backgroundColor: c.bg, borderColor: c.fg }]}

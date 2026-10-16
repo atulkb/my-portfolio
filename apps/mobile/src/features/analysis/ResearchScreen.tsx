@@ -4,7 +4,6 @@ import {
   parseInstrumentKey,
   type Currency,
   type InstrumentKey,
-  type MacroAssessment,
   type ParamLevel,
   type ParamResult,
 } from '@portfolio/core';
@@ -13,18 +12,22 @@ import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ExchangeBadge, LabelBadge, SymbolTile } from '@/components/Badges';
+import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
 import { PriceChart } from '@/components/PriceChart';
 import { RangeBar } from '@/components/RangeBar';
 import { Screen } from '@/components/Screen';
 import { refFor, useHolding } from '@/features/portfolio/hooks';
+import { useInstrumentRules, type InstrumentRuleRow } from '@/features/rules/hooks';
+import { useListsContaining } from '@/features/watchlist/hooks';
 import { formatDate, formatMoney, formatPct, formatQuantity, formatSignedMoney } from '@/lib/format';
 import { userMessage } from '@/lib/messages';
 import { getInstrumentIndex } from '@/services/instruments/instrumentIndex';
 import { marketStore, uiStore, useAi, useInstruments, useMarket, useSession } from '@/stores';
 import { colors, labelColors, radii, spacing, typography } from '@/theme/tokens';
-import { useAiSuggestions, useDeepAnalysis, useMarketSentiment } from './ai';
-import { AiVerdictCard, AlternativesCard, MarketNote } from './AiVerdict';
+import { useAiSuggestions, useDeepAnalysis } from './ai';
+import { AiVerdictCard, AlternativesCard } from './AiVerdict';
+import { MarketContextCard } from './MarketContext';
 import { useAnalysisEntry, usePositionBenchmark } from './hooks';
 import { formatParamValue, PARAM_LABEL } from './params';
 import { resolveSector } from './sector';
@@ -32,12 +35,50 @@ import { resolveSector } from './sector';
 /** Sessions shown in the chart (~3 months). */
 const CHART_SESSIONS = 63;
 
-type Tab = 'VERDICT' | 'FUNDAMENTAL' | 'TECHNICAL';
+type Tab = 'VERDICT' | 'FUNDAMENTAL' | 'TECHNICAL' | 'RULES';
 const TABS: readonly { value: Tab; label: string }[] = [
   { value: 'VERDICT', label: 'AI Verdict' },
   { value: 'FUNDAMENTAL', label: 'Fundamentals' },
   { value: 'TECHNICAL', label: 'Technicals' },
+  { value: 'RULES', label: 'Rules' },
 ];
+
+const OUTCOME: Readonly<Record<InstrumentRuleRow['outcome'], { text: string; color: string }>> = {
+  MATCH: { text: 'Match', color: colors.gain },
+  NO_MATCH: { text: 'No match', color: colors.textSecondary },
+  INSUFFICIENT_DATA: { text: 'Insufficient data', color: colors.caution },
+  INVALID: { text: 'Needs attention', color: colors.caution },
+};
+
+/** S04 Rules tab: enabled rules covering this stock, evaluated live on today's data. */
+function RulesTab({ instrumentKey }: { readonly instrumentKey: InstrumentKey }): React.JSX.Element {
+  const { rows, inScope } = useInstrumentRules(instrumentKey);
+  return (
+    <Card>
+      <Text style={styles.cardTitle}>Rules</Text>
+      {!inScope ? (
+        <Text style={styles.muted}>
+          Rules run on your portfolio and watchlists. Add this stock to a watchlist to check it.
+        </Text>
+      ) : rows.length === 0 ? (
+        <Text style={styles.muted}>No active rules apply to this stock.</Text>
+      ) : (
+        rows.map((r) => (
+          <View key={r.rule.id} style={styles.param}>
+            <View style={styles.paramTop}>
+              <Text style={styles.paramName}>{r.rule.name}</Text>
+              <Text style={[styles.outcome, { color: OUTCOME[r.outcome].color }]}>
+                {OUTCOME[r.outcome].text}
+              </Text>
+            </View>
+            <Text style={styles.reason}>{r.rule.readBack}</Text>
+          </View>
+        ))
+      )}
+      <Button label="Manage rules" variant="link" onPress={() => router.navigate('/rules')} />
+    </Card>
+  );
+}
 
 const LEVEL_TEXT: Readonly<Record<ParamLevel, string>> = {
   GOOD: 'Good',
@@ -93,36 +134,11 @@ function Stat({
   );
 }
 
-const VIX_TEXT = { CALM: 'Calm', ELEVATED: 'Elevated', FEAR: 'Fear' } as const;
-const REGIME_TEXT = { ABOVE: 'above', NEAR: 'near', BELOW: 'below' } as const;
-
-function MacroBlock({ macro }: { readonly macro: MacroAssessment }): React.JSX.Element {
-  const sentiment = useMarketSentiment(macro, true);
-  const vix = (v: MacroAssessment['vix']): string =>
-    v.value === null || v.level === null ? '—' : `${v.value.toFixed(2)} · ${VIX_TEXT[v.level]}`;
-  const trend = (t: MacroAssessment['nifty']): string =>
-    t.pctVsSma200 === null || t.regime === null
-      ? '—'
-      : `${formatPct(t.pctVsSma200, { signed: true })} · ${REGIME_TEXT[t.regime]} 200-day`;
-  return (
-    <Card>
-      <Text style={styles.cardTitle}>Market context</Text>
-      <MarketNote entry={sentiment.entry} />
-      <Text style={styles.muted}>Shown for context; not part of the Health score.</Text>
-      <View style={styles.statGrid}>
-        <Stat label="INDIA VIX" value={vix(macro.indiaVix)} />
-        <Stat label="CBOE VIX" value={vix(macro.vix)} />
-        <Stat label="NIFTY 50" value={trend(macro.nifty)} />
-        <Stat label="S&P 500" value={trend(macro.sp500)} />
-      </View>
-    </Card>
-  );
-}
-
 /**
  * S04 Research for one instrument (LLD §4.4): header, price card with the 3-month chart and
  * ranges, AI Verdict (Health, AI synthesis, signal, alternatives), Fundamentals and Technicals
- * tabs, market context with the AI note, and "Your position" for held stocks. Rules join with M8.
+ * tabs (deterministic market context), Rules tab, ★ add to watchlist, and "Your position" for
+ * held stocks.
  */
 export function ResearchScreen({ instrumentKey }: { readonly instrumentKey: InstrumentKey | null }) {
   const key = instrumentKey;
@@ -140,6 +156,7 @@ export function ResearchScreen({ instrumentKey }: { readonly instrumentKey: Inst
   const suggestions = useAiSuggestions();
   const signal = useAi((s) => (key && suggestions ? (s.signals[key]?.value ?? null) : null));
   const performanceReason = useAi((s) => (key ? (s.performance[key]?.value.reason ?? null) : null));
+  const watchedIn = useListsContaining(key);
 
   const hit = useMemo(
     () => (key && listVersion ? (getInstrumentIndex()?.byKey.get(key) ?? null) : null),
@@ -209,6 +226,18 @@ export function ResearchScreen({ instrumentKey }: { readonly instrumentKey: Inst
             {sector ? `${name} · ${sector}` : name}
           </Text>
         </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={watchedIn.length > 0 ? 'On your watchlists. Change lists' : 'Add to watchlist'}
+          hitSlop={10}
+          onPress={() => router.push({ pathname: '/sheets/watchlist-pick', params: { key } })}
+        >
+          <MaterialCommunityIcons
+            name={watchedIn.length > 0 ? 'star' : 'star-outline'}
+            size={26}
+            color={watchedIn.length > 0 ? colors.gain : colors.textSecondary}
+          />
+        </Pressable>
       </View>
 
       <Card>
@@ -308,6 +337,8 @@ export function ResearchScreen({ instrumentKey }: { readonly instrumentKey: Inst
             <Text style={styles.muted}>{loading ? 'Analysing…' : 'Health needs price history.'}</Text>
           )}
         </Card>
+      ) : tab === 'RULES' ? (
+        <RulesTab instrumentKey={key} />
       ) : (
         <Card>
           {tab === 'FUNDAMENTAL' && isEtf ? (
@@ -327,7 +358,7 @@ export function ResearchScreen({ instrumentKey }: { readonly instrumentKey: Inst
         </Card>
       )}
 
-      {tab === 'TECHNICAL' && analysis ? <MacroBlock macro={analysis.macro} /> : null}
+      {tab === 'TECHNICAL' && analysis ? <MarketContextCard macro={analysis.macro} withNote={false} /> : null}
 
       {tab === 'VERDICT' && suggestions && deep.entry ? (
         <AlternativesCard analysis={deep.entry.value} />
@@ -433,6 +464,7 @@ const styles = StyleSheet.create({
   caption: { ...typography.microBadge, color: colors.textMuted },
   statValue: { ...typography.metricMd, color: colors.textPrimary },
   bullet: { ...typography.bodyMd, color: colors.textPrimary },
+  outcome: { ...typography.labelMd },
   disclaimer: {
     ...typography.labelSm,
     color: colors.textMuted,

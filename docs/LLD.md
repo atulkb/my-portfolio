@@ -1475,6 +1475,41 @@ Recomputation is cheap (≤ 500 transactions, ≤ 150 instruments) and memoised 
   - Market note above the macro figures; position reason in "Your position".
   - **Re-opening S04 and restarting the app cost 0 calls** (474 of 500 left before and after).
 
+### 4.15 Implementation notes (M8, 2026-10-17)
+
+- **Port changes (§1.10):** like transactions (§4.11), creates are optimistic with device-made IDs.
+  - `WatchlistRepository`: `newListId()` and `createWatchlist(id, name, sortOrder)`; `upsertItem(listId, item, { exists })` updates an existing item in place, so `addedAt` is kept.
+  - `RuleRepository`: `newId()` and `create(id, rule)`.
+- **Watchlists:**
+  - Names are unique per user, ignoring case, at most 40 characters (`watchlistNameIssue`).
+  - The last list can't be deleted; the sheet offers rename instead.
+  - Adding a stock means setting which lists hold it (`setMembership`), from `watchlist-pick` (S07 search bar and +, S04 ★).
+  - Copy and move keep the stock's targets and notes.
+  - New route `sheets/watchlist-item` (long-press or ⋮ on a row): edit targets and notes, copy or move, remove.
+  - The active list is not persisted; S07 filters are persisted in `ui.watchlist`.
+- **Refresh:** refs are holdings, then watchlist-only instruments.
+  - The first refresh waits until transactions and watchlists have loaded.
+  - A newly added holding or watched stock is priced by `refreshMissing()`. It waits for a running refresh, then fetches only what is still unpriced.
+- **Signals:** they now cover watched stocks that are not held (scope `WATCHLIST`, with the user's targets). A held stock keeps its portfolio signal. The S07 refresh re-runs signals for that list only.
+- **Market note (deviation from §4.14 ends):** the AI note moved to the S07 market-context card, next to USD/INR. S04 Technicals keeps the deterministic figures.
+- **Rules (§2.8):**
+  - Compile goes through `rulesStore.compile` → `aiService.compileRule`. It is never cached, but it counts against the daily budget.
+  - S08a caches compiles per sentence, so changing only the scopes re-tests without another AI call. An edited rule starts from its stored, re-validated logic. The dry-test state lives in the sheet, not the store.
+  - Scope issues are re-checked locally against the current toggles. Save needs a passing dry test of the current text and scopes, and stores the read-back the user saw.
+- **Evaluation (§3.8 step 8):**
+  - `startRuleSync` loads rules and the current session's results, then re-evaluates, debounced 1.5 s, after a refresh or when rules, holdings, watchlists, Health or Performance change.
+  - Unpriced instruments count as insufficient data.
+  - The results' session date is the latest closed session of either market (`latestSessionDate`).
+  - Only changed results are written. A failed write is retried with the next evaluation.
+  - Results older than 30 days are pruned once per session.
+  - "Insufficient data for N" is kept in memory, not stored.
+- **S04 Rules tab:** shows enabled rules whose scope covers the stock, evaluated live. A stock that is neither held nor watched shows a hint to add it to a watchlist.
+- **Verification (emulator, 2026-10-17):**
+  - NVDA added from S07 search: priced at once; Buy · AI conf. 85 % signal.
+  - "Health score above 70" compiled to `healthScore > 70`. The dry run matched NVDA (Health 80, watchlist) and none of the holdings.
+  - The rule was saved and showed "Triggered today (NVDA)". The result was still there after a cold restart (read back from `ruleResults`).
+- **Later polish:** signal reasons sometimes quote raw parameter keys ("healthScore"); see the M7 note on prompt wording.
+
 ### 4.13 Implementation notes (M6, 2026-10-16)
 
 - **Spike S1 confirmed on the device:** RN's cookie jar keeps the `fc.yahoo.com` cookie. `getcrumb` and quoteSummary answer 200 from the app.

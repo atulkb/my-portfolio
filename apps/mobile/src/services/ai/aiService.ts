@@ -7,6 +7,7 @@ import {
   LabelSchema,
   marketSentimentTask,
   performanceRatingTask,
+  ruleCompileTask,
   SIGNAL_LABELS,
   signalsTask,
   TECHNICAL_PARAMS,
@@ -24,6 +25,8 @@ import {
   type ModelTier,
   type PerformanceInput,
   type PerformanceRating,
+  type RuleCompileInput,
+  type RuleCompileResult,
   type Signal,
   type SignalInput,
 } from '@portfolio/core';
@@ -97,7 +100,14 @@ export type AiBatchResult<T> = {
   readonly calls: number;
 };
 
-/** The four AI tasks of v1 with caching (rule compile joins with M8). */
+/** A compiled rule sentence and what compiled it (stored as `compiledWith`, LLD §1.7). */
+export type CompiledRule = {
+  readonly result: RuleCompileResult;
+  readonly model: string;
+  readonly promptVersion: string;
+};
+
+/** The five AI tasks of v1; all but rule compile are cached per session and input. */
 export type AiService = {
   cachedPerformance(): Record<InstrumentKey, AiEntry<PerformanceRating>>;
   cachedSignals(): Record<InstrumentKey, AiEntry<Signal>>;
@@ -129,6 +139,8 @@ export type AiService = {
     input: MarketSentimentInput,
     opts: { force: boolean },
   ): Promise<AiEntry<MarketSentiment>>;
+  /** NL → JSON-Logic (S08a dry test). Never cached: each compile is a user action. Throws `AppError`. */
+  compileRule(input: RuleCompileInput): Promise<CompiledRule>;
   /** Drops entries whose data is more than {@link AI_PRUNE_DAYS} days old, and old usage counters. */
   prune(today: IsoDate): void;
   usedToday(): number;
@@ -296,6 +308,15 @@ export function createAiService(deps: AiServiceDeps): AiService {
       const e = entry(sessionDate, hash, marketSentimentTask.model, marketSentimentTask.version, value);
       kv.set(AI_KEYS.marketSentiment, e);
       return e;
+    },
+
+    async compileRule(input) {
+      const { value } = await client.runSingle(ruleCompileTask, input);
+      return {
+        result: value,
+        model: AI_CONFIG.models[ruleCompileTask.model],
+        promptVersion: ruleCompileTask.version,
+      };
     },
 
     prune(today) {

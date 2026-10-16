@@ -47,6 +47,7 @@ export * from './rules/validate';
 export * from './rules/evaluate';
 export * from './rules/readback';
 export * from './rules/context';
+export * from './rules/results';
 
 // CSV import (LLD §2.9)
 export * from './csv/types';
