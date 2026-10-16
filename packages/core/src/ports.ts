@@ -24,10 +24,15 @@ export type ReadResult<T> = { readonly items: T[]; readonly skipped: number };
 
 /** `users/{uid}/transactions`. */
 export interface TransactionRepository {
+  /** Creates `n` new document IDs locally (no network), so optimistic adds use their real IDs. */
+  newIds(n: number): string[];
   /** Whole subcollection (≤ 500 docs). */
   listAll(): Promise<ReadResult<BuyTransaction>>;
-  /** Batched writes (≤ 500 per batch). Returns new document IDs. */
-  addMany(txs: NewBuyTransaction[], importBatchId: string | null): Promise<string[]>;
+  /** Batched writes (≤ 500 per batch) under the given IDs (from {@link newIds}). */
+  addMany(
+    items: readonly { readonly id: string; readonly tx: NewBuyTransaction }[],
+    importBatchId: string | null,
+  ): Promise<void>;
   /** Undo import; returns the number of documents deleted. */
   deleteByImportBatch(importBatchId: string): Promise<number>;
   update(id: string, patch: BuyTransactionPatch): Promise<void>;

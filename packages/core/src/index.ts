@@ -52,6 +52,7 @@ export * from './rules/context';
 export * from './csv/types';
 export * from './csv/duplicates';
 export { parseHoldingsCsv } from './csv/parse';
+export { parsePositiveNumber } from './csv/fields';
 
 // Instrument master (LLD §2.10)
 export * from './instruments/build';

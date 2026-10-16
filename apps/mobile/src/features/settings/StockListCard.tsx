@@ -14,8 +14,8 @@ function formatDate(epochMs: number): string {
 }
 
 /**
- * M3 check: stock-list status ("18,108 stocks · updated …", LLD §4.4 Settings row) and a search
- * box over the local list. Moves into Settings / ticker search with M4–M5.
+ * Stock-list status ("18,108 stocks · updated …", LLD §4.4 Settings row) and a search
+ * box over the local list (interim Settings; the full S09 row comes in M9).
  */
 export function StockListCard(): React.JSX.Element {
   const status = useInstruments((s) => s.status);

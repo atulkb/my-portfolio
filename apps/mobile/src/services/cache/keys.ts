@@ -3,4 +3,5 @@ export const KV_KEYS = {
   instrumentsMeta: 'instruments.meta',
   instrumentsTsv: 'instruments.tsv',
   instrumentsLastCheckAt: 'instruments.lastCheckAt',
+  importLastBatch: 'import.lastBatch',
 } as const;

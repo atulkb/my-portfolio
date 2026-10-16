@@ -1,4 +1,11 @@
-import { toAppError, type AppErrorCode, type ProfileRepository, type UserProfile } from '@portfolio/core';
+import {
+  normalisePlatform,
+  toAppError,
+  type AppErrorCode,
+  type InstrumentKey,
+  type ProfileRepository,
+  type UserProfile,
+} from '@portfolio/core';
 import { createStore, type StoreApi } from 'zustand/vanilla';
 
 import { devErrorDetail } from '@/lib/devError';
@@ -35,7 +42,14 @@ export type SessionState = {
   retryProfile(): Promise<void>;
   signOut(): Promise<void>;
   clearError(): void;
+  /** Adds platforms missing from the managed list (case-insensitive, ≤ 30 total). Optimistic. */
+  addPlatforms(names: readonly string[]): Promise<void>;
+  /** Writes sector overrides (CSV `sector` column). Optimistic. */
+  setSectorOverrides(overrides: Readonly<Record<InstrumentKey, string>>): Promise<void>;
 };
+
+/** Maximum managed platforms (LLD §1.4). */
+export const MAX_PLATFORMS = 30;
 
 /** Dependencies, injected so tests use fakes. */
 export type SessionDeps = {
@@ -135,6 +149,41 @@ export function createSessionStore(deps: SessionDeps): StoreApi<SessionState> {
         });
       },
       clearError: () => set({ error: null, errorDetail: null }),
+
+      addPlatforms: async (names) => {
+        const { user, profile } = get();
+        if (!user || !profile) return;
+        const known = new Set(profile.platforms.map(normalisePlatform));
+        const merged = [...profile.platforms];
+        for (const raw of names) {
+          const name = raw.trim();
+          if (name && !known.has(normalisePlatform(name)) && merged.length < MAX_PLATFORMS) {
+            known.add(normalisePlatform(name));
+            merged.push(name);
+          }
+        }
+        if (merged.length === profile.platforms.length) return;
+        set({ profile: { ...profile, platforms: merged } });
+        try {
+          await deps.profiles(user.uid).setPlatforms(merged);
+        } catch (e) {
+          const now = get().profile;
+          if (now) set({ profile: { ...now, platforms: profile.platforms }, error: toAppError(e).code });
+        }
+      },
+
+      setSectorOverrides: async (overrides) => {
+        const { user, profile } = get();
+        const entries = Object.entries(overrides) as [InstrumentKey, string][];
+        if (!user || !profile || entries.length === 0) return;
+        set({ profile: { ...profile, sectorOverrides: { ...profile.sectorOverrides, ...overrides } } });
+        try {
+          const repo = deps.profiles(user.uid);
+          for (const [key, sector] of entries) await repo.setSectorOverride(key, sector);
+        } catch (e) {
+          set({ error: toAppError(e).code });
+        }
+      },
     };
   });
 }

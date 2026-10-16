@@ -149,4 +149,28 @@ describe('session actions', () => {
     await failing.store.getState().signOut();
     expect(failing.onSignedOut).not.toHaveBeenCalled();
   });
+
+  it('adds only new platforms (case-insensitive) and rolls back on failure', async () => {
+    const setPlatforms = jest.fn(async () => undefined);
+    const { store, emit } = setup({}, { setPlatforms });
+    await emit(googleUser);
+    await store.getState().addPlatforms(['Zerodha', ' zerodha ', 'Groww']);
+    expect(setPlatforms).toHaveBeenLastCalledWith(['Zerodha', 'Groww']);
+    await store.getState().addPlatforms(['GROWW']);
+    expect(setPlatforms).toHaveBeenCalledTimes(1);
+
+    setPlatforms.mockRejectedValueOnce(new AppError('FS_UNAVAILABLE'));
+    await store.getState().addPlatforms(['Upstox']);
+    expect(store.getState().profile?.platforms).toEqual(['Zerodha', 'Groww']);
+    expect(store.getState().error).toBe('FS_UNAVAILABLE');
+  });
+
+  it('writes sector overrides into the profile', async () => {
+    const setSectorOverride = jest.fn(async () => undefined);
+    const { store, emit } = setup({}, { setSectorOverride });
+    await emit(googleUser);
+    await store.getState().setSectorOverrides({ 'NSE:INFY': 'IT Services' });
+    expect(setSectorOverride).toHaveBeenCalledWith('NSE:INFY', 'IT Services');
+    expect(store.getState().profile?.sectorOverrides).toEqual({ 'NSE:INFY': 'IT Services' });
+  });
 });
