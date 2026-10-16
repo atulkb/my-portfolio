@@ -1,7 +1,9 @@
 import type { IndicatorSet } from '../indicators/compute';
+import type { InstrumentKey } from '../models/primitives';
 import { buildRuleContext } from './context';
 import { dryRun, evaluateRule, type RuleContext } from './evaluate';
 import { renderReadBack } from './readback';
+import { evaluateRules, sameRuleMatches } from './results';
 import { checkRuleScopes, parseRuleLogicJson, validateRuleLogic, type ValidRule } from './validate';
 import { RULE_VARIABLE_NAMES } from './variables';
 
@@ -196,5 +198,51 @@ describe('buildRuleContext', () => {
       indiaVix: 14,
     });
     expect(Object.keys(c).sort()).toEqual([...RULE_VARIABLE_NAMES].sort());
+  });
+});
+
+describe('evaluateRules', () => {
+  const rule = valid(oversold);
+  const candidates = [
+    { key: 'NSE:INFY' as InstrumentKey, scope: 'PORTFOLIO' as const, ctx: ctx({ rsi14: 25, pe: 18 }) },
+    { key: 'NASDAQ:AAPL' as InstrumentKey, scope: 'WATCHLIST' as const, ctx: ctx({ rsi14: 28, pe: 15 }) },
+    { key: 'NSE:TCS' as InstrumentKey, scope: 'WATCHLIST' as const, ctx: ctx({ rsi14: 40, pe: null }) },
+  ];
+
+  it('evaluates only candidates in the rule scope', () => {
+    const [portfolio] = evaluateRules(
+      [{ id: 'r1', rule, appliesToPortfolio: true, appliesToWatchlists: false }],
+      candidates,
+      '2026-10-16',
+      1,
+    );
+    expect(portfolio?.result.matches).toEqual([{ instrumentKey: 'NSE:INFY', scope: 'PORTFOLIO' }]);
+    expect(portfolio?.insufficient).toEqual([]);
+
+    const [watch] = evaluateRules(
+      [{ id: 'r2', rule, appliesToPortfolio: false, appliesToWatchlists: true }],
+      candidates,
+      '2026-10-16',
+      1,
+    );
+    expect(watch?.result).toMatchObject({ ruleId: 'r2', sessionDate: '2026-10-16', schemaVersion: 1 });
+    expect(watch?.result.matches).toEqual([{ instrumentKey: 'NASDAQ:AAPL', scope: 'WATCHLIST' }]);
+    expect(watch?.insufficient).toEqual([{ key: 'NSE:TCS', scope: 'WATCHLIST' }]);
+  });
+
+  it('compares matches ignoring order', () => {
+    const a = {
+      schemaVersion: 1 as const,
+      ruleId: 'r1',
+      sessionDate: '2026-10-16',
+      evaluatedAt: 1,
+      matches: [
+        { instrumentKey: 'NSE:INFY' as InstrumentKey, scope: 'PORTFOLIO' as const },
+        { instrumentKey: 'NASDAQ:AAPL' as InstrumentKey, scope: 'WATCHLIST' as const },
+      ],
+    };
+    expect(sameRuleMatches(a, { ...a, evaluatedAt: 2, matches: [...a.matches].reverse() })).toBe(true);
+    expect(sameRuleMatches(a, { ...a, matches: a.matches.slice(1) })).toBe(false);
+    expect(sameRuleMatches(a, { ...a, sessionDate: '2026-10-17' })).toBe(false);
   });
 });

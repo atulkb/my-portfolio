@@ -1,4 +1,4 @@
-import type { IsoDate } from '@portfolio/core';
+import { sessionDateFor, type IsoDate } from '@portfolio/core';
 
 /** The device's local calendar date as `YYYY-MM-DD` (trade dates are entered in local time). */
 export function localIsoDate(d: Date = new Date()): IsoDate {
@@ -10,4 +10,14 @@ export function localIsoDate(d: Date = new Date()): IsoDate {
 export function dateFromIso(iso: IsoDate): Date {
   const [y, m, d] = iso.split('-').map(Number);
   return new Date(y ?? 1990, (m ?? 1) - 1, d ?? 1);
+}
+
+/**
+ * The most recent closed session of either market (IN or US). Used for the market note and as
+ * the session date of rule results (LLD §1.7).
+ */
+export function latestSessionDate(now: number): IsoDate {
+  const a = sessionDateFor('IN', now);
+  const b = sessionDateFor('US', now);
+  return a > b ? a : b;
 }

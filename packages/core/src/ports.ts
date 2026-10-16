@@ -46,20 +46,24 @@ export interface TransactionRepository {
 /** `users/{uid}/watchlists` and their items. */
 export interface WatchlistRepository {
   listWatchlists(): Promise<ReadResult<Watchlist>>;
-  createWatchlist(name: string): Promise<string>;
+  /** Creates a document ID locally (no network), so optimistic creates use their real ID. */
+  newListId(): string;
+  createWatchlist(id: string, name: string, sortOrder: number): Promise<void>;
   renameWatchlist(id: string, name: string): Promise<void>;
   /** Deletes the items first. */
   deleteWatchlist(id: string): Promise<void>;
   listItems(watchlistId: string): Promise<ReadResult<WatchlistItem>>;
-  /** Document ID = instrument key. */
-  upsertItem(watchlistId: string, item: NewWatchlistItem): Promise<void>;
+  /** Document ID = instrument key. `exists` updates in place, keeping `addedAt`. */
+  upsertItem(watchlistId: string, item: NewWatchlistItem, opts?: { exists: boolean }): Promise<void>;
   removeItem(watchlistId: string, key: InstrumentKey): Promise<void>;
 }
 
 /** `users/{uid}/rules` and `ruleResults`. */
 export interface RuleRepository {
   list(): Promise<ReadResult<Rule>>;
-  create(rule: NewRule): Promise<string>;
+  /** Creates a document ID locally (no network), so optimistic creates use their real ID. */
+  newId(): string;
+  create(id: string, rule: NewRule): Promise<void>;
   update(id: string, patch: RulePatch): Promise<void>;
   delete(id: string): Promise<void>;
   saveResults(results: RuleResult[]): Promise<void>;

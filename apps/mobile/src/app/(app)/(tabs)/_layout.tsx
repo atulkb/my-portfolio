@@ -13,10 +13,13 @@ function tabIcon(name: IconName) {
   return TabIcon;
 }
 
-/** Bottom tabs (LLD §4.1): Portfolio · Research; Watchlist and Rules join with M8. */
+/** Bottom tabs (LLD §4.1): Portfolio · Watchlist · Rules · Research. */
 export default function TabsLayout(): React.JSX.Element {
   return (
     <Tabs
+      // Back returns to the tab the user came from (e.g. Watchlist → Research → back = Watchlist),
+      // not always to the first tab.
+      backBehavior="history"
       screenOptions={{
         headerShown: false,
         sceneStyle: { backgroundColor: colors.canvas },
@@ -27,6 +30,11 @@ export default function TabsLayout(): React.JSX.Element {
       }}
     >
       <Tabs.Screen name="portfolio" options={{ title: 'Portfolio', tabBarIcon: tabIcon('chart-donut') }} />
+      <Tabs.Screen
+        name="watchlist"
+        options={{ title: 'Watchlist', tabBarIcon: tabIcon('bookmark-outline') }}
+      />
+      <Tabs.Screen name="rules" options={{ title: 'Rules', tabBarIcon: tabIcon('tune-variant') }} />
       <Tabs.Screen
         name="research"
         options={{ title: 'Research', tabBarIcon: tabIcon('chart-timeline-variant') }}

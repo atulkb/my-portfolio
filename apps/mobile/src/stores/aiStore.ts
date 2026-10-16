@@ -59,6 +59,8 @@ export type AiState = {
     input: MarketSentimentInput,
     opts: { force: boolean },
   ): Promise<void>;
+  /** Re-reads the requests left today (after a call made outside this store, e.g. rule compile). */
+  refreshBudget(): void;
   reset(): void;
 };
 
@@ -250,6 +252,8 @@ export function createAiStore(deps: AiStoreDeps): StoreApi<AiState> {
         })();
         return inflightSentiment;
       },
+
+      refreshBudget: () => set({ budgetLeftToday: service.leftToday() }),
 
       reset: () => {
         noticed.clear();

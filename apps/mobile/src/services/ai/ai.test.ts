@@ -11,6 +11,7 @@ import {
 } from '@portfolio/core';
 
 import { createAiStore } from '@/stores/aiStore';
+import { AI_CONFIG } from '@/config/ai';
 import { createKeyValueCache, memoryRawStore } from '../cache/kv';
 import { createAiClient, parseModelJson, type AiClientConfig } from './aiClient';
 import { AI_KEYS, createAiService, type AiItem } from './aiService';
@@ -303,6 +304,43 @@ describe('AI service cache (D26)', () => {
     t.service.prune('2026-10-16');
     expect(t.service.cachedPerformance()).toEqual({});
     expect(t.raw.data.has(AI_KEYS.performance)).toBe(true);
+  });
+});
+
+describe('AI service rule compile', () => {
+  const reply = (body: unknown): GenerateResult => ({
+    text: JSON.stringify(body),
+    finishReason: 'STOP',
+    usage: { promptTokens: 900, outputTokens: 60, thoughtsTokens: 0 },
+  });
+  const input = { text: 'RSI below 30', appliesToPortfolio: true, appliesToWatchlists: false };
+
+  it('returns the validated rule with the model and prompt version, never cached', async () => {
+    const ok = reply({ status: 'OK', logicJson: '{"<":[{"var":"rsi14"},30]}', suggestedName: 'Oversold' });
+    const t = setup([ok, ok]);
+    const first = await t.service.compileRule(input);
+    expect(first.result).toMatchObject({ status: 'OK', readBack: expect.stringContaining('RSI') });
+    expect(first.promptVersion).toBe('rule-compile@1');
+    expect(first.model).toBe(AI_CONFIG.models.flash);
+    await t.service.compileRule(input);
+    expect(t.requests).toHaveLength(2);
+    expect(t.usage.usedToday()).toBe(2);
+  });
+
+  it('retries a variable outside the whitelist with the validator feedback', async () => {
+    const t = setup([
+      reply({ status: 'OK', logicJson: '{"<":[{"var":"peRatio"},20]}' }),
+      reply({ status: 'OK', logicJson: '{"<":[{"var":"pe"},20]}' }),
+    ]);
+    const r = await t.service.compileRule({ ...input, text: 'PE under 20' });
+    expect(r.result.status).toBe('OK');
+    expect(t.requests[1]?.prompt.user).toContain('peRatio');
+  });
+
+  it('passes UNSUPPORTED through (e.g. intraday timeframes)', async () => {
+    const t = setup([reply({ status: 'UNSUPPORTED', reason: 'Needs 4-hour candles.' })]);
+    const r = await t.service.compileRule({ ...input, text: 'RSI on 4H below 30' });
+    expect(r.result).toEqual({ status: 'UNSUPPORTED', reason: 'Needs 4-hour candles.' });
   });
 });
 

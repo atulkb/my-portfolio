@@ -15,7 +15,9 @@ import { createKeyValueCache } from '@/services/cache/kv';
 import { mmkvRawStore, wipeUserData } from '@/services/cache/storage';
 import { createInstrumentMasterRepository } from '@/services/firestore/instrumentMasterRepository';
 import { createProfileRepository } from '@/services/firestore/profileRepository';
+import { createRuleRepository } from '@/services/firestore/ruleRepository';
 import { createTransactionRepository } from '@/services/firestore/transactionRepository';
+import { createWatchlistRepository } from '@/services/firestore/watchlistRepository';
 import {
   clearInstrumentIndex,
   getInstrumentIndex,
@@ -32,9 +34,11 @@ import { createRefreshService } from '@/services/refresh/refreshService';
 import { createAiStore, type AiState } from './aiStore';
 import { createAnalysisStore, type AnalysisState } from './analysisStore';
 import { createMarketStore, type MarketState } from './marketStore';
+import { createRulesStore, type RulesState } from './rulesStore';
 import { createSessionStore, type SessionState } from './sessionStore';
 import { createToastStore, type ToastState } from './toastStore';
 import { createUiStore, type UiState } from './uiStore';
+import { createWatchlistStore, type WatchlistState } from './watchlistStore';
 
 const kv = createKeyValueCache(mmkvRawStore());
 const clock = { now: () => Date.now() };
@@ -95,26 +99,29 @@ const aiUsage = createAiUsage({
   limits: { ...AI_CONFIG.rateLimit, maxWaitMs: AI_CONFIG.maxRpmWaitMs },
 });
 
+/** Gemini tasks with caching and the daily budget (LLD §3.5); shared by the AI and rules stores. */
+export const aiService = createAiService({
+  client: createAiClient({
+    port: firebaseGenerativePort,
+    usage: aiUsage,
+    config: AI_CONFIG,
+    sleep,
+    log: __DEV__
+      ? (line) => {
+          console.log(`[ai] ${line}`);
+          pushAiDevLog(line);
+        }
+      : undefined,
+    describeError: devErrorDetail,
+  }),
+  usage: aiUsage,
+  kv,
+  clock,
+});
+
 /** Gemini ratings, signals, deep analysis and market sentiment (LLD §3.5, §4.3). */
 export const aiStore = createAiStore({
-  service: createAiService({
-    client: createAiClient({
-      port: firebaseGenerativePort,
-      usage: aiUsage,
-      config: AI_CONFIG,
-      sleep,
-      log: __DEV__
-        ? (line) => {
-            console.log(`[ai] ${line}`);
-            pushAiDevLog(line);
-          }
-        : undefined,
-      describeError: devErrorDetail,
-    }),
-    usage: aiUsage,
-    kv,
-    clock,
-  }),
+  service: aiService,
   now: () => Date.now(),
   onNotice: (code) => {
     const message = userMessage(code);
@@ -141,6 +148,34 @@ export const portfolioStore = createPortfolioStore({
   newBatchId: () => Crypto.randomUUID(),
 });
 
+/** The signed-in user's resolved uid, for repositories created per call. */
+const currentUid = (): string | null => sessionStore.getState().user?.uid ?? null;
+
+/** Watchlists and their items (LLD §4.3). */
+export const watchlistStore = createWatchlistStore({
+  repo: () => {
+    const uid = currentUid();
+    return uid ? createWatchlistRepository(uid) : null;
+  },
+  clock,
+});
+
+/** Rules and today's results (LLD §4.3). */
+export const rulesStore = createRulesStore({
+  repo: () => {
+    const uid = currentUid();
+    return uid ? createRuleRepository(uid) : null;
+  },
+  clock,
+  compile: async (input) => {
+    try {
+      return await aiService.compileRule(input);
+    } finally {
+      aiStore.getState().refreshBudget();
+    }
+  },
+});
+
 /** The app's session store, wired to Firebase. */
 export const sessionStore = createSessionStore({
   auth: firebaseAuthService,
@@ -149,6 +184,8 @@ export const sessionStore = createSessionStore({
     wipeUserData();
     instrumentStore.getState().reset();
     portfolioStore.getState().reset();
+    watchlistStore.getState().reset();
+    rulesStore.getState().reset();
     marketStore.getState().reset();
     analysisStore.getState().reset();
     aiStore.getState().reset();
@@ -194,4 +231,14 @@ export function useAi<T>(selector: (s: AiState) => T): T {
 /** React hook selecting from the UI store. */
 export function useUi<T>(selector: (s: UiState) => T): T {
   return useStore(uiStore, selector);
+}
+
+/** React hook selecting from the watchlist store. */
+export function useWatchlists<T>(selector: (s: WatchlistState) => T): T {
+  return useStore(watchlistStore, selector);
+}
+
+/** React hook selecting from the rules store. */
+export function useRules<T>(selector: (s: RulesState) => T): T {
+  return useStore(rulesStore, selector);
 }
