@@ -737,7 +737,7 @@ Ties broken by: listing on NSE/NASDAQ/NYSE before others, then shorter name. Ind
 
 ### 2.13 Implementation notes (M1, 2026-10-16)
 Small refinements made while implementing; behaviour matches the sections above unless noted.
-1. **P/B absolute fallback** — the framework defines P/B only relative to a sector median. v1 uses `good < 1.5`, `bad > 3` (1.5–3 average), in `THRESHOLDS.pb`. **Pending user review.**
+1. **P/B absolute fallback** — the framework defines P/B only relative to a sector median. v1 uses `good < 1.5`, `bad > 3` (1.5–3 average), in `THRESHOLDS.pb`. **Approved by user 2026-10-16.**
 2. **Buy date "not in the future"** is checked only on write (`newBuyTransactionSchema(today)`); stored documents are read with format + ≥ 1990 checks only, so a wrong device clock never hides existing buys.
 3. **Sector groups** (`groupBySector(holdings, fx, currency)`) report value / P&L / weight in the summary currency; holdings stay native (D25).
 4. **`AnalysisInput.market`** added (needed for India-only promoter holding and VIX relevance).

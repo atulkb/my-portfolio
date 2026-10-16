@@ -14,7 +14,7 @@ export const THRESHOLDS = {
   // §3 fundamental (v1: absolute fallbacks for valuation, LLD §2.7)
   pe: { goodBelow: 20, badAbove: 35 },
   peg: { goodBelow: 1, badAbove: 2 },
-  /** Not in the framework (it is sector-relative only); v1 absolute fallback, pending review. */
+  /** Not in the framework (it is sector-relative only); v1 absolute fallback, approved 2026-10-16. */
   pb: { goodBelow: 1.5, badAbove: 3 },
   roe: { goodAbove: 15, badBelow: 10 },
   roce: { goodAbove: 15, badBelow: 10 },

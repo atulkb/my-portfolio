@@ -1,0 +1,19 @@
+{
+  "name": "@portfolio/firebase-rules",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Firestore security rules tests (Firestore emulator). See LLD §1.11 / §1.13.",
+  "scripts": {
+    "test:rules": "node scripts/test-rules.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^6.0.0",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^26.6.5",
+    "firebase": "^13.0.0",
+    "jest": "^30.5.2",
+    "ts-jest": "^29.4.15",
+    "typescript": "~6.0.3"
+  }
+}

@@ -1,5 +1,5 @@
 # Lint, type-check, test and format check on every push / PR (LLD §5.4).
-# No secrets are used. Firestore rules tests (emulator) are added in M2.
+# No secrets are used. The rules job runs the Firestore emulator with a demo project.
 name: CI
 
 on:
@@ -41,3 +41,26 @@ jobs:
 
       - name: Format check
         run: npm run format:check
+
+  rules:
+    # Firestore security rules against the emulator (LLD §1.13). Uses a demo project: no credentials.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install
+        run: npm ci && npm install -g firebase-tools@15
+
+      - name: Firestore rules tests
+        run: npm run test:rules

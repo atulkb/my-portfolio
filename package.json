@@ -5,7 +5,8 @@
   "description": "Personal portfolio & watchlist analyzer (Expo + Firebase + Gemini). See docs/HLD.md.",
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "firebase"
   ],
   "engines": {
     "node": ">=22"
@@ -19,7 +20,8 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "test:rules": "npm run test:rules -w @portfolio/firebase-rules"
   },
   "devDependencies": {
     "eslint": "^9.39.5",
