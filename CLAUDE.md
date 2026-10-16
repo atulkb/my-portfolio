@@ -55,13 +55,15 @@ docs/                     HLD, LLD, analysis framework, ui/ (Stitch screen desig
 - **Expo SDK:** 57 (React Native 0.86). Add native packages with `npx expo install <pkg>` from `apps/mobile`, never plain `npm install`.
 - **Install deps:** `npm install`
 - **Start Metro dev server:** `npm run start`
-- **Open on Android (Expo Go until native modules are added, then the dev client):** `npm run android`
-- **Native build & run locally (needs Android Studio + JDK 17):** `npm run android:native`
+- **Build, install & run on the emulator/phone (dev client; needs Android Studio + JDK 17):** `npm run android` (first build ≈ 30 min, then incremental). Expo Go no longer works (native Firebase modules).
+- **Regenerate the native project after app.json/plugin changes or a new google-services.json:** `npx expo prebuild --platform android --clean` (in `apps/mobile`)
+- **Emulator:** AVD `Medium_Phone_API_37.0` (Google Play image, needed for Google sign-in)
 - **Cloud dev build (no local Android SDK needed):** `npx eas-cli build --profile development --platform android` (run inside `apps/mobile`)
 - **Run all tests:** `npm test`
 - **Type-check:** `npm run typecheck`
 - **Lint:** `npm run lint`
 - **Format:** `npm run format`
+- **Firestore rules tests (emulator):** `npm run test:rules` — firebase-tools needs Java 21+: set `FIREBASE_JAVA_HOME` (e.g. Android Studio's `jbr`) so Android builds keep JDK 17
 - **Firebase emulators:** `firebase emulators:start`
 - **Expo dependency health:** `npm run doctor`
 
