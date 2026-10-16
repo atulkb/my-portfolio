@@ -1,0 +1,29 @@
+{
+  "name": "portfolio-analyzer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Personal portfolio & watchlist analyzer (Expo + Firebase + Gemini). See docs/HLD.md.",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "npm run start -w @portfolio/mobile",
+    "android": "npm run android -w @portfolio/mobile",
+    "android:native": "npm run android:native -w @portfolio/mobile",
+    "doctor": "npm run doctor -w @portfolio/mobile",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "eslint": "^9.39.5",
+    "eslint-config-expo": "~57.0.2",
+    "prettier": "^3.9.10"
+  }
+}

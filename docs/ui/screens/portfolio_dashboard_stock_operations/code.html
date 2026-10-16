@@ -1,0 +1,1044 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"><meta content="mobile_tab" name="shell-type"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "tertiary-fixed": "#ffdcc5", "error": "#ffb4ab", "surface-variant": "#333538", "background": "#111317", "primary-fixed-dim": "#18e376", "secondary-container": "#881d24", "primary-fixed": "#62ff96", "on-secondary": "#670211", "inverse-on-surface": "#2f3034", "on-secondary-container": "#ff9996", "surface-container": "#1e2023", "surface-container-highest": "#333538", "surface-container-low": "#1a1c1f", "error-container": "#93000a", "on-surface-variant": "#bacbb9", "on-secondary-fixed-variant": "#881d24", "on-primary-fixed-variant": "#005226", "on-tertiary-fixed-variant": "#6e3908", "inverse-surface": "#e2e2e6", "tertiary-container": "#ffb178", "surface-tint": "#18e376", "inverse-primary": "#006d34", "on-tertiary": "#4f2500", "tertiary": "#ffd6bc", "on-secondary-fixed": "#410006", "surface-bright": "#37393d", "on-background": "#e2e2e6", "on-primary-fixed": "#00210b", "surface-container-lowest": "#0c0e11", "tertiary-fixed-dim": "#ffb783", "on-tertiary-fixed": "#301400", "surface-dim": "#111317", "secondary-fixed": "#ffdad8", "primary": "#46fc8b", "on-error": "#690005", "outline": "#859585", "on-primary": "#003918", "on-surface": "#e2e2e6", "primary-container": "#05df72", "surface": "#111317", "on-primary-container": "#005d2b", "secondary-fixed-dim": "#ffb3b0", "on-error-container": "#ffdad6", "outline-variant": "#3c4a3d", "surface-container-high": "#282a2d", "on-tertiary-container": "#794112", "secondary": "#ffb3b0" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "space-md": "0.75rem", "margin": "1rem", "space-xs": "0.25rem", "space-lg": "1rem", "space-sm": "0.5rem", "space-xl": "1.5rem", "gutter": "0.75rem" }, "fontFamily": { "metric-num-lg": ["Inter"], "label-md": ["Inter"], "metric-num-md": ["Inter"], "label-sm": ["Inter"], "headline-md": ["Inter"], "micro-badge": ["Inter"], "body-md": ["Inter"], "body-lg": ["Inter"], "headline-sm": ["Inter"], "headline-lg": ["Inter"], "display-hero": ["Inter"] }, "fontSize": { "metric-num-lg": ["24px", { "lineHeight": "28px", "letterSpacing": "-0.02em", "fontWeight": "600" }], "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "500" }], "metric-num-md": ["16px", { "lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.02em", "fontWeight": "500" }], "headline-md": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.015em", "fontWeight": "600" }], "micro-badge": ["10px", { "lineHeight": "12px", "letterSpacing": "0.04em", "fontWeight": "600" }], "body-md": ["13px", { "lineHeight": "18px", "letterSpacing": "0em", "fontWeight": "400" }], "body-lg": ["15px", { "lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "400" }], "headline-sm": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "headline-lg": ["28px", { "lineHeight": "34px", "letterSpacing": "-0.02em", "fontWeight": "600" }], "display-hero": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.03em", "fontWeight": "700" }] } } } };</script><style>@layer base{html,body{width:100vw;margin:0;padding:0;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head><body class="bg-surface font-body-md text-body-md text-on-surface antialiased flex flex-col min-h-screen"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/85 backdrop-blur-xl border-b border-surface-container"><div class="h-14 px-margin flex items-center justify-between"><div class="flex items-center gap-space-sm"><div class="w-8 h-8 rounded-lg bg-primary/10 border border-primary/30 flex items-center justify-center text-primary"><span class="material-symbols-outlined text-[20px]">show_chart</span></div><span class="font-headline-sm text-headline-sm text-on-surface tracking-tight uppercase font-bold">Portfolio</span></div><div class="flex items-center gap-space-xs"><a class="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors" data-path="settings" href="#"><span class="material-symbols-outlined text-[20px]">settings</span></a><a class="w-10 h-10 flex items-center justify-center" data-path="profile" href="#"><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-1 ring-outline/30" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAeiCAF6zHLuHAuHE7Oiy-VNZ2wpcXHh7BBr5rUTj3TNUUNkxPCLE-aWHBj_DadekhDCc5_Q34ZIwqGPgkKdjgOM9cD4HCy5gyg5Dn3-sAYVDrZC6lUovXIoXey_cNcdHDOvQgZyNHX1VS1ko4UP7pZCWTFb2aM9KVLhO08JfbvAM81z7wWaxvU3yeaO314RYT7eY-2xmCmP5OjwJYbhutm9a1ITYBPk53i1J8jFNHXCByTFgKrUFnm"></a></div></div></header><main class="flex flex-col relative w-full pt-14 pb-20 bg-surface flex-1"><div class="flex flex-col w-full px-margin pb-24 space-y-space-lg select-none">
+<!-- Portfolio Summary Hero Card -->
+<section class="w-full bg-surface-container-low border border-surface-container rounded-xl p-space-lg relative overflow-hidden shadow-sm">
+<!-- Top row: Label + Currency Toggle -->
+<div class="flex items-center justify-between gap-space-sm mb-2">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider font-semibold">Net Portfolio Worth</span>
+</div>
+<!-- Currency Switcher Pill -->
+<div class="inline-flex items-center bg-surface-container rounded-full p-0.5 border border-surface-container-highest" id="currencyToggleContainer">
+<button class="px-2.5 py-0.5 rounded-full font-label-sm text-label-sm font-semibold transition-all duration-200 bg-surface-bright text-on-surface shadow-xs" id="btnUSD" onclick="switchCurrency('USD')">
+          $ USD
+        </button>
+<button class="px-2.5 py-0.5 rounded-full font-label-sm text-label-sm font-medium transition-all duration-200 text-on-surface-variant" id="btnINR" onclick="switchCurrency('INR')">
+          ₹ INR
+        </button>
+</div>
+</div>
+<!-- Main Hero Balance Display -->
+<div class="flex flex-col mb-3">
+<div class="flex items-baseline gap-2">
+<span class="font-display-hero text-[34px] leading-tight text-on-surface tracking-tight font-bold" id="heroBalance">
+          $148,620.45
+        </span>
+</div>
+<div class="flex items-center gap-1.5 mt-0.5">
+<span class="font-label-sm text-label-sm text-on-surface-variant font-mono" id="fxRateTag">
+          1 USD ≈ 86.85 INR • Live Mid-Market
+        </span>
+</div>
+</div>
+<!-- Separate Split Sub-Cards (US Portfolio & India Portfolio) -->
+<div class="grid grid-cols-2 gap-2 mb-3">
+<!-- US Portfolio Card -->
+<div class="bg-surface-container/90 border border-surface-container-highest rounded-lg p-2.5 flex flex-col justify-between">
+<div class="flex items-center justify-between mb-1">
+<div class="flex items-center gap-1">
+<span class="text-sm">🇺🇸</span>
+<span class="font-label-sm text-label-sm font-semibold text-on-surface uppercase tracking-wide">US Stocks</span>
+</div>
+<span class="font-micro-badge text-micro-badge px-1.5 py-0.2 rounded bg-primary/10 text-primary font-bold">62%</span>
+</div>
+<div class="font-metric-num-md text-[17px] font-bold text-on-surface tracking-tight" id="usPortfolioVal">$92,144.68</div>
+<div class="flex items-center justify-between text-on-surface-variant font-label-sm text-[10px] mt-1 pt-1 border-t border-surface-container-high/60">
+<span class="">CAGR</span>
+<span class="text-primary font-semibold font-mono">+24.8% p.a.</span>
+</div>
+</div>
+<!-- India Portfolio Card -->
+<div class="bg-surface-container/90 border border-surface-container-highest rounded-lg p-2.5 flex flex-col justify-between">
+<div class="flex items-center justify-between mb-1">
+<div class="flex items-center gap-1">
+<span class="text-sm">🇮🇳</span>
+<span class="font-label-sm text-label-sm font-semibold text-on-surface uppercase tracking-wide">India Stocks</span>
+</div>
+<span class="font-micro-badge text-micro-badge px-1.5 py-0.2 rounded bg-tertiary-container/20 text-tertiary-container font-bold">38%</span>
+</div>
+<div class="font-metric-num-md text-[17px] font-bold text-on-surface tracking-tight" id="inPortfolioVal">₹49,04,360.00</div>
+<div class="flex items-center justify-between text-on-surface-variant font-label-sm text-[10px] mt-1 pt-1 border-t border-surface-container-high/60">
+<span class="">CAGR</span>
+<span class="text-primary font-semibold font-mono">+18.2% p.a.</span>
+</div>
+</div>
+</div>
+<!-- High-Contrast Metric Block (1-Day P&L, Total P&L, Combined CAGR) -->
+<div class="bg-surface-container rounded-lg p-space-sm flex flex-col space-y-2 mb-space-md border border-surface-container-high/60">
+<!-- 1-Day P&L -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="font-label-md text-label-md text-on-surface-variant">1-Day P&amp;L</span>
+<span class="font-micro-badge text-micro-badge px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant">Today</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[15px]">trending_up</span>
+<span class="font-metric-num-md text-metric-num-md text-primary font-semibold font-mono" id="dayPnlVal">+$2,840.12</span>
+<span class="font-label-sm text-label-sm font-semibold text-primary bg-primary-container/20 px-1.5 py-0.5 rounded">
+            +1.95%
+          </span>
+</div>
+</div>
+<!-- Total P&L -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="font-label-md text-label-md text-on-surface-variant">Total Unrealized P&amp;L</span>
+<span class="font-micro-badge text-micro-badge px-1.5 py-0.5 rounded bg-surface-container-high text-primary">All-Time</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[15px]">north_east</span>
+<span class="font-metric-num-md text-metric-num-md text-primary font-semibold font-mono" id="totPnlVal">+$43,210.80</span>
+<span class="font-label-sm text-label-sm font-semibold text-primary bg-primary-container/20 px-1.5 py-0.5 rounded">
+            +41.01%
+          </span>
+</div>
+</div>
+<!-- Combined CAGR Row -->
+<div class="flex items-center justify-between pt-1.5 border-t border-surface-container-high/70">
+<div class="flex items-center gap-1.5">
+<span class="font-label-md text-label-md text-on-surface-variant">Overall Portfolio CAGR</span>
+<span class="font-micro-badge text-micro-badge px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant">Annualized</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="font-metric-num-md text-metric-num-md text-primary font-bold font-mono">+21.4%</span>
+<span class="text-on-surface-variant text-[11px]">p.a.</span>
+</div>
+</div>
+</div>
+<!-- Multi-Market Split Status Bar -->
+<div class="space-y-1.5">
+<div class="flex items-center justify-between font-label-sm text-label-sm text-on-surface-variant">
+<span class="flex items-center gap-1">
+<span class="text-xs">🇺🇸</span>
+<span class="text-on-surface font-medium">US Equity (NYSE/NASDAQ)</span>
+<span class="text-primary font-semibold">62%</span>
+</span>
+<span class="flex items-center gap-1">
+<span class="text-xs">🇮🇳</span>
+<span class="text-on-surface font-medium">India (NSE/BSE)</span>
+<span class="text-tertiary-container font-semibold">38%</span>
+</span>
+</div>
+<!-- Stacked Market Bar Indicator -->
+<div class="h-1.5 w-full bg-surface-container rounded-full overflow-hidden flex">
+<div class="bg-primary h-full w-[62%] transition-all duration-300"></div>
+<div class="bg-tertiary-container h-full w-[38%] transition-all duration-300"></div>
+</div>
+</div>
+</section>
+<!-- Multi-Broker Horizontal Filter Scroll -->
+<section class="w-full">
+<div class="flex items-center justify-between mb-space-xs px-0.5">
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-semibold">Platforms</span>
+<span class="font-micro-badge text-micro-badge text-primary-fixed-dim flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span> 4 Synced
+</span>
+</div>
+<button onclick="toggleFilterModal()" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container border border-surface-container-highest hover:bg-surface-container-high text-on-surface font-label-sm text-[11px] transition-colors">
+<span class="material-symbols-outlined text-[14px] text-primary">tune</span>
+<span class="font-medium">Filters</span>
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+</button>
+</div>
+
+</section>
+<!-- Holdings Section -->
+<section class="w-full flex flex-col space-y-space-sm">
+<div class="flex items-center justify-between px-0.5 pt-1">
+<div class="flex items-baseline gap-2">
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Holdings</h2>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-medium" id="holdingsCount">(5 Assets)</span>
+</div>
+<div class="flex items-center gap-1.5">
+<button class="flex items-center gap-1 bg-surface-container hover:bg-surface-container-high px-2.5 py-1 rounded-md text-on-surface-variant border border-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-[15px]">swap_vert</span>
+<span class="font-label-sm text-label-sm font-medium">Daily P&amp;L</span>
+</button>
+</div>
+</div>
+
+<div class="flex flex-col space-y-4" id="holdingsContainer">
+
+<!-- SECTOR 1: Technology & Semiconductors -->
+<div class="sector-group flex flex-col space-y-2.5">
+<button type="button" onclick="toggleSector('sector-tech', this)" class="w-full bg-surface-container-high/70 hover:bg-surface-container-high border border-surface-container-highest px-3 py-2 rounded-lg flex items-center justify-between transition-colors text-left">
+<div class="flex items-center gap-2 min-w-0">
+<span class="material-symbols-outlined text-[18px] text-primary transition-transform duration-200 sector-chevron">expand_more</span>
+<div class="flex items-center gap-1.5 truncate">
+<span class="font-label-md text-label-md font-bold text-on-surface truncate">Technology &amp; Semi</span>
+<span class="font-micro-badge text-micro-badge px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-mono">5</span>
+</div>
+</div>
+<div class="flex items-center gap-2 shrink-0 text-right">
+<div class="flex flex-col items-end">
+<span class="font-label-sm text-[11px] font-bold text-on-surface font-mono">$72,480.00</span>
+<div class="flex items-center gap-1 font-label-sm text-[10px]">
+<span class="text-primary font-semibold">+$19,842 (+37.7%)</span>
+<span class="text-on-surface-variant">• 48.8%</span>
+</div>
+</div>
+</div>
+</button>
+<div id="sector-tech" class="flex flex-col space-y-2.5 transition-all duration-300">
+<!-- NVDA -->
+<div class="holding-card bg-surface-container-low hover:bg-surface-container transition-colors rounded-xl p-3 border border-surface-container flex flex-col gap-2.5" data-broker="robinhood" style="display: none;">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center font-bold text-on-surface text-xs shrink-0 border border-surface-container-highest">NVDA</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-body-lg text-body-lg text-on-surface font-semibold tracking-tight truncate">NVIDIA Corp</span>
+<span class="text-[11px]" title="US Market">🇺🇸</span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-primary shrink-0"></span>
+<span class="text-on-surface-variant font-medium">Robinhood</span>
+<span class="text-surface-variant">•</span>
+<span class="">24 Shs</span>
+<span class="text-surface-variant">•</span>
+<span class="">Avg <span class="font-mono text-on-surface-variant/90 holding-val" data-inr="8546.04" data-type="price" data-usd="98.40">$98.40</span></span>
+</div>
+</div>
+</div>
+<div class="flex items-start gap-2 shrink-0 pl-2"><div class="flex flex-col items-end"><span class="font-metric-num-md text-metric-num-md text-on-surface font-semibold font-mono holding-val" data-inr="11507.60" data-type="price" data-usd="132.50">$132.50</span><div class="flex items-center gap-0.5 mt-0.5 px-1.5 py-0.5 rounded bg-primary-container/20 text-primary font-label-sm text-label-sm font-semibold"><span class="">▲</span><span class="">+4.25%</span></div></div><button type="button" onclick="openDeleteModal('NVIDIA Corp', 'NVDA', this)" class="w-7 h-7 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors -mr-1" title="More options"><span class="material-symbols-outlined text-[18px]">more_vert</span></button></div>
+</div>
+<div class="flex flex-col gap-1.5 pt-1.5 border-t border-surface-container-high/60">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20">Outperforming (94/100)</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary border border-primary/20">Health: Robust</span>
+</div>
+<p class="text-[11px] text-on-surface-variant leading-relaxed"><span class="text-primary font-medium">Reason:</span> AI accelerator backlog up 42% YoY; operating margins remain peak at 75%.</p>
+</div>
+<div class="grid grid-cols-3 gap-2 pt-2 border-t border-surface-container-high/60 bg-surface-container/50 -mx-3 -mb-3 px-3 py-2 rounded-b-xl">
+<div>
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Invested</div>
+<div class="font-mono text-label-md font-medium text-on-surface holding-val" data-inr="205105.00" data-type="money" data-usd="2361.60">$2,361.60</div>
+</div>
+<div>
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Current</div>
+<div class="font-mono text-label-md font-medium text-on-surface holding-val" data-inr="276183.00" data-type="money" data-usd="3180.00">$3,180.00</div>
+</div>
+<div class="text-right">
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Total Return</div>
+<div class="font-mono text-label-md font-semibold text-primary holding-gain" data-inr="+71078.00" data-pct="+34.65%" data-usd="+818.40">+$818.40 (+34.6%)</div>
+</div>
+</div>
+</div>
+
+<!-- AAPL -->
+<div class="holding-card bg-surface-container-low hover:bg-surface-container transition-colors rounded-xl p-3 border border-surface-container flex flex-col gap-2.5" data-broker="robinhood" style="display: none;">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center font-bold text-on-surface text-xs shrink-0 border border-surface-container-highest">AAPL</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-body-lg text-body-lg text-on-surface font-semibold tracking-tight truncate">Apple Inc</span>
+<span class="text-[11px]" title="US Market">🇺🇸</span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-primary shrink-0"></span>
+<span class="text-on-surface-variant font-medium">Robinhood</span>
+<span class="text-surface-variant">•</span>
+<span class="">65 Shs</span>
+<span class="text-surface-variant">•</span>
+<span class="">Avg <span class="font-mono text-on-surface-variant/90 holding-val" data-inr="15155.32" data-type="price" data-usd="174.50">$174.50</span></span>
+</div>
+</div>
+</div>
+<div class="flex items-start gap-2 shrink-0 pl-2"><div class="flex flex-col items-end"><span class="font-metric-num-md text-metric-num-md text-on-surface font-semibold font-mono holding-val" data-inr="19836.50" data-type="price" data-usd="228.40">$228.40</span><div class="flex items-center gap-0.5 mt-0.5 px-1.5 py-0.5 rounded bg-secondary-container/40 text-secondary font-label-sm text-label-sm font-semibold"><span class="">▼</span><span class="">-0.74%</span></div></div><button type="button" onclick="openDeleteModal('Apple Inc', 'AAPL', this)" class="w-7 h-7 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors -mr-1" title="More options"><span class="material-symbols-outlined text-[18px]">more_vert</span></button></div>
+</div>
+<div class="flex flex-col gap-1.5 pt-1.5 border-t border-surface-container-high/60">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-tertiary-container/20 text-tertiary-container border border-tertiary-container/30">Moderate (72/100)</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary border border-primary/20">Health: Robust</span>
+</div>
+<p class="text-[11px] text-on-surface-variant leading-relaxed"><span class="text-tertiary-container font-medium">Reason:</span> Services revenue at all-time high offsetting cyclical hardware softness.</p>
+</div>
+<div class="grid grid-cols-3 gap-2 pt-2 border-t border-surface-container-high/60 bg-surface-container/50 -mx-3 -mb-3 px-3 py-2 rounded-b-xl">
+<div>
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Invested</div>
+<div class="font-mono text-label-md font-medium text-on-surface holding-val" data-inr="985096.00" data-type="money" data-usd="11342.50">$11,342.50</div>
+</div>
+<div>
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Current</div>
+<div class="font-mono text-label-md font-medium text-on-surface holding-val" data-inr="1289375.00" data-type="money" data-usd="14846.00">$14,846.00</div>
+</div>
+<div class="text-right">
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Total Return</div>
+<div class="font-mono text-label-md font-semibold text-primary holding-gain" data-inr="+304279.00" data-pct="+30.89%" data-usd="+3503.50">+$3,503.50 (+30.9%)</div>
+</div>
+</div>
+</div>
+
+<!-- MSFT -->
+<div class="holding-card bg-surface-container-low hover:bg-surface-container transition-colors rounded-xl p-3 border border-surface-container flex flex-col gap-2.5" data-broker="robinhood" style="display: none;">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center font-bold text-on-surface text-xs shrink-0 border border-surface-container-highest">MSFT</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-body-lg text-body-lg text-on-surface font-semibold tracking-tight truncate">Microsoft Corp</span>
+<span class="text-[11px]" title="US Market">🇺🇸</span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-primary shrink-0"></span>
+<span class="text-on-surface-variant font-medium">Robinhood</span>
+<span class="text-surface-variant">•</span>
+<span class="">40 Shs</span>
+<span class="text-surface-variant">•</span>
+<span class="">Avg <span class="font-mono text-on-surface-variant/90 holding-val" data-inr="30571.20" data-type="price" data-usd="352.00">$352.00</span></span>
+</div>
+</div>
+</div>
+<div class="flex items-start gap-2 shrink-0 pl-2"><div class="flex flex-col items-end"><span class="font-metric-num-md text-metric-num-md text-on-surface font-semibold font-mono holding-val" data-inr="37792.80" data-type="price" data-usd="435.15">$435.15</span><div class="flex items-center gap-0.5 mt-0.5 px-1.5 py-0.5 rounded bg-primary-container/20 text-primary font-label-sm text-label-sm font-semibold"><span class="">▲</span><span class="">+1.12%</span></div></div><button type="button" onclick="openDeleteModal('Microsoft Corp', 'MSFT', this)" class="w-7 h-7 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors -mr-1" title="More options"><span class="material-symbols-outlined text-[18px]">more_vert</span></button></div>
+</div>
+<div class="flex flex-col gap-1.5 pt-1.5 border-t border-surface-container-high/60">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20">Outperforming (89/100)</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary border border-primary/20">Health: Robust</span>
+</div>
+<p class="text-[11px] text-on-surface-variant leading-relaxed"><span class="text-primary font-medium">Reason:</span> Azure AI revenue contribution accelerated to +34% constant currency.</p>
+</div>
+<div class="grid grid-cols-3 gap-2 pt-2 border-t border-surface-container-high/60 bg-surface-container/50 -mx-3 -mb-3 px-3 py-2 rounded-b-xl">
+<div>
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Invested</div>
+<div class="font-mono text-label-md font-medium text-on-surface holding-val" data-inr="1222848.00" data-type="money" data-usd="14080.00">$14,080.00</div>
+</div>
+<div>
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Current</div>
+<div class="font-mono text-label-md font-medium text-on-surface holding-val" data-inr="1511711.00" data-type="money" data-usd="17406.00">$17,406.00</div>
+</div>
+<div class="text-right">
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Total Return</div>
+<div class="font-mono text-label-md font-semibold text-primary holding-gain" data-inr="+288863.00" data-pct="+23.62%" data-usd="+3326.00">+$3,326.00 (+23.6%)</div>
+</div>
+</div>
+</div>
+
+<!-- INFY -->
+<div class="holding-card bg-surface-container-low hover:bg-surface-container transition-colors rounded-xl p-3 border border-surface-container flex flex-col gap-2.5" data-broker="zerodha" style="display: flex;">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center font-bold text-on-surface text-xs shrink-0 border border-surface-container-highest">INFY</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-body-lg text-body-lg text-on-surface font-semibold tracking-tight truncate">Infosys Ltd</span>
+<span class="text-[11px]" title="India Market">🇮🇳</span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-[#387ed1] shrink-0"></span>
+<span class="text-on-surface-variant font-medium">Zerodha</span>
+<span class="text-surface-variant">•</span>
+<span class="">150 Shs</span>
+<span class="text-surface-variant">•</span>
+<span class="">Avg <span class="font-mono text-on-surface-variant/90 holding-val" data-inr="1680.00" data-type="price" data-usd="19.34">₹1,680.00</span></span>
+</div>
+</div>
+</div>
+<div class="flex items-start gap-2 shrink-0 pl-2"><div class="flex flex-col items-end"><span class="font-metric-num-md text-metric-num-md text-on-surface font-semibold font-mono holding-val" data-inr="1919.65" data-type="price" data-usd="22.10">₹1,919.65</span><div class="flex items-center gap-0.5 mt-0.5 px-1.5 py-0.5 rounded bg-secondary-container/40 text-secondary font-label-sm text-label-sm font-semibold"><span class="">▼</span><span class="">-1.18%</span></div></div><button type="button" onclick="openStockMenu('Infosys Ltd', 'INFY', this)" class="w-7 h-7 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors -mr-1" title="More options"><span class="material-symbols-outlined text-[18px]">more_vert</span></button></div>
+</div>
+<div class="flex flex-col gap-1.5 pt-1.5 border-t border-surface-container-high/60">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-tertiary-container/20 text-tertiary-container border border-tertiary-container/30">Moderate (64/100)</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary border border-primary/20">Health: Stable</span>
+</div>
+<p class="text-[11px] text-on-surface-variant leading-relaxed"><span class="text-tertiary-container font-medium">Reason:</span> Large deal TCV resilient; discretionary tech spend recovery delayed.</p>
+</div>
+<div class="grid grid-cols-3 gap-2 pt-2 border-t border-surface-container-high/60 bg-surface-container/50 -mx-3 -mb-3 px-3 py-2 rounded-b-xl">
+<div>
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Invested</div>
+<div class="font-mono text-label-md font-medium text-on-surface holding-val" data-inr="252000.00" data-type="money" data-usd="2901.55">₹2,52,000</div>
+</div>
+<div>
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Current</div>
+<div class="font-mono text-label-md font-medium text-on-surface holding-val" data-inr="287947.50" data-type="money" data-usd="3315.46">₹2,87,948</div>
+</div>
+<div class="text-right">
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Total Return</div>
+<div class="font-mono text-label-md font-semibold text-primary holding-gain" data-inr="+35947.50" data-pct="+14.26%" data-usd="+413.91">+₹35,948 (+14.3%)</div>
+</div>
+</div>
+</div>
+
+<!-- TCS -->
+<div class="holding-card bg-surface-container-low hover:bg-surface-container transition-colors rounded-xl p-3 border border-surface-container flex flex-col gap-2.5" data-broker="zerodha" style="display: flex;">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center font-bold text-on-surface text-xs shrink-0 border border-surface-container-highest">TCS</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-body-lg text-body-lg text-on-surface font-semibold tracking-tight truncate">Tata Consultancy</span>
+<span class="text-[11px]" title="India Market">🇮🇳</span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-[#387ed1] shrink-0"></span>
+<span class="text-on-surface-variant font-medium">Zerodha</span>
+<span class="text-surface-variant">•</span>
+<span class="">45 Shs</span>
+<span class="text-surface-variant">•</span>
+<span class="">Avg <span class="font-mono text-on-surface-variant/90 holding-val" data-inr="3620.00" data-type="price" data-usd="41.68">₹3,620.00</span></span>
+</div>
+</div>
+</div>
+<div class="flex items-start gap-2 shrink-0 pl-2"><div class="flex flex-col items-end"><span class="font-metric-num-md text-metric-num-md text-on-surface font-semibold font-mono holding-val" data-inr="4134.10" data-type="price" data-usd="47.60">₹4,134.10</span><div class="flex items-center gap-0.5 mt-0.5 px-1.5 py-0.5 rounded bg-primary-container/20 text-primary font-label-sm text-label-sm font-semibold"><span class="">▲</span><span class="">+0.82%</span></div></div><button type="button" onclick="openStockMenu('Tata Consultancy', 'TCS', this)" class="w-7 h-7 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors -mr-1" title="More options"><span class="material-symbols-outlined text-[18px]">more_vert</span></button></div>
+</div>
+<div class="flex flex-col gap-1.5 pt-1.5 border-t border-surface-container-high/60">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20">Stable (78/100)</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary border border-primary/20">Health: Robust</span>
+</div>
+<p class="text-[11px] text-on-surface-variant leading-relaxed"><span class="text-primary font-medium">Reason:</span> BFSI demand inflection in North America driving margin expansion.</p>
+</div>
+<div class="grid grid-cols-3 gap-2 pt-2 border-t border-surface-container-high/60 bg-surface-container/50 -mx-3 -mb-3 px-3 py-2 rounded-b-xl">
+<div>
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Invested</div>
+<div class="font-mono text-label-md font-medium text-on-surface holding-val" data-inr="162900.00" data-type="money" data-usd="1875.65">₹1,62,900</div>
+</div>
+<div>
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Current</div>
+<div class="font-mono text-label-md font-medium text-on-surface holding-val" data-inr="186034.50" data-type="money" data-usd="2142.02">₹1,86,035</div>
+</div>
+<div class="text-right">
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Total Return</div>
+<div class="font-mono text-label-md font-semibold text-primary holding-gain" data-inr="+23134.50" data-pct="+14.20%" data-usd="+266.37">+₹23,135 (+14.2%)</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- SECTOR 2: Energy & Conglomerates -->
+<div class="sector-group flex flex-col space-y-2.5">
+<button type="button" onclick="toggleSector('sector-energy', this)" class="w-full bg-surface-container-high/70 hover:bg-surface-container-high border border-surface-container-highest px-3 py-2 rounded-lg flex items-center justify-between transition-colors text-left">
+<div class="flex items-center gap-2 min-w-0">
+<span class="material-symbols-outlined text-[18px] text-primary transition-transform duration-200 sector-chevron">expand_more</span>
+<div class="flex items-center gap-1.5 truncate">
+<span class="font-label-md text-label-md font-bold text-on-surface truncate">Energy &amp; Conglomerates</span>
+<span class="font-micro-badge text-micro-badge px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-mono">1</span>
+</div>
+</div>
+<div class="flex items-center gap-2 shrink-0 text-right">
+<div class="flex flex-col items-end">
+<span class="font-label-sm text-[11px] font-bold text-on-surface font-mono">₹3,58,248</span>
+<div class="flex items-center gap-1 font-label-sm text-[10px]">
+<span class="text-primary font-semibold">+₹67,848 (+23.4%)</span>
+<span class="text-on-surface-variant">• 14.2%</span>
+</div>
+</div>
+</div>
+</button>
+<div id="sector-energy" class="flex flex-col space-y-2.5 transition-all duration-300">
+<!-- RELIANCE -->
+<div class="holding-card bg-surface-container-low hover:bg-surface-container transition-colors rounded-xl p-3 border border-surface-container flex flex-col gap-2.5" data-broker="zerodha" style="display: flex;">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center font-bold text-on-surface text-xs shrink-0 border border-surface-container-highest">RELI</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-body-lg text-body-lg text-on-surface font-semibold tracking-tight truncate">Reliance Ind.</span>
+<span class="text-[11px]" title="India Market">🇮🇳</span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-[#387ed1] shrink-0"></span>
+<span class="text-on-surface-variant font-medium">Zerodha</span>
+<span class="text-surface-variant">•</span>
+<span class="">120 Shs</span>
+<span class="text-surface-variant">•</span>
+<span class="">Avg <span class="font-mono text-on-surface-variant/90 holding-val" data-inr="2420.00" data-type="price" data-usd="27.86">₹2,420.00</span></span>
+</div>
+</div>
+</div>
+<div class="flex items-start gap-2 shrink-0 pl-2"><div class="flex flex-col items-end"><span class="font-metric-num-md text-metric-num-md text-on-surface font-semibold font-mono holding-val" data-inr="2985.40" data-type="price" data-usd="34.37">₹2,985.40</span><div class="flex items-center gap-0.5 mt-0.5 px-1.5 py-0.5 rounded bg-primary-container/20 text-primary font-label-sm text-label-sm font-semibold"><span class="">▲</span><span class="">+1.85%</span></div></div><button type="button" onclick="openStockMenu('Reliance Ind.', 'RELI', this)" class="w-7 h-7 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors -mr-1" title="More options"><span class="material-symbols-outlined text-[18px]">more_vert</span></button></div>
+</div>
+<div class="flex flex-col gap-1.5 pt-1.5 border-t border-surface-container-high/60">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20">Outperforming (84/100)</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary border border-primary/20">Health: Robust</span>
+</div>
+<p class="text-[11px] text-on-surface-variant leading-relaxed"><span class="text-primary font-medium">Reason:</span> Steady O2C gross refining margin rebound &amp; Jio ARPU expansion.</p>
+</div>
+<div class="grid grid-cols-3 gap-2 pt-2 border-t border-surface-container-high/60 bg-surface-container/50 -mx-3 -mb-3 px-3 py-2 rounded-b-xl">
+<div>
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Invested</div>
+<div class="font-mono text-label-md font-medium text-on-surface holding-val" data-inr="290400.00" data-type="money" data-usd="3343.70">₹2,90,400</div>
+</div>
+<div>
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Current</div>
+<div class="font-mono text-label-md font-medium text-on-surface holding-val" data-inr="358248.00" data-type="money" data-usd="4124.90">₹3,58,248</div>
+</div>
+<div class="text-right">
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Total Return</div>
+<div class="font-mono text-label-md font-semibold text-primary holding-gain" data-inr="+67848.00" data-pct="+23.36%" data-usd="+781.20">+₹67,848 (+23.4%)</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- SECTOR 3: Banking & Financial Services -->
+<div class="sector-group flex flex-col space-y-2.5">
+<button type="button" onclick="toggleSector('sector-finance', this)" class="w-full bg-surface-container-high/70 hover:bg-surface-container-high border border-surface-container-highest px-3 py-2 rounded-lg flex items-center justify-between transition-colors text-left">
+<div class="flex items-center gap-2 min-w-0">
+<span class="material-symbols-outlined text-[18px] text-primary transition-transform duration-200 sector-chevron">expand_more</span>
+<div class="flex items-center gap-1.5 truncate">
+<span class="font-label-md text-label-md font-bold text-on-surface truncate">Banking &amp; Financials</span>
+<span class="font-micro-badge text-micro-badge px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-mono">2</span>
+</div>
+</div>
+<div class="flex items-center gap-2 shrink-0 text-right">
+<div class="flex flex-col items-end">
+<span class="font-label-sm text-[11px] font-bold text-on-surface font-mono">₹4,53,056</span>
+<div class="flex items-center gap-1 font-label-sm text-[10px]">
+<span class="text-primary font-semibold">+₹70,156 (+18.4%)</span>
+<span class="text-on-surface-variant">• 18.5%</span>
+</div>
+</div>
+</div>
+</button>
+<div id="sector-finance" class="flex flex-col space-y-2.5 transition-all duration-300">
+<!-- HDFC Bank -->
+<div class="holding-card bg-surface-container-low hover:bg-surface-container transition-colors rounded-xl p-3 border border-surface-container flex flex-col gap-2.5" data-broker="groww" style="display: none;">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center font-bold text-on-surface text-xs shrink-0 border border-surface-container-highest">HDFC</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-body-lg text-body-lg text-on-surface font-semibold tracking-tight truncate">HDFC Bank Ltd</span>
+<span class="text-[11px]" title="India Market">🇮🇳</span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-[#00d09c] shrink-0"></span>
+<span class="text-on-surface-variant font-medium">Groww</span>
+<span class="text-surface-variant">•</span>
+<span class="">180 Shs</span>
+<span class="text-surface-variant">•</span>
+<span class="">Avg <span class="font-mono text-on-surface-variant/90 holding-val" data-inr="1510.00" data-type="price" data-usd="17.39">₹1,510.00</span></span>
+</div>
+</div>
+</div>
+<div class="flex items-start gap-2 shrink-0 pl-2"><div class="flex flex-col items-end"><span class="font-metric-num-md text-metric-num-md text-on-surface font-semibold font-mono holding-val" data-inr="1748.20" data-type="price" data-usd="20.12">₹1,748.20</span><div class="flex items-center gap-0.5 mt-0.5 px-1.5 py-0.5 rounded bg-primary-container/20 text-primary font-label-sm text-label-sm font-semibold"><span class="">▲</span><span class="">+2.15%</span></div></div><button type="button" onclick="openDeleteModal('HDFC Bank Ltd', 'HDFC', this)" class="w-7 h-7 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors -mr-1" title="More options"><span class="material-symbols-outlined text-[18px]">more_vert</span></button></div>
+</div>
+<div class="flex flex-col gap-1.5 pt-1.5 border-t border-surface-container-high/60">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-tertiary-container/20 text-tertiary-container border border-tertiary-container/30">Moderate (74/100)</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary border border-primary/20">Health: Robust</span>
+</div>
+<p class="text-[11px] text-on-surface-variant leading-relaxed"><span class="text-tertiary-container font-medium">Reason:</span> NIM compression bottoming out; steady 16% loan book compounding.</p>
+</div>
+<div class="grid grid-cols-3 gap-2 pt-2 border-t border-surface-container-high/60 bg-surface-container/50 -mx-3 -mb-3 px-3 py-2 rounded-b-xl">
+<div>
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Invested</div>
+<div class="font-mono text-label-md font-medium text-on-surface holding-val" data-inr="271800.00" data-type="money" data-usd="3129.53">₹2,71,800</div>
+</div>
+<div>
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Current</div>
+<div class="font-mono text-label-md font-medium text-on-surface holding-val" data-inr="314676.00" data-type="money" data-usd="3623.21">₹3,14,676</div>
+</div>
+<div class="text-right">
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Total Return</div>
+<div class="font-mono text-label-md font-semibold text-primary holding-gain" data-inr="+42876.00" data-pct="+15.77%" data-usd="+493.68">+₹42,876 (+15.8%)</div>
+</div>
+</div>
+</div>
+
+<!-- ICICI Bank -->
+<div class="holding-card bg-surface-container-low hover:bg-surface-container transition-colors rounded-xl p-3 border border-surface-container flex flex-col gap-2.5" data-broker="zerodha" style="display: flex;">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center font-bold text-on-surface text-xs shrink-0 border border-surface-container-highest">ICICI</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-body-lg text-body-lg text-on-surface font-semibold tracking-tight truncate">ICICI Bank</span>
+<span class="text-[11px]" title="India Market">🇮🇳</span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-[#387ed1] shrink-0"></span>
+<span class="text-on-surface-variant font-medium">Zerodha</span>
+<span class="text-surface-variant">•</span>
+<span class="">110 Shs</span>
+<span class="text-surface-variant">•</span>
+<span class="">Avg <span class="font-mono text-on-surface-variant/90 holding-val" data-inr="1010.00" data-type="price" data-usd="11.63">₹1,010.00</span></span>
+</div>
+</div>
+</div>
+<div class="flex items-start gap-2 shrink-0 pl-2"><div class="flex flex-col items-end"><span class="font-metric-num-md text-metric-num-md text-on-surface font-semibold font-mono holding-val" data-inr="1258.00" data-type="price" data-usd="14.48">₹1,258.00</span><div class="flex items-center gap-0.5 mt-0.5 px-1.5 py-0.5 rounded bg-primary-container/20 text-primary font-label-sm text-label-sm font-semibold"><span class="">▲</span><span class="">+1.44%</span></div></div><button type="button" onclick="openStockMenu('ICICI Bank', 'ICICI', this)" class="w-7 h-7 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors -mr-1" title="More options"><span class="material-symbols-outlined text-[18px]">more_vert</span></button></div>
+</div>
+<div class="flex flex-col gap-1.5 pt-1.5 border-t border-surface-container-high/60">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20">Outperforming (92/100)</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary border border-primary/20">Health: Robust</span>
+</div>
+<p class="text-[11px] text-on-surface-variant leading-relaxed"><span class="text-primary font-medium">Reason:</span> Best-in-class RoA (2.4%) with lowest gross NPA across private lenders.</p>
+</div>
+<div class="grid grid-cols-3 gap-2 pt-2 border-t border-surface-container-high/60 bg-surface-container/50 -mx-3 -mb-3 px-3 py-2 rounded-b-xl">
+<div>
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Invested</div>
+<div class="font-mono text-label-md font-medium text-on-surface holding-val" data-inr="111100.00" data-type="money" data-usd="1279.22">₹1,11,100</div>
+</div>
+<div>
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Current</div>
+<div class="font-mono text-label-md font-medium text-on-surface holding-val" data-inr="138380.00" data-type="money" data-usd="1593.32">₹1,38,380</div>
+</div>
+<div class="text-right">
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Total Return</div>
+<div class="font-mono text-label-md font-semibold text-primary holding-gain" data-inr="+27280.00" data-pct="+24.55%" data-usd="+314.10">+₹27,280 (+24.6%)</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- SECTOR 4: Automotive & Mobility -->
+<div class="sector-group flex flex-col space-y-2.5">
+<button type="button" onclick="toggleSector('sector-auto', this)" class="w-full bg-surface-container-high/70 hover:bg-surface-container-high border border-surface-container-highest px-3 py-2 rounded-lg flex items-center justify-between transition-colors text-left">
+<div class="flex items-center gap-2 min-w-0">
+<span class="material-symbols-outlined text-[18px] text-primary transition-transform duration-200 sector-chevron" style="transform: rotate(-90deg);">expand_more</span>
+<div class="flex items-center gap-1.5 truncate">
+<span class="font-label-md text-label-md font-bold text-on-surface truncate">Automotive &amp; Mobility</span>
+<span class="font-micro-badge text-micro-badge px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-mono">3</span>
+</div>
+</div>
+<div class="flex items-center gap-2 shrink-0 text-right">
+<div class="flex flex-col items-end">
+<span class="font-label-sm text-[11px] font-bold text-on-surface font-mono">$12,343.20</span>
+<div class="flex items-center gap-1 font-label-sm text-[10px]">
+<span class="text-primary font-semibold">+$3,210.00 (+19.1%)</span>
+<span class="text-on-surface-variant">• 12.3%</span>
+</div>
+</div>
+</div>
+</button>
+<div id="sector-auto" class="flex flex-col space-y-2.5 transition-all duration-300 hidden">
+<!-- Tesla -->
+<div class="holding-card bg-surface-container-low hover:bg-surface-container transition-colors rounded-xl p-3 border border-surface-container flex flex-col gap-2.5" data-broker="robinhood" style="display: none;">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center font-bold text-on-surface text-xs shrink-0 border border-surface-container-highest">TSLA</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-body-lg text-body-lg text-on-surface font-semibold tracking-tight truncate">Tesla Inc</span>
+<span class="text-[11px]" title="US Market">🇺🇸</span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-primary shrink-0"></span>
+<span class="text-on-surface-variant font-medium">Robinhood</span>
+<span class="text-surface-variant">•</span>
+<span class="">32 Shs</span>
+<span class="text-surface-variant">•</span>
+<span class="">Avg <span class="font-mono text-on-surface-variant/90 holding-val" data-inr="16701.25" data-type="price" data-usd="192.30">$192.30</span></span>
+</div>
+</div>
+</div>
+<div class="flex items-start gap-2 shrink-0 pl-2"><div class="flex flex-col items-end"><span class="font-metric-num-md text-metric-num-md text-on-surface font-semibold font-mono holding-val" data-inr="21608.20" data-type="price" data-usd="248.80">$248.80</span><div class="flex items-center gap-0.5 mt-0.5 px-1.5 py-0.5 rounded bg-primary-container/20 text-primary font-label-sm text-label-sm font-semibold"><span class="">▲</span><span class="">+3.62%</span></div></div><button type="button" onclick="openDeleteModal('Tesla Inc', 'TSLA', this)" class="w-7 h-7 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors -mr-1" title="More options"><span class="material-symbols-outlined text-[18px]">more_vert</span></button></div>
+</div>
+<div class="flex flex-col gap-1.5 pt-1.5 border-t border-surface-container-high/60">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20">Outperforming (85/100)</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary border border-primary/20">Health: Robust</span>
+</div>
+<p class="text-[11px] text-on-surface-variant leading-relaxed"><span class="text-primary font-medium">Reason:</span> Auto gross margin stabilizing; FSD v13 rollout driving software adoption.</p>
+</div>
+<div class="grid grid-cols-3 gap-2 pt-2 border-t border-surface-container-high/60 bg-surface-container/50 -mx-3 -mb-3 px-3 py-2 rounded-b-xl">
+<div>
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Invested</div>
+<div class="font-mono text-label-md font-medium text-on-surface holding-val" data-inr="534440.00" data-type="money" data-usd="6153.60">$6,153.60</div>
+</div>
+<div>
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Current</div>
+<div class="font-mono text-label-md font-medium text-on-surface holding-val" data-inr="691465.00" data-type="money" data-usd="7961.60">$7,961.60</div>
+</div>
+<div class="text-right">
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Total Return</div>
+<div class="font-mono text-label-md font-semibold text-primary holding-gain" data-inr="+157025.00" data-pct="+29.38%" data-usd="+1808.00">+$1,808.00 (+29.4%)</div>
+</div>
+</div>
+</div>
+
+<!-- Tata Motors -->
+<div class="holding-card bg-surface-container-low hover:bg-surface-container transition-colors rounded-xl p-3 border border-surface-container flex flex-col gap-2.5" data-broker="groww" style="display: none;">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center font-bold text-on-surface text-xs shrink-0 border border-surface-container-highest">TATA</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-body-lg text-body-lg text-on-surface font-semibold tracking-tight truncate">Tata Motors</span>
+<span class="text-[11px]" title="India Market">🇮🇳</span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-[#00d09c] shrink-0"></span>
+<span class="text-on-surface-variant font-medium">Groww</span>
+<span class="text-surface-variant">•</span>
+<span class="">210 Shs</span>
+<span class="text-surface-variant">•</span>
+<span class="">Avg <span class="font-mono text-on-surface-variant/90 holding-val" data-inr="780.00" data-type="price" data-usd="8.98">₹780.00</span></span>
+</div>
+</div>
+</div>
+<div class="flex items-start gap-2 shrink-0 pl-2"><div class="flex flex-col items-end"><span class="font-metric-num-md text-metric-num-md text-on-surface font-semibold font-mono holding-val" data-inr="994.50" data-type="price" data-usd="11.45">₹994.50</span><div class="flex items-center gap-0.5 mt-0.5 px-1.5 py-0.5 rounded bg-secondary-container/40 text-secondary font-label-sm text-label-sm font-semibold"><span class="">▼</span><span class="">-0.64%</span></div></div><button type="button" onclick="openDeleteModal('Tata Motors', 'TATA', this)" class="w-7 h-7 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors -mr-1" title="More options"><span class="material-symbols-outlined text-[18px]">more_vert</span></button></div>
+</div>
+<div class="flex flex-col gap-1.5 pt-1.5 border-t border-surface-container-high/60">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20">Outperforming (88/100)</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary border border-primary/20">Health: Robust</span>
+</div>
+<p class="text-[11px] text-on-surface-variant leading-relaxed"><span class="text-primary font-medium">Reason:</span> JLR order book robust; EV margins showing disciplined cash generation.</p>
+</div>
+<div class="grid grid-cols-3 gap-2 pt-2 border-t border-surface-container-high/60 bg-surface-container/50 -mx-3 -mb-3 px-3 py-2 rounded-b-xl">
+<div>
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Invested</div>
+<div class="font-mono text-label-md font-medium text-on-surface holding-val" data-inr="163800.00" data-type="money" data-usd="1886.01">₹1,63,800</div>
+</div>
+<div>
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Current</div>
+<div class="font-mono text-label-md font-medium text-on-surface holding-val" data-inr="208845.00" data-type="money" data-usd="2404.66">₹2,08,845</div>
+</div>
+<div class="text-right">
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Total Return</div>
+<div class="font-mono text-label-md font-semibold text-primary holding-gain" data-inr="+45045.00" data-pct="+27.50%" data-usd="+518.65">+₹45,045 (+27.5%)</div>
+</div>
+</div>
+</div>
+
+<!-- Bajaj Auto -->
+<div class="holding-card bg-surface-container-low hover:bg-surface-container transition-colors rounded-xl p-3 border border-surface-container flex flex-col gap-2.5" data-broker="groww" style="display: none;">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center font-bold text-on-surface text-xs shrink-0 border border-surface-container-highest">BAJAJ</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-body-lg text-body-lg text-on-surface font-semibold tracking-tight truncate">Bajaj Auto</span>
+<span class="text-[11px]" title="India Market">🇮🇳</span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-[#00d09c] shrink-0"></span>
+<span class="text-on-surface-variant font-medium">Groww</span>
+<span class="text-surface-variant">•</span>
+<span class="">18 Shs</span>
+<span class="text-surface-variant">•</span>
+<span class="">Avg <span class="font-mono text-on-surface-variant/90 holding-val" data-inr="7450.00" data-type="price" data-usd="85.78">₹7,450.00</span></span>
+</div>
+</div>
+</div>
+<div class="flex items-start gap-2 shrink-0 pl-2"><div class="flex flex-col items-end"><span class="font-metric-num-md text-metric-num-md text-on-surface font-semibold font-mono holding-val" data-inr="9539.00" data-type="price" data-usd="109.84">₹9,539.00</span><div class="flex items-center gap-0.5 mt-0.5 px-1.5 py-0.5 rounded bg-primary-container/20 text-primary font-label-sm text-label-sm font-semibold"><span class="">▲</span><span class="">+2.80%</span></div></div><button type="button" onclick="openDeleteModal('Bajaj Auto', 'BAJAJ', this)" class="w-7 h-7 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors -mr-1" title="More options"><span class="material-symbols-outlined text-[18px]">more_vert</span></button></div>
+</div>
+<div class="flex flex-col gap-1.5 pt-1.5 border-t border-surface-container-high/60">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20">Outperforming (86/100)</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary border border-primary/20">Health: Robust</span>
+</div>
+<p class="text-[11px] text-on-surface-variant leading-relaxed"><span class="text-primary font-medium">Reason:</span> Premium 2W domestic market share gains and export recovery.</p>
+</div>
+<div class="grid grid-cols-3 gap-2 pt-2 border-t border-surface-container-high/60 bg-surface-container/50 -mx-3 -mb-3 px-3 py-2 rounded-b-xl">
+<div>
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Invested</div>
+<div class="font-mono text-label-md font-medium text-on-surface holding-val" data-inr="134100.00" data-type="money" data-usd="1544.04">₹1,34,100</div>
+</div>
+<div>
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Current</div>
+<div class="font-mono text-label-md font-medium text-on-surface holding-val" data-inr="171702.00" data-type="money" data-usd="1977.00">₹1,71,702</div>
+</div>
+<div class="text-right">
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Total Return</div>
+<div class="font-mono text-label-md font-semibold text-primary holding-gain" data-inr="+37602.00" data-pct="+28.04%" data-usd="+432.95">+₹37,602 (+28.0%)</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- SECTOR 5: Consumer & Cloud -->
+<div class="sector-group flex flex-col space-y-2.5">
+<button type="button" onclick="toggleSector('sector-consumer', this)" class="w-full bg-surface-container-high/70 hover:bg-surface-container-high border border-surface-container-highest px-3 py-2 rounded-lg flex items-center justify-between transition-colors text-left">
+<div class="flex items-center gap-2 min-w-0">
+<span class="material-symbols-outlined text-[18px] text-primary transition-transform duration-200 sector-chevron" style="transform: rotate(-90deg);">expand_more</span>
+<div class="flex items-center gap-1.5 truncate">
+<span class="font-label-md text-label-md font-bold text-on-surface truncate">Consumer &amp; Cloud</span>
+<span class="font-micro-badge text-micro-badge px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-mono">1</span>
+</div>
+</div>
+<div class="flex items-center gap-2 shrink-0 text-right">
+<div class="flex flex-col items-end">
+<span class="font-label-sm text-[11px] font-bold text-on-surface font-mono">$5,637.00</span>
+<div class="flex items-center gap-1 font-label-sm text-[10px]">
+<span class="text-primary font-semibold">+$1,401.00 (+33.1%)</span>
+<span class="text-on-surface-variant">• 6.2%</span>
+</div>
+</div>
+</div>
+</button>
+<div id="sector-consumer" class="flex flex-col space-y-2.5 transition-all duration-300 hidden">
+<!-- Amazon -->
+<div class="holding-card bg-surface-container-low hover:bg-surface-container transition-colors rounded-xl p-3 border border-surface-container flex flex-col gap-2.5" data-broker="zerodha" style="display: flex;">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center font-bold text-on-surface text-xs shrink-0 border border-surface-container-highest">AMZN</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-body-lg text-body-lg text-on-surface font-semibold tracking-tight truncate">Amazon.com</span>
+<span class="text-[11px]" title="US Market">🇺🇸</span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-[#387ed1] shrink-0"></span>
+<span class="text-on-surface-variant font-medium">Zerodha Global</span>
+<span class="text-surface-variant">•</span>
+<span class="">30 Shs</span>
+<span class="text-surface-variant">•</span>
+<span class="">Avg <span class="font-mono text-on-surface-variant/90 holding-val" data-inr="12263.22" data-type="price" data-usd="141.20">$141.20</span></span>
+</div>
+</div>
+</div>
+<div class="flex items-start gap-2 shrink-0 pl-2"><div class="flex flex-col items-end"><span class="font-metric-num-md text-metric-num-md text-on-surface font-semibold font-mono holding-val" data-inr="16319.10" data-type="price" data-usd="187.90">$187.90</span><div class="flex items-center gap-0.5 mt-0.5 px-1.5 py-0.5 rounded bg-secondary-container/40 text-secondary font-label-sm text-label-sm font-semibold"><span class="">▼</span><span class="">-0.45%</span></div></div><button type="button" onclick="openStockMenu('Amazon.com', 'AMZN', this)" class="w-7 h-7 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors -mr-1" title="More options"><span class="material-symbols-outlined text-[18px]">more_vert</span></button></div>
+</div>
+<div class="flex flex-col gap-1.5 pt-1.5 border-t border-surface-container-high/60">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20">Outperforming (91/100)</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary border border-primary/20">Health: Robust</span>
+</div>
+<p class="text-[11px] text-on-surface-variant leading-relaxed"><span class="text-primary font-medium">Reason:</span> AWS re-acceleration &amp; high-margin retail advertising growth.</p>
+</div>
+<div class="grid grid-cols-3 gap-2 pt-2 border-t border-surface-container-high/60 bg-surface-container/50 -mx-3 -mb-3 px-3 py-2 rounded-b-xl">
+<div>
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Invested</div>
+<div class="font-mono text-label-md font-medium text-on-surface holding-val" data-inr="367896.60" data-type="money" data-usd="4236.00">$4,236.00</div>
+</div>
+<div>
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Current</div>
+<div class="font-mono text-label-md font-medium text-on-surface holding-val" data-inr="489573.45" data-type="money" data-usd="5637.00">$5,637.00</div>
+</div>
+<div class="text-right">
+<div class="font-label-sm text-[10px] uppercase text-on-surface-variant tracking-wider">Total Return</div>
+<div class="font-mono text-label-md font-semibold text-primary holding-gain" data-inr="+121676.85" data-pct="+33.07%" data-usd="+1401.00">+$1,401.00 (+33.1%)</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+</section>
+<!-- Floating Action Speed Dial / Modal Overlay -->
+<!-- Filter Sheet Modal Backdrop -->
+<div class="fixed inset-0 bg-background/70 backdrop-blur-sm z-50 hidden transition-opacity" id="filterBackdrop" onclick="toggleFilterModal()"></div>
+<!-- Filter Sheet Bottom Drawer -->
+<div class="fixed inset-x-0 bottom-0 z-50 bg-surface-container-low border-t border-surface-container-highest rounded-t-xl p-space-lg space-y-4 max-h-[85vh] overflow-y-auto hidden pb-safe shadow-xl" id="filterModal">
+<div class="flex items-center justify-between pb-2 border-b border-surface-container-high">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">tune</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Holdings Filter</h3>
+</div>
+<button onclick="toggleFilterModal()" class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+
+<!-- Market Filter -->
+<div class="space-y-2">
+<label class="font-label-sm text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold">Market</label>
+<div class="grid grid-cols-3 gap-2">
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-high border border-primary/30 text-primary font-label-md text-label-md font-semibold">All Markets</button>
+<button class="px-3 py-1.5 rounded-lg bg-surface-container border border-transparent text-on-surface-variant font-label-md text-label-md">US (NYSE/NAS)</button>
+<button class="px-3 py-1.5 rounded-lg bg-surface-container border border-transparent text-on-surface-variant font-label-md text-label-md">India (NSE/BSE)</button>
+</div>
+</div>
+
+<!-- Exchange Filter -->
+<div class="space-y-2">
+<label class="font-label-sm text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold">Exchange</label>
+<div class="grid grid-cols-4 gap-2">
+<button class="px-2.5 py-1.5 rounded-lg bg-surface-container text-on-surface-variant font-label-sm text-xs">NASDAQ</button>
+<button class="px-2.5 py-1.5 rounded-lg bg-surface-container text-on-surface-variant font-label-sm text-xs">NYSE</button>
+<button class="px-2.5 py-1.5 rounded-lg bg-surface-container text-on-surface-variant font-label-sm text-xs">NSE</button>
+<button class="px-2.5 py-1.5 rounded-lg bg-surface-container text-on-surface-variant font-label-sm text-xs">BSE</button>
+</div>
+</div>
+
+<!-- Sector Filter -->
+<div class="space-y-2">
+<label class="font-label-sm text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold">Sector</label>
+<div class="flex flex-wrap gap-2">
+<span class="px-3 py-1 rounded-full text-xs font-semibold bg-primary/20 text-primary border border-primary/30">All Sectors (5)</span>
+<span class="px-3 py-1 rounded-full text-xs bg-surface-container text-on-surface-variant border border-surface-container-highest">Technology</span>
+<span class="px-3 py-1 rounded-full text-xs bg-surface-container text-on-surface-variant border border-surface-container-highest">Energy</span>
+<span class="px-3 py-1 rounded-full text-xs bg-surface-container text-on-surface-variant border border-surface-container-highest">Banking &amp; Finance</span>
+<span class="px-3 py-1 rounded-full text-xs bg-surface-container text-on-surface-variant border border-surface-container-highest">Automotive</span>
+<span class="px-3 py-1 rounded-full text-xs bg-surface-container text-on-surface-variant border border-surface-container-highest">Consumer</span>
+</div>
+</div>
+
+<div class="pt-2 flex items-center gap-3">
+<button onclick="toggleFilterModal()" class="flex-1 py-2 rounded-lg bg-surface-container text-on-surface-variant font-label-md text-label-md font-medium">Reset</button>
+<button onclick="toggleFilterModal()" class="flex-1 py-2 rounded-lg bg-primary text-on-primary font-label-md text-label-md font-bold">Apply Filters</button>
+</div>
+</div><div class="fixed inset-0 bg-background/60 backdrop-blur-sm z-40 transition-opacity hidden" id="fabBackdrop" onclick="toggleFabMenu()"></div>
+<!-- FAB Menu Options -->
+<div class="fixed right-5 bottom-36 z-50 flex flex-col items-end space-y-2 hidden" id="fabMenu">
+<button class="flex items-center gap-2 bg-surface-container-high hover:bg-surface-bright text-on-surface px-3.5 py-2.5 rounded-xl shadow-lg border border-surface-container-highest transition-transform active:scale-95" onclick="handleFabAction('manual')">
+<span class="font-label-md text-label-md font-semibold">Add Stock Manually</span>
+<span class="material-symbols-outlined text-[18px] text-primary">add_chart</span>
+</button>
+<button class="flex items-center gap-2 bg-surface-container-high hover:bg-surface-bright text-on-surface px-3.5 py-2.5 rounded-xl shadow-lg border border-surface-container-highest transition-transform active:scale-95" onclick="handleFabAction('csv')">
+<span class="font-label-md text-label-md font-semibold">Upload Broker CSV</span>
+<span class="material-symbols-outlined text-[18px] text-primary">upload_file</span>
+</button>
+</div>
+<!-- Main Floating Action Button (FAB) -->
+<div class="fixed right-5 bottom-20 z-50">
+<button class="w-12 h-12 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-lg transition-transform active:scale-90 focus:outline-none" id="mainFab" onclick="toggleFabMenu()">
+<span class="material-symbols-outlined text-[26px] font-bold transition-transform duration-200" id="fabIcon" style="transform: rotate(0deg);">add</span>
+</button>
+</div>
+</div>
+<script>
+  let currentCurrency = 'USD';
+  const usdRate = 86.85;
+
+  function switchCurrency(curr) {
+    currentCurrency = curr;
+    const heroBalance = document.getElementById('heroBalance');
+    const dayPnlVal = document.getElementById('dayPnlVal');
+    const totPnlVal = document.getElementById('totPnlVal');
+    const btnUSD = document.getElementById('btnUSD');
+    const btnINR = document.getElementById('btnINR');
+    const holdingVals = document.querySelectorAll('.holding-val');
+    const holdingGains = document.querySelectorAll('.holding-gain');
+
+    if (curr === 'INR') {
+      btnINR.classList.add('bg-surface-bright', 'text-on-surface', 'font-semibold', 'shadow-xs');
+      btnINR.classList.remove('text-on-surface-variant');
+      btnUSD.classList.remove('bg-surface-bright', 'text-on-surface', 'font-semibold', 'shadow-xs');
+      btnUSD.classList.add('text-on-surface-variant');
+
+      heroBalance.innerText = '₹1,29,07,686';
+      dayPnlVal.innerText = '+₹2,46,664';
+      totPnlVal.innerText = '+₹37,52,858';
+
+      holdingVals.forEach(el => {
+        const val = Number(el.getAttribute('data-inr'));
+        const type = el.getAttribute('data-type');
+        if (type === 'price') {
+          el.innerText = '₹' + val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        } else {
+          el.innerText = '₹' + Math.round(val).toLocaleString('en-IN');
+        }
+      });
+
+      holdingGains.forEach(el => {
+        const val = Number(el.getAttribute('data-inr'));
+        const pct = el.getAttribute('data-pct');
+        const sign = val >= 0 ? '+' : '-';
+        el.innerText = `${sign}₹${Math.abs(Math.round(val)).toLocaleString('en-IN')} (${pct})`;
+      });
+    } else {
+      btnUSD.classList.add('bg-surface-bright', 'text-on-surface', 'font-semibold', 'shadow-xs');
+      btnUSD.classList.remove('text-on-surface-variant');
+      btnINR.classList.remove('bg-surface-bright', 'text-on-surface', 'font-semibold', 'shadow-xs');
+      btnINR.classList.add('text-on-surface-variant');
+
+      heroBalance.innerText = '$148,620.45';
+      dayPnlVal.innerText = '+$2,840.12';
+      totPnlVal.innerText = '+$43,210.80';
+
+      holdingVals.forEach(el => {
+        const val = Number(el.getAttribute('data-usd'));
+        const type = el.getAttribute('data-type');
+        if (type === 'price') {
+          el.innerText = '$' + val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        } else {
+          el.innerText = '$' + val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+      });
+
+      holdingGains.forEach(el => {
+        const val = Number(el.getAttribute('data-usd'));
+        const pct = el.getAttribute('data-pct');
+        const sign = val >= 0 ? '+' : '-';
+        el.innerText = `${sign}$${Math.abs(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${pct})`;
+      });
+    }
+  }
+
+  function filterBroker(broker, element) {
+    const chips = document.querySelectorAll('.broker-chip');
+    chips.forEach(c => {
+      c.classList.remove('bg-surface-container-high', 'text-primary', 'border-primary/30');
+      c.classList.add('bg-surface-container', 'text-on-surface-variant', 'border-transparent');
+    });
+
+    element.classList.remove('bg-surface-container', 'text-on-surface-variant', 'border-transparent');
+    element.classList.add('bg-surface-container-high', 'text-primary', 'border-primary/30');
+
+    const holdings = document.querySelectorAll('.holding-card');
+    let visibleCount = 0;
+
+    holdings.forEach(item => {
+      if (broker === 'all' || item.getAttribute('data-broker') === broker) {
+        item.style.display = 'flex';
+        visibleCount++;
+      } else {
+        item.style.display = 'none';
+      }
+    });
+
+    document.getElementById('holdingsCount').innerText = `(${visibleCount} Assets)`;
+  }
+
+  let isFabOpen = false;
+  function toggleFabMenu() {
+    isFabOpen = !isFabOpen;
+    const fabMenu = document.getElementById('fabMenu');
+    const fabBackdrop = document.getElementById('fabBackdrop');
+    const fabIcon = document.getElementById('fabIcon');
+
+    if (isFabOpen) {
+      fabMenu.classList.remove('hidden');
+      fabBackdrop.classList.remove('hidden');
+      fabIcon.style.transform = 'rotate(45deg)';
+    } else {
+      fabMenu.classList.add('hidden');
+      fabBackdrop.classList.add('hidden');
+      fabIcon.style.transform = 'rotate(0deg)';
+    }
+  }
+
+  function handleFabAction(type) {
+    toggleFabMenu();
+  }
+</script><div id="deleteModalBackdrop" class="fixed inset-0 bg-background/70 backdrop-blur-sm z-50 transition-opacity" onclick="closeStockMenu()"></div><div id="deleteModalDrawer" class="fixed inset-x-0 bottom-0 z-50 bg-surface-container-low border-t border-surface-container-highest rounded-t-xl p-space-lg space-y-4 max-h-[85vh] overflow-y-auto pb-safe shadow-xl"><div class="flex items-center justify-between pb-2 border-b border-surface-container-high"><div class="flex items-center gap-2.5"><div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center font-bold text-on-surface text-xs border border-surface-container-highest" id="stockActionBadge">RELI</div><div><h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold" id="stockActionTitle">Reliance Ind. (RELI)</h3><p class="font-label-sm text-label-sm text-on-surface-variant" id="stockActionSubtitle">Holding Management &amp; Actions</p></div></div><button onclick="closeStockMenu()" class="w-8 h-8 rounded-full bg-surface-container hover:bg-surface-container-high flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[18px]">close</span></button></div><div id="stockMenuOptions" class="flex flex-col space-y-2"><button type="button" onclick="closeStockMenu()" class="flex items-center justify-between p-3 rounded-xl bg-surface-container hover:bg-surface-container-high border border-surface-container-highest transition-colors text-left"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary"><span class="material-symbols-outlined text-[18px]">insights</span></div><div><div class="font-body-md font-semibold text-on-surface">View Deep Research &amp; Rules</div><div class="font-label-sm text-[11px] text-on-surface-variant">View valuation models, health scores &amp; stop rules</div></div></div><span class="material-symbols-outlined text-on-surface-variant text-[18px]">arrow_forward_ios</span></button><button type="button" onclick="closeStockMenu()" class="flex items-center justify-between p-3 rounded-xl bg-surface-container hover:bg-surface-container-high border border-surface-container-highest transition-colors text-left"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-lg bg-surface-container-high border border-surface-container-highest flex items-center justify-center text-on-surface"><span class="material-symbols-outlined text-[18px]">edit_note</span></div><div><div class="font-body-md font-semibold text-on-surface">Edit Holding / Lots</div><div class="font-label-sm text-[11px] text-on-surface-variant">Update buy prices, quantity or reassign broker</div></div></div><span class="material-symbols-outlined text-on-surface-variant text-[18px]">arrow_forward_ios</span></button><button type="button" onclick="showDeleteConfirmStep()" class="flex items-center justify-between p-3 rounded-xl bg-secondary-container/40 hover:bg-error-container/30 border border-error/30 text-error transition-colors text-left"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-lg bg-error-container flex items-center justify-center text-on-error"><span class="material-symbols-outlined text-[18px]">delete</span></div><div><div class="font-body-md font-semibold text-error">Remove from Portfolio</div><div class="font-label-sm text-[11px] text-on-error-container">Untrack holding and delete or archive history</div></div></div><span class="material-symbols-outlined text-error text-[18px]">chevron_right</span></button></div><div id="stockDeleteConfirmArea" class="space-y-3 pt-1 border-t border-surface-container-high"><div class="flex items-center gap-2 p-2.5 rounded-lg bg-surface-container border border-surface-container-highest"><span class="material-symbols-outlined text-error text-[20px]">warning</span><div class="font-label-sm text-[11px] text-on-surface-variant leading-relaxed">Choose how to handle historical trades for this stock before removing it:</div></div><div class="space-y-2"><label class="flex items-center gap-2.5 p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high border border-surface-container-highest cursor-pointer"><input type="radio" name="deleteHistoryOpt" value="keep" checked="" class="text-primary focus:ring-primary rounded-full bg-surface-container-highest border-outline-variant"><div class="flex flex-col"><span class="font-label-md text-label-md font-medium text-on-surface">Keep transaction history</span><span class="font-label-sm text-[11px] text-on-surface-variant">Retain past trade logs &amp; realized P&amp;L calculations</span></div></label><label class="flex items-center gap-2.5 p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high border border-surface-container-highest cursor-pointer"><input type="radio" name="deleteHistoryOpt" value="purge" class="text-error focus:ring-error rounded-full bg-surface-container-highest border-outline-variant"><div class="flex flex-col"><span class="font-label-md text-label-md font-medium text-error">Delete all records completely</span><span class="font-label-sm text-[11px] text-on-surface-variant">Permanently purge past transactions &amp; logs</span></div></label></div><div class="pt-1 flex items-center gap-3"><button onclick="closeStockMenu()" type="button" class="flex-1 py-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high border border-surface-container-highest text-on-surface-variant font-label-md text-label-md font-medium transition-colors">Cancel</button><button onclick="confirmDeleteHolding()" type="button" class="flex-1 py-2.5 rounded-lg bg-error-container hover:bg-error text-on-error font-label-md text-label-md font-bold flex items-center justify-center gap-1.5 transition-colors shadow-sm"><span class="material-symbols-outlined text-[16px]">delete_forever</span><span class="">Delete Stock</span></button></div></div></div><script class="">let targetCardToDelete = null; function openDeleteModal(name, ticker, triggerEl) { targetCardToDelete = triggerEl.closest('.holding-card'); document.getElementById('deleteStockName').innerText = name; document.getElementById('deleteStockTicker').innerText = ticker; document.getElementById('deleteStockBadge').innerText = ticker; document.getElementById('deleteModalSubtitle').innerText = 'Remove ' + name + ' (' + ticker + ') from portfolio?'; document.getElementById('deleteModalBackdrop').classList.remove('hidden'); document.getElementById('deleteModalDrawer').classList.remove('hidden'); } function closeDeleteModal() { document.getElementById('deleteModalBackdrop').classList.add('hidden'); document.getElementById('deleteModalDrawer').classList.add('hidden'); } function confirmDeleteHolding() { if (targetCardToDelete) { targetCardToDelete.style.display = 'none'; const allHoldings = document.querySelectorAll('.holding-card'); let count = 0; allHoldings.forEach(h => { if (h.style.display !== 'none') count++; }); const countTag = document.getElementById('holdingsCount'); if (countTag) countTag.innerText = '(' + count + ' Assets)'; } closeDeleteModal(); }</script></main><script class="">
+  function toggleSector(sectorId, buttonEl) {
+    const target = document.getElementById(sectorId);
+    const chevron = buttonEl.querySelector('.sector-chevron');
+    if (!target) return;
+    if (target.classList.contains('hidden')) {
+      target.classList.remove('hidden');
+      if (chevron) chevron.style.transform = 'rotate(0deg)';
+    } else {
+      target.classList.add('hidden');
+      if (chevron) chevron.style.transform = 'rotate(-90deg)';
+    }
+  }
+
+  function toggleFilterModal() {
+    const modal = document.getElementById('filterModal');
+    const backdrop = document.getElementById('filterBackdrop');
+    if (!modal || !backdrop) return;
+    if (modal.classList.contains('hidden')) {
+      modal.classList.remove('hidden');
+      backdrop.classList.remove('hidden');
+    } else {
+      modal.classList.add('hidden');
+      backdrop.classList.add('hidden');
+    }
+  }
+</script><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface/90 backdrop-blur-xl border-t border-surface-container" data-active-classes="text-primary"><div class="h-16 px-space-xs grid grid-cols-4 items-center"><a aria-current="page" class="flex flex-col items-center justify-center gap-1 w-full h-12 transition-colors text-primary" data-path="portfolio" href="#"><span class="material-symbols-outlined text-[22px]">pie_chart</span><span class="font-label-sm text-label-sm font-semibold">Portfolio</span></a><a class="flex flex-col items-center justify-center gap-1 w-full h-12 text-on-surface-variant hover:text-on-surface transition-colors" data-path="watchlist" href="#"><span class="material-symbols-outlined text-[22px]">bookmark</span><span class="font-label-sm text-label-sm">Watchlist</span></a><a class="flex flex-col items-center justify-center gap-1 w-full h-12 text-on-surface-variant hover:text-on-surface transition-colors" data-path="rules" href="#"><span class="material-symbols-outlined text-[22px]">tune</span><span class="font-label-sm text-label-sm">Rules</span></a><a class="flex flex-col items-center justify-center gap-1 w-full h-12 text-on-surface-variant hover:text-on-surface transition-colors" data-path="research" href="#"><span class="material-symbols-outlined text-[22px]">insights</span><span class="font-label-sm text-label-sm">Research</span></a></div></nav>
+
+
+
+
+
+</body></html>

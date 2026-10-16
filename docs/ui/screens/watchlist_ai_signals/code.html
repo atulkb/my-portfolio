@@ -1,0 +1,660 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><svg class="inline-defs-container" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden"></svg><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"><meta content="mobile_tab" name="shell-type"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "tertiary-fixed": "#ffdcc5", "error": "#ffb4ab", "surface-variant": "#333538", "background": "#111317", "primary-fixed-dim": "#18e376", "secondary-container": "#881d24", "primary-fixed": "#62ff96", "on-secondary": "#670211", "inverse-on-surface": "#2f3034", "on-secondary-container": "#ff9996", "surface-container": "#1e2023", "surface-container-highest": "#333538", "surface-container-low": "#1a1c1f", "error-container": "#93000a", "on-surface-variant": "#bacbb9", "on-secondary-fixed-variant": "#881d24", "on-primary-fixed-variant": "#005226", "on-tertiary-fixed-variant": "#6e3908", "inverse-surface": "#e2e2e6", "tertiary-container": "#ffb178", "surface-tint": "#18e376", "inverse-primary": "#006d34", "on-tertiary": "#4f2500", "tertiary": "#ffd6bc", "on-secondary-fixed": "#410006", "surface-bright": "#37393d", "on-background": "#e2e2e6", "on-primary-fixed": "#00210b", "surface-container-lowest": "#0c0e11", "tertiary-fixed-dim": "#ffb783", "on-tertiary-fixed": "#301400", "surface-dim": "#111317", "secondary-fixed": "#ffdad8", "primary": "#46fc8b", "on-error": "#690005", "outline": "#859585", "on-primary": "#003918", "on-surface": "#e2e2e6", "primary-container": "#05df72", "surface": "#111317", "on-primary-container": "#005d2b", "secondary-fixed-dim": "#ffb3b0", "on-error-container": "#ffdad6", "outline-variant": "#3c4a3d", "surface-container-high": "#282a2d", "on-tertiary-container": "#794112", "secondary": "#ffb3b0" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "space-md": "0.75rem", "margin": "1rem", "space-xs": "0.25rem", "space-lg": "1rem", "space-sm": "0.5rem", "space-xl": "1.5rem", "gutter": "0.75rem" }, "fontFamily": { "metric-num-lg": ["Inter"], "label-md": ["Inter"], "metric-num-md": ["Inter"], "label-sm": ["Inter"], "headline-md": ["Inter"], "micro-badge": ["Inter"], "body-md": ["Inter"], "body-lg": ["Inter"], "headline-sm": ["Inter"], "headline-lg": ["Inter"], "display-hero": ["Inter"] }, "fontSize": { "metric-num-lg": ["24px", { "lineHeight": "28px", "letterSpacing": "-0.02em", "fontWeight": "600" }], "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "500" }], "metric-num-md": ["16px", { "lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.02em", "fontWeight": "500" }], "headline-md": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.015em", "fontWeight": "600" }], "micro-badge": ["10px", { "lineHeight": "12px", "letterSpacing": "0.04em", "fontWeight": "600" }], "body-md": ["13px", { "lineHeight": "18px", "letterSpacing": "0em", "fontWeight": "400" }], "body-lg": ["15px", { "lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "400" }], "headline-sm": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "headline-lg": ["28px", { "lineHeight": "34px", "letterSpacing": "-0.02em", "fontWeight": "600" }], "display-hero": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.03em", "fontWeight": "700" }] } } } };</script><style>@layer base{html,body{width:100vw;margin:0;padding:0;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head><body class="bg-surface font-body-md text-body-md text-on-surface antialiased flex flex-col min-h-screen"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/85 backdrop-blur-xl border-b border-surface-container"><div class="h-14 px-margin flex items-center justify-between"><div class="flex items-center gap-space-sm"><div class="w-8 h-8 rounded-lg bg-primary/10 border border-primary/30 flex items-center justify-center text-primary"><span class="material-symbols-outlined text-[20px]">show_chart</span></div><span class="font-headline-sm text-headline-sm text-on-surface tracking-tight uppercase font-bold">WATCHLIST</span></div><div class="flex items-center gap-space-xs"><a class="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors" data-path="settings" href="#"><span class="material-symbols-outlined text-[20px]">settings</span></a><a class="w-10 h-10 flex items-center justify-center" data-path="profile" href="#"><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-1 ring-outline/30" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAeiCAF6zHLuHAuHE7Oiy-VNZ2wpcXHh7BBr5rUTj3TNUUNkxPCLE-aWHBj_DadekhDCc5_Q34ZIwqGPgkKdjgOM9cD4HCy5gyg5Dn3-sAYVDrZC6lUovXIoXey_cNcdHDOvQgZyNHX1VS1ko4UP7pZCWTFb2aM9KVLhO08JfbvAM81z7wWaxvU3yeaO314RYT7eY-2xmCmP5OjwJYbhutm9a1ITYBPk53i1J8jFNHXCByTFgKrUFnm"></a></div></div></header><main class="flex flex-col relative w-full pt-14 pb-20 bg-surface flex-1"><div class="flex flex-col w-full relative">
+<!-- Top Section: Header & Live Search Module -->
+<section class="flex flex-col px-margin pt-space-md pb-space-sm bg-surface"><div class="flex items-center justify-between pb-space-sm"><div class="flex items-center gap-space-sm"><h1 class="font-headline-md text-headline-md text-on-surface tracking-tight">Watchlist &amp; AI Signals</h1><span class="flex items-center gap-1 px-2 py-0.5 rounded-sm bg-surface-container-high border border-outline-variant/40 text-on-surface-variant font-micro-badge text-micro-badge uppercase tracking-wider"><span class="material-symbols-outlined text-[13px] text-outline">schedule</span>Last Analyzed: Oct 24, 06:30 AM EST</span></div><button aria-label="Sync Broker Feeds" class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:scale-95" type="button"><span class="material-symbols-outlined text-[18px]">sync</span></button></div><div class="relative w-full flex items-center mb-space-sm"><span class="material-symbols-outlined absolute left-3 text-outline text-[18px] pointer-events-none">search</span><input class="w-full h-10 pl-9 pr-9 bg-surface-container-low text-on-surface placeholder:text-outline text-body-md font-body-md rounded-lg border-0 focus:ring-1 focus:ring-primary focus:outline-none transition-all shadow-inner" id="watchlist-search" placeholder="Search US &amp; India tickers (NVDA, RELIANCE, TSLA)..." type="text"><button aria-label="Clear Search" class="absolute right-2.5 w-5 h-5 rounded-full bg-surface-variant text-on-surface-variant hidden items-center justify-center hover:text-on-surface" id="search-clear-btn" type="button"><span class="material-symbols-outlined text-[13px]">close</span></button></div><div class="flex items-center gap-space-xs overflow-x-auto pb-space-sm no-scrollbar border-b border-surface-container/60 mb-space-sm"><button type="button" class="flex items-center gap-1.5 px-space-sm py-1 rounded-lg bg-surface-container-high border border-primary/40 text-primary font-label-sm text-label-sm font-semibold shrink-0 transition-all shadow-sm"><span class="material-symbols-outlined text-[15px]">star</span><span class="">AI &amp; Tech Alpha</span><span class="px-1.5 py-0.2 rounded-full bg-primary/20 text-primary font-micro-badge text-[10px]">8</span><span class="material-symbols-outlined text-[13px] text-outline hover:text-primary transition-colors ml-0.5">edit</span></button><button type="button" class="flex items-center gap-1.5 px-space-sm py-1 rounded-lg bg-surface-container-low text-on-surface-variant hover:text-on-surface hover:bg-surface-container font-label-sm text-label-sm shrink-0 transition-colors"><span class="text-xs">🇺🇸</span><span class="">US Momentum</span><span class="px-1.5 py-0.2 rounded-full bg-surface-container text-on-surface-variant font-micro-badge text-[10px]">5</span></button><button type="button" class="flex items-center gap-1.5 px-space-sm py-1 rounded-lg bg-surface-container-low text-on-surface-variant hover:text-on-surface hover:bg-surface-container font-label-sm text-label-sm shrink-0 transition-colors"><span class="text-xs">🇮🇳</span><span class="">India Bluechips</span><span class="px-1.5 py-0.2 rounded-full bg-surface-container text-on-surface-variant font-micro-badge text-[10px]">6</span></button><button type="button" class="flex items-center gap-1.5 px-space-sm py-1 rounded-lg bg-surface-container-low text-on-surface-variant hover:text-on-surface hover:bg-surface-container font-label-sm text-label-sm shrink-0 transition-colors"><span class="material-symbols-outlined text-[15px] text-outline">payments</span><span class="">High Dividend</span><span class="px-1.5 py-0.2 rounded-full bg-surface-container text-on-surface-variant font-micro-badge text-[10px]">4</span></button><button type="button" class="flex items-center gap-1 px-space-sm py-1 rounded-lg border border-dashed border-outline-variant text-outline hover:text-primary hover:border-primary font-label-sm text-label-sm shrink-0 transition-colors"><span class="material-symbols-outlined text-[14px]">add</span><span class="">New List</span></button></div><div class="flex items-center gap-space-xs overflow-x-auto py-space-sm no-scrollbar"><button class="quick-chip active px-space-sm py-1 rounded-lg bg-primary text-on-primary font-label-sm text-label-sm font-semibold shrink-0 transition-transform active:scale-95" data-quick="all">All Markets</button><button class="quick-chip px-space-sm py-1 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm shrink-0 transition-colors" data-quick="ai-strong">⚡ AI Strong Buy (4)</button><button class="quick-chip px-space-sm py-1 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm shrink-0 flex items-center gap-1 transition-colors" data-quick="us"><span class="">🇺🇸</span> US Equities</button><button class="quick-chip px-space-sm py-1 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm shrink-0 flex items-center gap-1 transition-colors" data-quick="in"><span class="">🇮🇳</span> India NSE/BSE</button><button class="quick-chip px-space-sm py-1 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm shrink-0 transition-colors" data-quick="options">High Volatility</button></div></section>
+<!-- AI Market Sentiment Banner (Contextual Volatility Brief) -->
+<section class="px-margin pt-space-xs pb-space-sm">
+<div class="p-space-md rounded-lg bg-surface-container-low flex flex-col gap-space-xs shadow-sm relative overflow-hidden">
+<!-- Glow ambient indicator -->
+<div class="absolute -right-6 -top-6 w-24 h-24 bg-tertiary-container/10 rounded-full blur-xl pointer-events-none"></div>
+<div class="flex items-start justify-between gap-space-sm">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-tertiary-container text-[20px] shrink-0 animate-pulse">warning</span>
+<span class="font-label-sm text-label-sm text-tertiary-container font-semibold uppercase tracking-wider">AI Sentiment: Volatility High</span>
+</div>
+<span class="font-micro-badge text-micro-badge text-outline shrink-0">Analyzed: Today, 06:30 AM EST • Pre-market Batch</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface leading-snug">
+        Cross-market divergence detected: <span class="font-semibold text-on-surface">CBOE VIX 21.4</span> • <span class="font-semibold text-on-surface">India VIX 16.8</span>. Tighten stop-losses on momentum beta; allocate toward high-conviction value setups on pullback.
+      </p>
+<div class="flex items-center gap-space-lg pt-1 text-outline font-label-sm text-label-sm">
+<span class="flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span> USD/INR ₹83.42 (+0.04%)
+        </span>
+<span class="flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary-container"></span> Beta Bias: Defensives
+        </span>
+</div>
+</div>
+</section>
+<!-- Signal Segmentation Control Pills -->
+<section class="px-margin py-space-xs">
+<div class="p-1 rounded-lg bg-surface-container-lowest flex items-center gap-1 overflow-x-auto no-scrollbar">
+<button class="signal-tab active flex-1 py-1 px-space-sm rounded bg-surface-container-high text-on-surface font-label-sm text-label-sm font-semibold text-center whitespace-nowrap transition-all shadow-sm" data-filter="ALL">
+        All (8)
+      </button>
+<button class="signal-tab flex-1 py-1 px-space-sm rounded text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm font-medium text-center whitespace-nowrap transition-all" data-filter="STRONG_BUY">
+        Strong Buy (4)
+      </button>
+<button class="signal-tab flex-1 py-1 px-space-sm rounded text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm font-medium text-center whitespace-nowrap transition-all" data-filter="BUY">
+        Buy (2)
+      </button>
+<button class="signal-tab flex-1 py-1 px-space-sm rounded text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm font-medium text-center whitespace-nowrap transition-all" data-filter="NEUTRAL">
+        Neutral (1)
+      </button>
+<button class="signal-tab flex-1 py-1 px-space-sm rounded text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm font-medium text-center whitespace-nowrap transition-all" data-filter="SELL">
+        Sell (1)
+      </button>
+</div>
+</section>
+<!-- Watchlist Feed List -->
+<main class="flex flex-col px-margin py-space-sm gap-space-sm" id="watchlist-feed">
+<!-- Card 1: NVDA (Strong Buy, US) -->
+<article class="watchlist-card p-space-md rounded-lg bg-surface-container-low hover:bg-surface-container transition-all flex flex-col gap-space-sm relative" data-market="us" data-signal="STRONG_BUY" data-ticker="NVDA">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center font-metric-num-md text-metric-num-md font-bold text-primary shrink-0">
+            N
+          </div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold tracking-tight">NVDA</span>
+<span class="text-xs">🇺🇸</span>
+<span class="font-micro-badge text-micro-badge text-on-surface-variant px-1 rounded bg-surface-container-high">NASDAQ</span>
+</div>
+<span class="font-body-md text-body-md text-on-surface-variant truncate">NVIDIA Corporation</span>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-metric-num-md text-metric-num-md font-semibold text-on-surface tracking-tight">$132.50</span>
+<span class="px-1.5 py-0.5 rounded bg-primary/10 text-primary font-label-sm text-label-sm font-semibold flex items-center gap-0.5 mt-0.5">
+<span class="text-[10px]">▲</span> +4.25%
+          </span>
+</div>
+</div>
+<!-- Strategy & Target Metrics with Sparkline -->
+<div class="flex items-center justify-between gap-space-sm pt-0.5">
+<div class="flex flex-col gap-1 min-w-0">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="px-2 py-0.5 rounded bg-primary text-on-primary font-label-sm text-label-sm font-bold tracking-wide uppercase">
+              Strong Buy
+            </span>
+<span class="font-label-sm text-label-sm text-primary font-medium">96% Conf.</span>
+</div>
+<div class="font-body-md text-body-md text-on-surface-variant">
+            Target Entry: <span class="font-semibold text-on-surface">$128.00</span>
+</div>
+</div>
+<!-- 7-Day Sparkline SVG -->
+<div class="w-24 h-10 shrink-0 flex items-center justify-end">
+<svg class="w-24 h-9 overflow-visible" fill="none" viewBox="0 0 96 36">
+<defs>
+<linearGradient id="grad-nvda" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#46fc8b" stop-opacity="0.35"></stop>
+<stop offset="100%" stop-color="#46fc8b" stop-opacity="0.0"></stop>
+</linearGradient>
+</defs>
+<path d="M 0 28 Q 18 29 28 22 T 52 16 T 74 10 L 96 4" fill="none" stroke="#46fc8b" stroke-linecap="round" stroke-width="2"></path>
+<path d="M 0 28 Q 18 29 28 22 T 52 16 T 74 10 L 96 4 L 96 36 L 0 36 Z" fill="url(#grad-nvda)"></path>
+<circle cx="96" cy="4" fill="#46fc8b" r="2.5"></circle>
+</svg>
+</div>
+</div>
+<!-- Technical Rationale -->
+<div class="pt-1 flex items-center gap-1.5 text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[15px] text-primary shrink-0">insights</span>
+<span class="truncate">Bullish RSI + MACD momentum crossover on 4H • Data center demand catalyst</span>
+</div>
+</article>
+<!-- Card 2: RELIANCE (Buy, India) -->
+<article class="watchlist-card p-space-md rounded-lg bg-surface-container-low hover:bg-surface-container transition-all flex flex-col gap-space-sm relative" data-market="in" data-signal="BUY" data-ticker="RELIANCE">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center font-metric-num-md text-metric-num-md font-bold text-primary shrink-0">
+            R
+          </div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold tracking-tight">RELIANCE</span>
+<span class="text-xs">🇮🇳</span>
+<span class="font-micro-badge text-micro-badge text-on-surface-variant px-1 rounded bg-surface-container-high">NSE</span>
+</div>
+<span class="font-body-md text-body-md text-on-surface-variant truncate">Reliance Industries Ltd</span>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-metric-num-md text-metric-num-md font-semibold text-on-surface tracking-tight">₹2,985.40</span>
+<span class="px-1.5 py-0.5 rounded bg-primary/10 text-primary font-label-sm text-label-sm font-semibold flex items-center gap-0.5 mt-0.5">
+<span class="text-[10px]">▲</span> +1.85%
+          </span>
+</div>
+</div>
+<div class="flex items-center justify-between gap-space-sm pt-0.5">
+<div class="flex flex-col gap-1 min-w-0">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="px-2 py-0.5 rounded bg-inverse-primary text-on-surface font-label-sm text-label-sm font-bold tracking-wide uppercase">
+              Buy
+            </span>
+<span class="font-label-sm text-label-sm text-primary-fixed-dim font-medium">88% Conf.</span>
+</div>
+<div class="font-body-md text-body-md text-on-surface-variant">
+            Target Entry: <span class="font-semibold text-on-surface">₹2,940.00</span>
+</div>
+</div>
+<div class="w-24 h-10 shrink-0 flex items-center justify-end">
+<svg class="w-24 h-9 overflow-visible" fill="none" viewBox="0 0 96 36">
+<defs>
+<linearGradient id="grad-rel" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#18e376" stop-opacity="0.3"></stop>
+<stop offset="100%" stop-color="#18e376" stop-opacity="0.0"></stop>
+</linearGradient>
+</defs>
+<path d="M 0 24 Q 22 26 38 19 T 70 14 L 96 8" fill="none" stroke="#18e376" stroke-linecap="round" stroke-width="2"></path>
+<path d="M 0 24 Q 22 26 38 19 T 70 14 L 96 8 L 96 36 L 0 36 Z" fill="url(#grad-rel)"></path>
+<circle cx="96" cy="8" fill="#18e376" r="2.5"></circle>
+</svg>
+</div>
+</div>
+<div class="pt-1 flex items-center gap-1.5 text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[15px] text-primary shrink-0">insights</span>
+<span class="truncate">Rebounded off 50-DMA support • Retail telecom margin expansion</span>
+</div>
+</article>
+<!-- Card 3: TSLA (Neutral, US) -->
+<article class="watchlist-card p-space-md rounded-lg bg-surface-container-low hover:bg-surface-container transition-all flex flex-col gap-space-sm relative" data-market="us" data-signal="NEUTRAL" data-ticker="TSLA">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center font-metric-num-md text-metric-num-md font-bold text-tertiary-container shrink-0">
+            T
+          </div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold tracking-tight">TSLA</span>
+<span class="text-xs">🇺🇸</span>
+<span class="font-micro-badge text-micro-badge text-on-surface-variant px-1 rounded bg-surface-container-high">NASDAQ</span>
+</div>
+<span class="font-body-md text-body-md text-on-surface-variant truncate">Tesla, Inc.</span>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-metric-num-md text-metric-num-md font-semibold text-on-surface tracking-tight">$248.80</span>
+<span class="px-1.5 py-0.5 rounded bg-primary/10 text-primary font-label-sm text-label-sm font-semibold flex items-center gap-0.5 mt-0.5">
+<span class="text-[10px]">▲</span> +3.62%
+          </span>
+</div>
+</div>
+<div class="flex items-center justify-between gap-space-sm pt-0.5">
+<div class="flex flex-col gap-1 min-w-0">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="px-2 py-0.5 rounded bg-tertiary-container text-on-tertiary-container font-label-sm text-label-sm font-bold tracking-wide uppercase">
+              Neutral / Hold
+            </span>
+<span class="font-label-sm text-label-sm text-tertiary font-medium">72% Conf.</span>
+</div>
+<div class="font-body-md text-body-md text-on-surface-variant">
+            Target Entry: <span class="font-semibold text-on-surface">$235.00</span>
+</div>
+</div>
+<div class="w-24 h-10 shrink-0 flex items-center justify-end">
+<svg class="w-24 h-9 overflow-visible" fill="none" viewBox="0 0 96 36">
+<defs>
+<linearGradient id="grad-tsla" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#ffb178" stop-opacity="0.3"></stop>
+<stop offset="100%" stop-color="#ffb178" stop-opacity="0.0"></stop>
+</linearGradient>
+</defs>
+<path d="M 0 16 Q 24 6 42 24 T 76 18 L 96 14" fill="none" stroke="#ffb178" stroke-linecap="round" stroke-width="2"></path>
+<path d="M 0 16 Q 24 6 42 24 T 76 18 L 96 14 L 96 36 L 0 36 Z" fill="url(#grad-tsla)"></path>
+<circle cx="96" cy="14" fill="#ffb178" r="2.5"></circle>
+</svg>
+</div>
+</div>
+<div class="pt-1 flex items-center gap-1.5 text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[15px] text-tertiary-container shrink-0">speed</span>
+<span class="truncate">Testing upper resistance trendline ($252) • Awaiting delivery report</span>
+</div>
+</article>
+<!-- Card 4: TCS (Strong Buy, India) -->
+<article class="watchlist-card p-space-md rounded-lg bg-surface-container-low hover:bg-surface-container transition-all flex flex-col gap-space-sm relative" data-market="in" data-signal="STRONG_BUY" data-ticker="TCS">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center font-metric-num-md text-metric-num-md font-bold text-primary shrink-0">
+            T
+          </div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold tracking-tight">TCS</span>
+<span class="text-xs">🇮🇳</span>
+<span class="font-micro-badge text-micro-badge text-on-surface-variant px-1 rounded bg-surface-container-high">BSE/NSE</span>
+</div>
+<span class="font-body-md text-body-md text-on-surface-variant truncate">Tata Consultancy Services</span>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-metric-num-md text-metric-num-md font-semibold text-on-surface tracking-tight">₹4,134.10</span>
+<span class="px-1.5 py-0.5 rounded bg-primary/10 text-primary font-label-sm text-label-sm font-semibold flex items-center gap-0.5 mt-0.5">
+<span class="text-[10px]">▲</span> +0.82%
+          </span>
+</div>
+</div>
+<div class="flex items-center justify-between gap-space-sm pt-0.5">
+<div class="flex flex-col gap-1 min-w-0">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="px-2 py-0.5 rounded bg-primary text-on-primary font-label-sm text-label-sm font-bold tracking-wide uppercase">
+              Strong Buy
+            </span>
+<span class="font-label-sm text-label-sm text-primary font-medium">93% Conf.</span>
+</div>
+<div class="font-body-md text-body-md text-on-surface-variant">
+            Target Entry: <span class="font-semibold text-on-surface">₹4,080.00</span>
+</div>
+</div>
+<div class="w-24 h-10 shrink-0 flex items-center justify-end">
+<svg class="w-24 h-9 overflow-visible" fill="none" viewBox="0 0 96 36">
+<defs>
+<linearGradient id="grad-tcs" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#46fc8b" stop-opacity="0.35"></stop>
+<stop offset="100%" stop-color="#46fc8b" stop-opacity="0.0"></stop>
+</linearGradient>
+</defs>
+<path d="M 0 30 Q 30 26 50 18 T 80 12 L 96 6" fill="none" stroke="#46fc8b" stroke-linecap="round" stroke-width="2"></path>
+<path d="M 0 30 Q 30 26 50 18 T 80 12 L 96 6 L 96 36 L 0 36 Z" fill="url(#grad-tcs)"></path>
+<circle cx="96" cy="6" fill="#46fc8b" r="2.5"></circle>
+</svg>
+</div>
+</div>
+<div class="pt-1 flex items-center gap-1.5 text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[15px] text-primary shrink-0">insights</span>
+<span class="truncate">Order book renewal rate 18% YoY • Enterprise IT spending acceleration</span>
+</div>
+</article>
+<!-- Card 5: AAPL (Buy, US) -->
+<article class="watchlist-card p-space-md rounded-lg bg-surface-container-low hover:bg-surface-container transition-all flex flex-col gap-space-sm relative" data-market="us" data-signal="BUY" data-ticker="AAPL">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center font-metric-num-md text-metric-num-md font-bold text-on-surface shrink-0">
+            A
+          </div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold tracking-tight">AAPL</span>
+<span class="text-xs">🇺🇸</span>
+<span class="font-micro-badge text-micro-badge text-on-surface-variant px-1 rounded bg-surface-container-high">NASDAQ</span>
+</div>
+<span class="font-body-md text-body-md text-on-surface-variant truncate">Apple Inc.</span>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-metric-num-md text-metric-num-md font-semibold text-on-surface tracking-tight">$228.40</span>
+<span class="px-1.5 py-0.5 rounded bg-secondary-container/30 text-secondary font-label-sm text-label-sm font-semibold flex items-center gap-0.5 mt-0.5">
+<span class="text-[10px]">▼</span> -0.74%
+          </span>
+</div>
+</div>
+<div class="flex items-center justify-between gap-space-sm pt-0.5">
+<div class="flex flex-col gap-1 min-w-0">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="px-2 py-0.5 rounded bg-inverse-primary text-on-surface font-label-sm text-label-sm font-bold tracking-wide uppercase">
+              Buy Dip
+            </span>
+<span class="font-label-sm text-label-sm text-primary-fixed-dim font-medium">84% Conf.</span>
+</div>
+<div class="font-body-md text-body-md text-on-surface-variant">
+            Target Entry: <span class="font-semibold text-on-surface">$222.00</span>
+</div>
+</div>
+<div class="w-24 h-10 shrink-0 flex items-center justify-end">
+<svg class="w-24 h-9 overflow-visible" fill="none" viewBox="0 0 96 36">
+<defs>
+<linearGradient id="grad-aapl" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#18e376" stop-opacity="0.25"></stop>
+<stop offset="100%" stop-color="#18e376" stop-opacity="0.0"></stop>
+</linearGradient>
+</defs>
+<path d="M 0 14 Q 28 8 50 16 T 78 24 L 96 18" fill="none" stroke="#18e376" stroke-linecap="round" stroke-width="2"></path>
+<path d="M 0 14 Q 28 8 50 16 T 78 24 L 96 18 L 96 36 L 0 36 Z" fill="url(#grad-aapl)"></path>
+<circle cx="96" cy="18" fill="#18e376" r="2.5"></circle>
+</svg>
+</div>
+</div>
+<div class="pt-1 flex items-center gap-1.5 text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[15px] text-primary shrink-0">insights</span>
+<span class="truncate">Approaching 20-EMA dip level • Services revenue multiple defense</span>
+</div>
+</article>
+<!-- Card 6: HDFCBANK (Strong Buy, India) -->
+<article class="watchlist-card p-space-md rounded-lg bg-surface-container-low hover:bg-surface-container transition-all flex flex-col gap-space-sm relative" data-market="in" data-signal="STRONG_BUY" data-ticker="HDFCBANK">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center font-metric-num-md text-metric-num-md font-bold text-primary shrink-0">
+            H
+          </div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold tracking-tight">HDFCBANK</span>
+<span class="text-xs">🇮🇳</span>
+<span class="font-micro-badge text-micro-badge text-on-surface-variant px-1 rounded bg-surface-container-high">NSE</span>
+</div>
+<span class="font-body-md text-body-md text-on-surface-variant truncate">HDFC Bank Limited</span>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-metric-num-md text-metric-num-md font-semibold text-on-surface tracking-tight">₹1,748.20</span>
+<span class="px-1.5 py-0.5 rounded bg-primary/10 text-primary font-label-sm text-label-sm font-semibold flex items-center gap-0.5 mt-0.5">
+<span class="text-[10px]">▲</span> +2.15%
+          </span>
+</div>
+</div>
+<div class="flex items-center justify-between gap-space-sm pt-0.5">
+<div class="flex flex-col gap-1 min-w-0">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="px-2 py-0.5 rounded bg-primary text-on-primary font-label-sm text-label-sm font-bold tracking-wide uppercase">
+              Strong Buy
+            </span>
+<span class="font-label-sm text-label-sm text-primary font-medium">95% Conf.</span>
+</div>
+<div class="font-body-md text-body-md text-on-surface-variant">
+            Target Entry: <span class="font-semibold text-on-surface">₹1,710.00</span>
+</div>
+</div>
+<div class="w-24 h-10 shrink-0 flex items-center justify-end">
+<svg class="w-24 h-9 overflow-visible" fill="none" viewBox="0 0 96 36">
+<defs>
+<linearGradient id="grad-hdfc" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#46fc8b" stop-opacity="0.35"></stop>
+<stop offset="100%" stop-color="#46fc8b" stop-opacity="0.0"></stop>
+</linearGradient>
+</defs>
+<path d="M 0 32 Q 24 28 44 20 T 74 12 L 96 6" fill="none" stroke="#46fc8b" stroke-linecap="round" stroke-width="2"></path>
+<path d="M 0 32 Q 24 28 44 20 T 74 12 L 96 6 L 96 36 L 0 36 Z" fill="url(#grad-hdfc)"></path>
+<circle cx="96" cy="6" fill="#46fc8b" r="2.5"></circle>
+</svg>
+</div>
+</div>
+<div class="pt-1 flex items-center gap-1.5 text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[15px] text-primary shrink-0">insights</span>
+<span class="truncate">FII institutional accumulation spike • Credit-deposit ratio normalize</span>
+</div>
+</article>
+<!-- Card 7: PLTR (Neutral / Extended, US) -->
+<article class="watchlist-card p-space-md rounded-lg bg-surface-container-low hover:bg-surface-container transition-all flex flex-col gap-space-sm relative" data-market="us" data-signal="NEUTRAL" data-ticker="PLTR">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center font-metric-num-md text-metric-num-md font-bold text-tertiary-container shrink-0">
+            P
+          </div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold tracking-tight">PLTR</span>
+<span class="text-xs">🇺🇸</span>
+<span class="font-micro-badge text-micro-badge text-on-surface-variant px-1 rounded bg-surface-container-high">NYSE</span>
+</div>
+<span class="font-body-md text-body-md text-on-surface-variant truncate">Palantir Technologies</span>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-metric-num-md text-metric-num-md font-semibold text-on-surface tracking-tight">$58.20</span>
+<span class="px-1.5 py-0.5 rounded bg-primary/10 text-primary font-label-sm text-label-sm font-semibold flex items-center gap-0.5 mt-0.5">
+<span class="text-[10px]">▲</span> +6.40%
+          </span>
+</div>
+</div>
+<div class="flex items-center justify-between gap-space-sm pt-0.5">
+<div class="flex flex-col gap-1 min-w-0">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="px-2 py-0.5 rounded bg-tertiary-container text-on-tertiary-container font-label-sm text-label-sm font-bold tracking-wide uppercase">
+              Hold / Trim
+            </span>
+<span class="font-label-sm text-label-sm text-tertiary font-medium">69% Conf.</span>
+</div>
+<div class="font-body-md text-body-md text-on-surface-variant">
+            Target Entry: <span class="font-semibold text-on-surface">$52.00</span>
+</div>
+</div>
+<div class="w-24 h-10 shrink-0 flex items-center justify-end">
+<svg class="w-24 h-9 overflow-visible" fill="none" viewBox="0 0 96 36">
+<defs>
+<linearGradient id="grad-pltr" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#ffb178" stop-opacity="0.3"></stop>
+<stop offset="100%" stop-color="#ffb178" stop-opacity="0.0"></stop>
+</linearGradient>
+</defs>
+<path d="M 0 34 Q 30 32 50 14 T 76 6 L 96 4" fill="none" stroke="#ffb178" stroke-linecap="round" stroke-width="2"></path>
+<path d="M 0 34 Q 30 32 50 14 T 76 6 L 96 4 L 96 36 L 0 36 Z" fill="url(#grad-pltr)"></path>
+<circle cx="96" cy="4" fill="#ffb178" r="2.5"></circle>
+</svg>
+</div>
+</div>
+<div class="pt-1 flex items-center gap-1.5 text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[15px] text-tertiary-container shrink-0">speed</span>
+<span class="truncate">Overbought daily (RSI 79.4) • Awaiting consolidation before add</span>
+</div>
+</article>
+<!-- Card 8: INFY (Sell, India) -->
+<article class="watchlist-card p-space-md rounded-lg bg-surface-container-low hover:bg-surface-container transition-all flex flex-col gap-space-sm relative" data-market="in" data-signal="SELL" data-ticker="INFY">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center font-metric-num-md text-metric-num-md font-bold text-error shrink-0">
+            I
+          </div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold tracking-tight">INFY</span>
+<span class="text-xs">🇮🇳</span>
+<span class="font-micro-badge text-micro-badge text-on-surface-variant px-1 rounded bg-surface-container-high">NSE</span>
+</div>
+<span class="font-body-md text-body-md text-on-surface-variant truncate">Infosys Limited</span>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-metric-num-md text-metric-num-md font-semibold text-on-surface tracking-tight">₹1,919.65</span>
+<span class="px-1.5 py-0.5 rounded bg-secondary-container/30 text-secondary font-label-sm text-label-sm font-semibold flex items-center gap-0.5 mt-0.5">
+<span class="text-[10px]">▼</span> -1.18%
+          </span>
+</div>
+</div>
+<div class="flex items-center justify-between gap-space-sm pt-0.5">
+<div class="flex flex-col gap-1 min-w-0">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="px-2 py-0.5 rounded bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-bold tracking-wide uppercase">
+              Sell / Reduce
+            </span>
+<span class="font-label-sm text-label-sm text-secondary font-medium">89% Conf.</span>
+</div>
+<div class="font-body-md text-body-md text-on-surface-variant">
+            Target Re-entry: <span class="font-semibold text-on-surface">₹1,840.00</span>
+</div>
+</div>
+<div class="w-24 h-10 shrink-0 flex items-center justify-end">
+<svg class="w-24 h-9 overflow-visible" fill="none" viewBox="0 0 96 36">
+<defs>
+<linearGradient id="grad-infy" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#ffb4ab" stop-opacity="0.3"></stop>
+<stop offset="100%" stop-color="#ffb4ab" stop-opacity="0.0"></stop>
+</linearGradient>
+</defs>
+<path d="M 0 6 Q 25 12 45 18 T 72 26 L 96 30" fill="none" stroke="#ffb4ab" stroke-linecap="round" stroke-width="2"></path>
+<path d="M 0 6 Q 25 12 45 18 T 72 26 L 96 30 L 96 36 L 0 36 Z" fill="url(#grad-infy)"></path>
+<circle cx="96" cy="30" fill="#ffb4ab" r="2.5"></circle>
+</svg>
+</div>
+</div>
+<div class="pt-1 flex items-center gap-1.5 text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[15px] text-error shrink-0">trending_down</span>
+<span class="truncate">Bearish engulfing pattern • Operating margin pressure in Europe</span>
+</div>
+</article>
+<!-- Empty Search State Placeholder -->
+<div class="hidden flex-col items-center justify-center p-space-xl text-center gap-space-sm py-12" id="empty-state">
+<div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-outline">
+<span class="material-symbols-outlined text-[24px]">filter_list_off</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface font-semibold">No tickers match criteria</span>
+<span class="font-body-md text-body-md text-on-surface-variant mt-1">Try searching for other dual-market symbols or reset active filters.</span>
+</div>
+<button class="mt-2 px-space-md py-1.5 rounded-lg bg-surface-container text-primary font-label-sm text-label-sm font-semibold" id="reset-filters-btn">
+        Reset Search &amp; Filters
+      </button>
+</div>
+</main>
+<!-- Interactive Floating Add / Rule Trigger Button -->
+<div class="fixed bottom-20 right-4 z-40">
+<button aria-label="Add Ticker or Custom AI Signal Rule" class="w-13 h-13 p-3.5 rounded-full bg-primary text-on-primary shadow-xl hover:bg-primary-container active:scale-90 flex items-center justify-center transition-all focus:outline-none" id="add-ticker-fab" type="button">
+<span class="material-symbols-outlined text-[24px] font-bold">add</span>
+</button>
+</div>
+<!-- Mini Toast Notification for Delight -->
+<div class="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 px-space-md py-2 rounded-lg bg-surface-container-highest/95 backdrop-blur-md text-on-surface text-label-sm font-label-sm flex items-center gap-2 shadow-2xl transition-all duration-300 opacity-0 pointer-events-none translate-y-2" id="ai-toast">
+<span class="material-symbols-outlined text-primary text-[18px]">verified</span>
+<span id="toast-text" class="">AI Signal synced across Zerodha &amp; DriveWealth</span>
+</div>
+</div>
+<script>
+  (function() {
+    const searchInput = document.getElementById('watchlist-search');
+    const clearBtn = document.getElementById('search-clear-btn');
+    const cards = Array.from(document.querySelectorAll('.watchlist-card'));
+    const emptyState = document.getElementById('empty-state');
+    const signalTabs = Array.from(document.querySelectorAll('.signal-tab'));
+    const quickChips = Array.from(document.querySelectorAll('.quick-chip'));
+    const resetBtn = document.getElementById('reset-filters-btn');
+    const toast = document.getElementById('ai-toast');
+    const toastText = document.getElementById('toast-text');
+    const fabBtn = document.getElementById('add-ticker-fab');
+
+    let currentSignal = 'ALL';
+    let currentMarket = 'ALL';
+    let searchQuery = '';
+
+    function showToast(msg) {
+      if (!toast) return;
+      toastText.textContent = msg;
+      toast.classList.remove('opacity-0', 'translate-y-2', 'pointer-events-none');
+      toast.classList.add('opacity-100', 'translate-y-0');
+      setTimeout(() => {
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        toast.classList.add('opacity-0', 'translate-y-2', 'pointer-events-none');
+      }, 2400);
+    }
+
+    function applyFilters() {
+      let visibleCount = 0;
+      cards.forEach(card => {
+        const ticker = (card.dataset.ticker || '').toLowerCase();
+        const signal = card.dataset.signal;
+        const market = card.dataset.market;
+        const content = card.textContent.toLowerCase();
+
+        const matchesSearch = !searchQuery || ticker.includes(searchQuery) || content.includes(searchQuery);
+        const matchesSignal = currentSignal === 'ALL' || signal === currentSignal;
+        const matchesMarket = currentMarket === 'ALL' || 
+          (currentMarket === 'us' && market === 'us') || 
+          (currentMarket === 'in' && market === 'in') ||
+          (currentMarket === 'ai-strong' && signal === 'STRONG_BUY');
+
+        if (matchesSearch && matchesSignal && matchesMarket) {
+          card.classList.remove('hidden');
+          visibleCount++;
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+
+      if (visibleCount === 0) {
+        emptyState.classList.remove('hidden');
+        emptyState.classList.add('flex');
+      } else {
+        emptyState.classList.remove('flex');
+        emptyState.classList.add('hidden');
+      }
+    }
+
+    searchInput.addEventListener('input', (e) => {
+      searchQuery = e.target.value.trim().toLowerCase();
+      if (searchQuery.length > 0) {
+        clearBtn.classList.remove('hidden');
+        clearBtn.classList.add('flex');
+      } else {
+        clearBtn.classList.add('hidden');
+        clearBtn.classList.remove('flex');
+      }
+      applyFilters();
+    });
+
+    clearBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      searchQuery = '';
+      clearBtn.classList.add('hidden');
+      clearBtn.classList.remove('flex');
+      applyFilters();
+    });
+
+    // Signal Segment Tabs
+    signalTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        signalTabs.forEach(t => {
+          t.classList.remove('active', 'bg-surface-container-high', 'text-on-surface', 'font-semibold', 'shadow-sm');
+          t.classList.add('text-on-surface-variant', 'font-medium');
+        });
+        tab.classList.add('active', 'bg-surface-container-high', 'text-on-surface', 'font-semibold', 'shadow-sm');
+        tab.classList.remove('text-on-surface-variant', 'font-medium');
+        currentSignal = tab.dataset.filter;
+        applyFilters();
+      });
+    });
+
+    // Quick Market Filter Chips
+    quickChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        quickChips.forEach(c => {
+          c.classList.remove('active', 'bg-primary', 'text-on-primary', 'font-semibold');
+          c.classList.add('bg-surface-container', 'text-on-surface-variant');
+        });
+        chip.classList.add('active', 'bg-primary', 'text-on-primary', 'font-semibold');
+        chip.classList.remove('bg-surface-container', 'text-on-surface-variant');
+        
+        const q = chip.dataset.quick;
+        if (q === 'all') currentMarket = 'ALL';
+        else if (q === 'us') currentMarket = 'us';
+        else if (q === 'in') currentMarket = 'in';
+        else if (q === 'ai-strong') currentMarket = 'ai-strong';
+        applyFilters();
+      });
+    });
+
+    // Reset button in empty state
+    resetBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      searchQuery = '';
+      clearBtn.classList.add('hidden');
+      clearBtn.classList.remove('flex');
+      currentSignal = 'ALL';
+      currentMarket = 'ALL';
+
+      signalTabs[0].click();
+      quickChips[0].click();
+    });
+
+    // FAB Trigger
+    fabBtn.addEventListener('click', () => {
+      showToast('Opening Cross-Broker Ticker Screener...');
+    });
+
+    // Tap on card micro-interaction
+    cards.forEach(card => {
+      card.addEventListener('click', () => {
+        const ticker = card.dataset.ticker;
+        showToast(`${ticker} AI Signal breakdown expanded`);
+      });
+    });
+
+  })();
+</script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface/90 backdrop-blur-xl border-t border-surface-container" data-active-classes="text-primary"><div class="h-16 px-space-xs grid grid-cols-4 items-center"><a class="flex flex-col items-center justify-center gap-1 w-full h-12 text-on-surface-variant hover:text-on-surface transition-colors" data-path="portfolio" href="#"><span class="material-symbols-outlined text-[22px]">pie_chart</span><span class="font-label-sm text-label-sm">Portfolio</span></a><a class="flex flex-col items-center justify-center gap-1 w-full h-12 text-primary transition-colors" data-path="watchlist" href="#"><span class="material-symbols-outlined text-[22px]">bookmark</span><span class="font-label-sm text-label-sm font-semibold">Watchlist</span></a><a class="flex flex-col items-center justify-center gap-1 w-full h-12 text-on-surface-variant hover:text-on-surface transition-colors" data-path="rules" href="#"><span class="material-symbols-outlined text-[22px]">tune</span><span class="font-label-sm text-label-sm">Rules</span></a><a class="flex flex-col items-center justify-center gap-1 w-full h-12 text-on-surface-variant hover:text-on-surface transition-colors" data-path="research" href="#"><span class="material-symbols-outlined text-[22px]">psychology</span><span class="font-label-sm text-label-sm">Research</span></a></div></nav>
+
+</body></html>

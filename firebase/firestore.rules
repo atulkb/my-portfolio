@@ -1,0 +1,28 @@
+rules_version = '2';
+
+// Baseline per docs/HLD.md §11. Per-collection field validation is added in the LLD.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    // All user data lives under users/{uid}/...
+    match /users/{uid} {
+      allow read, write: if isOwner(uid);
+
+      match /{document=**} {
+        allow read, write: if isOwner(uid);
+      }
+    }
+
+    // Shared instrument master list (HLD §15): read-only for signed-in users.
+    // Written only by the weekly sync job via the Admin SDK, which bypasses rules.
+    match /reference/{document=**} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // Everything else is denied by default.
+  }
+}

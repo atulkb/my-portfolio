@@ -1,0 +1,94 @@
+# ─────────────────────────────────────────────
+# Secrets & credentials — NEVER commit
+# ─────────────────────────────────────────────
+# Environment files (only the placeholder template is committed)
+.env
+.env.*
+!.env.example
+*.local
+
+# Firebase app config & service accounts (dev upload script, emulator, admin)
+google-services.json
+GoogleService-Info.plist
+service-account*.json
+serviceAccount*.json
+*-firebase-adminsdk-*.json
+firebase-adminsdk*.json
+credentials*.json
+secrets/
+
+# Android / iOS signing
+*.jks
+*.keystore
+*.p8
+*.p12
+*.key
+*.pem
+*.cer
+*.mobileprovision
+keystore.properties
+
+# EAS / Expo credentials
+credentials.json
+.easignore.local
+
+# Package-manager auth tokens
+.npmrc
+.yarnrc.yml
+
+# Claude Code personal overrides
+.claude/settings.local.json
+
+# ─────────────────────────────────────────────
+# Dependencies & build output
+# ─────────────────────────────────────────────
+node_modules/
+.expo/
+.expo-shared/
+dist/
+web-build/
+expo-env.d.ts
+.metro-health-check*
+coverage/
+*.tsbuildinfo
+
+# Generated native folders (Continuous Native Generation)
+/apps/mobile/android/
+/apps/mobile/ios/
+.kotlin/
+*.apk
+*.aab
+*.ipa
+
+# Firebase local state & logs
+.firebase/
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
+database-debug.log*
+pubsub-debug.log*
+*-debug.log
+
+# ─────────────────────────────────────────────
+# Logs, OS & editor files
+# ─────────────────────────────────────────────
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Python (Claude hook scripts / tooling)
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Raw exchange ticker lists (NSE/BSE/Nasdaq Trader) — local only, not redistributed (see data/instruments/README.md)
+data/instruments/snapshot-*/
