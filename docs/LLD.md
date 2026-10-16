@@ -1408,6 +1408,29 @@ Recomputation is cheap (≤ 500 transactions, ≤ 150 instruments) and memoised 
 5. Watchlist market card: AI-written headline + paragraph (new `marketSentiment` task, §3.5) above deterministic figures; can be revisited later.
 6. Undesigned secondary screens are built in the Obsidian style without Stitch mock-ups; adjusted later if needed.
 
+### 4.12 Implementation notes (M5, 2026-10-16)
+
+- **Spike S1 (from Node):** Yahoo's cookie + crumb flow works. `fc.yahoo.com` returns 404 but sets the cookie, `getcrumb` returns the crumb, and quoteSummary answers 200. The RN cookie-jar check happens with fundamentals in M6.
+- **Spike S3:** moved to M9, because it needs a Twelve Data key.
+- **BSE symbol (corrects §3.3):** Yahoo resolves BSE listings by ticker (`RELIANCE.BO`, `TCS.BO`). Numeric scrip codes (`500325.BO`) return 404. `symbols.ts` uses the ticker. The numeric code stays for the quote-page fallback (M9).
+- **Scope:** M5 runs the deterministic refresh steps only: holdings bars and FX (latest + history) in parallel. Index history (benchmark) and fundamentals/profiles come with M6, rules with M8, AI with M7. Twelve Data and the scrape fallback come with M9.
+  - Until M6, sectors come from the user override, then the master-list industry (BSE), else **Unclassified**.
+  - Performance/Health badges are left off cards until they exist.
+- **Snapshots:**
+  - A cached snapshot is used without a network call when its session is current.
+  - If a provider doesn't have the expected session (e.g. an exchange holiday), it isn't asked again for **30 minutes**.
+  - Pull to refresh forces a fetch.
+  - If a fetch fails, the stale cache is shown with "as of …". An instrument is reported failed only when there is no cache at all.
+- **FX:**
+  - The latest rate comes from Frankfurter, falling back to Yahoo `USDINR=X`, then to the cached rate. It is refreshed once per IN session.
+  - History runs from the earliest buy minus 7 days. It is fetched once, then extended forward, or backward when an older buy appears.
+  - With no rate at all (first launch while offline), converted totals show "—".
+- **Refresh triggers:** app ready (cached first, then refresh), a newly added stock with no price, and the app returning to the foreground. All are cheap when the cache is current.
+- **HTTP:**
+  - Unlisted hosts default to 2 concurrent requests with 500 ms pacing.
+  - Only transport failures (network, timeout, 5xx) count towards the circuit breaker, so 404s don't trip it.
+- **Verified on the emulator (2026-10-16):** live Yahoo prices; totals match a hand calculation (3.5 × $342.00 → ₹1,13,667.12 at the ECB rate of 94.96, plus ₹82,497); the ₹/$ toggle; filters with the live count; the in-progress US session is excluded.
+
 ### 4.11 Implementation notes (M4, 2026-10-16)
 
 - **Port change (§1.10):** `TransactionRepository.newIds(n)` creates Firestore document IDs on the device (no network). `addMany` takes `{ id, tx }[]` and returns nothing. This lets optimistic adds use their real IDs, so a buy can be edited or deleted before the server confirms it.

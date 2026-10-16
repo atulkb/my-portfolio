@@ -1,48 +1,72 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { EXCHANGE_META, normalisePlatform, type Currency, type StockHolding } from '@portfolio/core';
+import { normalisePlatform, type PortfolioSort, type StockHolding } from '@portfolio/core';
 import { router } from 'expo-router';
 import { useEffect, useMemo } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  SectionList,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
 import { userMessage } from '@/lib/messages';
-import { formatMoney } from '@/lib/format';
-import { portfolioStore, toastStore, usePortfolio } from '@/stores';
+import { portfolioStore, sessionStore, toastStore, uiStore, useMarket, usePortfolio, useUi } from '@/stores';
+import { hasActiveFilters } from '@/stores/uiStore';
 import { colors, radii, spacing, typography } from '@/theme/tokens';
 import { importCsvFromPicker } from './csvImport';
 import { HoldingCard } from './HoldingCard';
-import { useHoldings } from './hooks';
+import { refreshPortfolio, usePortfolioView } from './hooks';
+import { SectorHeader } from './SectorHeader';
 import { SpeedDialFab } from './SpeedDialFab';
+import { SummaryCard } from './SummaryCard';
 
 const openAddBuy = (): void => router.push('/sheets/add-buy');
 const uploadCsv = (): void => void importCsvFromPicker();
 
-/** Invested per currency (holdings stay native; no FX conversion before M5). */
-function investedByCurrency(holdings: readonly StockHolding[]): Record<Currency, number> {
-  const out: Record<Currency, number> = { INR: 0, USD: 0 };
-  for (const h of holdings) out[h.currency] += h.invested;
-  return out;
-}
+/** Sort button cycle (LLD §4.4). */
+const SORT_CYCLE: readonly PortfolioSort[] = ['VALUE_DESC', 'DAY_PNL_PCT_DESC', 'PNL_PCT_DESC'];
+const SORT_LABEL: Readonly<Record<PortfolioSort, string>> = {
+  VALUE_DESC: 'Value',
+  DAY_PNL_PCT_DESC: 'Daily P&L',
+  PNL_PCT_DESC: 'Total return',
+  WEIGHT_DESC: 'Weight',
+  NAME_ASC: 'Name',
+};
 
-/**
- * S02 Portfolio, M4 version: holdings from the buy transactions (cost basis), + menu, empty
- * state. Prices, P/L, sectors and the summary header arrive with market data in M5.
- */
+/** S02 Portfolio (LLD §4.4). Performance/Health badges and Research arrive with M6/M7. */
 export function PortfolioScreen(): React.JSX.Element {
-  const holdings = useHoldings();
+  const view = usePortfolioView();
   const loadState = usePortfolio((s) => s.loadState);
   const pending = usePortfolio((s) => s.pendingWrites);
   const skipped = usePortfolio((s) => s.skipped);
   const error = usePortfolio((s) => s.error);
   const transactions = usePortfolio((s) => s.transactions);
+  const snapshots = useMarket((s) => s.snapshots);
+  const refresh = useMarket((s) => s.refresh);
+  const filters = useUi((s) => s.portfolioFilters);
+  const collapsed = useUi((s) => s.collapsedSectors);
 
   const platforms = useMemo(
     () => new Set(transactions.map((t) => normalisePlatform(t.platform))).size,
     [transactions],
   );
-  const invested = useMemo(() => investedByCurrency(holdings), [holdings]);
-  const markets = useMemo(() => new Set(holdings.map((h) => EXCHANGE_META[h.exchange].market)), [holdings]);
+  const staleCount = useMemo(
+    () => view.holdings.filter((h) => snapshots.get(h.key)?.stale).length,
+    [view.holdings, snapshots],
+  );
+  const sections = useMemo(
+    () =>
+      view.sectors.map((g) => ({
+        group: g,
+        data: collapsed.includes(g.sector) ? ([] as StockHolding[]) : [...g.holdings],
+      })),
+    [view.sectors, collapsed],
+  );
 
   // One-time notices: unreadable documents, failed writes (already rolled back).
   useEffect(() => {
@@ -58,27 +82,79 @@ export function PortfolioScreen(): React.JSX.Element {
       portfolioStore.getState().clearError();
     }
   }, [error, loadState]);
+  // Report prices that could not be fetched after a refresh.
+  useEffect(() => {
+    const report = refresh.report;
+    if (!report) return;
+    const ok = view.totalHoldings - report.failed.length - report.stale.length;
+    if (report.failed.length > 0 || report.stale.length > 0) {
+      const text = userMessage(report.failed[0]?.code ?? 'MD_PROVIDER_DOWN', {
+        ok,
+        total: view.totalHoldings,
+      });
+      if (text) toastStore.getState().show(text);
+    }
+    // Only when a refresh finishes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refresh.report]);
+
+  const cycleSort = (): void => {
+    const i = SORT_CYCLE.indexOf(filters.sort);
+    const next = SORT_CYCLE[(i + 1) % SORT_CYCLE.length] ?? 'VALUE_DESC';
+    uiStore.getState().setPortfolioFilters({ ...filters, sort: next });
+  };
 
   const header = (
     <View style={styles.headerBlock}>
-      <View style={styles.summary}>
-        <Text style={styles.caption}>INVESTED</Text>
-        {markets.has('IN') || holdings.length === 0 ? (
-          <Text style={styles.metric}>{formatMoney(invested.INR, 'INR')}</Text>
-        ) : null}
-        {markets.has('US') ? <Text style={styles.metric}>{formatMoney(invested.USD, 'USD')}</Text> : null}
-        <Text style={styles.hint}>Prices, P/L and CAGR appear once market data is added.</Text>
+      <SummaryCard
+        summary={view.summary}
+        onCurrencyChange={(c) => void sessionStore.getState().updateSettings({ summaryCurrency: c })}
+      />
+      {staleCount > view.holdings.length / 2 && view.holdings.length > 0 ? (
+        <Text style={styles.banner}>
+          Some prices are from an earlier session (provider unavailable or a market holiday).
+        </Text>
+      ) : null}
+      <View style={styles.row}>
+        <Text style={styles.section}>
+          {`PLATFORMS · ${platforms}`}
+          {pending > 0 ? <Text style={styles.pending}> · Saving…</Text> : null}
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={hasActiveFilters(filters) ? 'Filters, active' : 'Filters'}
+          onPress={() => router.push('/sheets/filter')}
+          style={styles.pill}
+        >
+          <MaterialCommunityIcons name="tune-variant" size={16} color={colors.textPrimary} />
+          <Text style={styles.pillText}>Filters</Text>
+          {hasActiveFilters(filters) ? <View style={styles.dot} /> : null}
+        </Pressable>
       </View>
       <View style={styles.row}>
-        <Text style={styles.section}>{`PLATFORMS · ${platforms}`}</Text>
-        {pending > 0 ? <Text style={styles.pending}>Saving…</Text> : null}
+        <Text style={styles.title}>
+          Holdings{' '}
+          <Text style={styles.count}>
+            {view.holdings.length === view.totalHoldings
+              ? `(${view.totalHoldings} ${view.totalHoldings === 1 ? 'asset' : 'assets'})`
+              : `(${view.holdings.length} of ${view.totalHoldings})`}
+          </Text>
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Sort by ${SORT_LABEL[filters.sort]}. Change`}
+          onPress={cycleSort}
+          style={styles.pill}
+        >
+          <MaterialCommunityIcons name="sort" size={16} color={colors.textPrimary} />
+          <Text style={styles.pillText}>{SORT_LABEL[filters.sort]}</Text>
+        </Pressable>
       </View>
-      <Text style={styles.title}>
-        Holdings{' '}
+      {refresh.running && refresh.progress ? (
         <Text
-          style={styles.count}
-        >{`(${holdings.length} ${holdings.length === 1 ? 'asset' : 'assets'})`}</Text>
-      </Text>
+          style={styles.progress}
+        >{`Fetching prices ${refresh.progress.done}/${refresh.progress.total}`}</Text>
+      ) : null}
     </View>
   );
 
@@ -114,7 +190,7 @@ export function PortfolioScreen(): React.JSX.Element {
             onPress={() => void portfolioStore.getState().load()}
           />
         </View>
-      ) : holdings.length === 0 ? (
+      ) : view.totalHoldings === 0 ? (
         <View style={styles.center}>
           <MaterialCommunityIcons name="briefcase-outline" size={40} color={colors.textMuted} />
           <Text style={styles.emptyTitle}>Add your first stock</Text>
@@ -123,17 +199,40 @@ export function PortfolioScreen(): React.JSX.Element {
           <Button label="Upload CSV" variant="secondary" onPress={uploadCsv} />
         </View>
       ) : (
-        <FlatList
-          data={holdings}
+        <SectionList
+          sections={sections}
           keyExtractor={(h) => h.key}
           ListHeaderComponent={header}
+          ListEmptyComponent={<Text style={styles.body}>No holdings match these filters.</Text>}
           contentContainerStyle={styles.list}
-          ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
-          renderItem={({ item }) => (
-            <HoldingCard
-              holding={item}
-              onPress={() => router.push({ pathname: '/sheets/holding-actions', params: { key: item.key } })}
+          stickySectionHeadersEnabled={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refresh.running}
+              onRefresh={() => void refreshPortfolio(true)}
+              tintColor={colors.gain}
+              colors={[colors.gain]}
+              progressBackgroundColor={colors.surface2}
             />
+          }
+          renderSectionHeader={({ section }) => (
+            <SectorHeader
+              group={section.group}
+              currency={view.currency}
+              collapsed={collapsed.includes(section.group.sector)}
+              onToggle={() => uiStore.getState().toggleSector(section.group.sector)}
+            />
+          )}
+          renderItem={({ item }) => (
+            <View style={styles.item}>
+              <HoldingCard
+                holding={item}
+                stale={snapshots.get(item.key)?.stale ?? false}
+                onPress={() =>
+                  router.push({ pathname: '/sheets/holding-actions', params: { key: item.key } })
+                }
+              />
+            </View>
           )}
         />
       )}
@@ -170,24 +269,36 @@ const styles = StyleSheet.create({
   },
   appTitle: { ...typography.headlineSm, color: colors.textPrimary },
   list: { padding: spacing.margin, paddingBottom: 120 },
-  headerBlock: { gap: spacing.lg, marginBottom: spacing.lg },
-  summary: {
-    backgroundColor: colors.surface1,
+  headerBlock: { gap: spacing.lg },
+  banner: {
+    ...typography.labelMd,
+    color: colors.caution,
+    backgroundColor: colors.cautionTint,
+    padding: spacing.md,
+    borderRadius: radii.lg,
+    overflow: 'hidden',
+  },
+  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.md },
+  section: { ...typography.labelSm, color: colors.textSecondary },
+  pending: { color: colors.caution },
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    minHeight: 36,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.full,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radii.lg,
-    padding: spacing.lg,
-    gap: spacing.xs,
+    backgroundColor: colors.surface1,
   },
-  caption: { ...typography.labelSm, color: colors.textSecondary },
-  metric: { ...typography.metricLg, color: colors.textPrimary },
-  hint: { ...typography.labelSm, color: colors.textMuted, marginTop: spacing.xs },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  section: { ...typography.labelSm, color: colors.textSecondary },
-  pending: { ...typography.labelSm, color: colors.caution },
+  pillText: { ...typography.labelMd, color: colors.textPrimary },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.gain },
   title: { ...typography.headlineMd, color: colors.textPrimary },
   count: { ...typography.labelMd, color: colors.textSecondary },
+  progress: { ...typography.labelSm, color: colors.info },
+  item: { marginTop: spacing.md },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg, padding: spacing.xl },
   emptyTitle: { ...typography.headlineSm, color: colors.textPrimary },
-  body: { ...typography.bodyLg, color: colors.textSecondary, textAlign: 'center' },
+  body: { ...typography.bodyLg, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.lg },
 });

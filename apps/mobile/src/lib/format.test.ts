@@ -1,5 +1,12 @@
 import { dateFromIso, localIsoDate } from './dates';
-import { formatDate, formatMoney, formatQuantity } from './format';
+import {
+  formatDate,
+  formatFxRate,
+  formatMoney,
+  formatPct,
+  formatQuantity,
+  formatSignedMoney,
+} from './format';
 
 describe('format', () => {
   it('uses Indian grouping for INR and US grouping for USD', () => {
@@ -28,5 +35,16 @@ describe('format', () => {
   it('round-trips local dates', () => {
     expect(localIsoDate(new Date(2024, 2, 5))).toBe('2024-03-05');
     expect(localIsoDate(dateFromIso('2024-12-31'))).toBe('2024-12-31');
+  });
+
+  it('formats signed changes and percentages', () => {
+    expect(formatSignedMoney(1401, 'INR')).toBe('+₹1,401.00');
+    expect(formatSignedMoney(-12.5, 'USD')).toBe('-$12.50');
+    expect(formatSignedMoney(0, 'USD')).toBe('$0.00');
+    expect(formatPct(14.304, { signed: true })).toBe('+14.30%');
+    expect(formatPct(-1.18)).toBe('-1.18%');
+    expect(formatPct(null)).toBe('—');
+    expect(formatFxRate(94.96)).toBe('1 USD ≈ ₹94.96');
+    expect(formatFxRate(Number.NaN)).toBe('');
   });
 });

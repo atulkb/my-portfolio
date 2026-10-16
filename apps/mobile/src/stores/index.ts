@@ -16,8 +16,15 @@ import {
 import { createInstrumentSyncService } from '@/services/instruments/instrumentSyncService';
 import { createInstrumentStore, type InstrumentState } from './instrumentStore';
 import { createPortfolioStore, type PortfolioState } from './portfolioStore';
+import { createFxService } from '@/services/fx/fxService';
+import { createHttpClient } from '@/services/http/httpClient';
+import { createMarketDataService } from '@/services/market-data/marketDataService';
+import { createYahooProvider } from '@/services/market-data/yahoo/yahooProvider';
+import { createRefreshService } from '@/services/refresh/refreshService';
+import { createMarketStore, type MarketState } from './marketStore';
 import { createSessionStore, type SessionState } from './sessionStore';
 import { createToastStore, type ToastState } from './toastStore';
+import { createUiStore, type UiState } from './uiStore';
 
 const kv = createKeyValueCache(mmkvRawStore());
 const clock = { now: () => Date.now() };
@@ -38,6 +45,36 @@ export const instrumentStore = createInstrumentStore({
   setIndexFromTsv,
   clearIndex: clearInstrumentIndex,
 });
+
+/** Shared HTTP client with per-host limits (LLD §3.2). */
+const http = createHttpClient(
+  {
+    fetch: (url, init) => fetch(url, init),
+    sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
+    now: () => Date.now(),
+    random: Math.random,
+  },
+  {
+    'query1.finance.yahoo.com': { concurrency: 4, minIntervalMs: 200 },
+    'query2.finance.yahoo.com': { concurrency: 4, minIntervalMs: 200 },
+    'api.frankfurter.dev': { concurrency: 2, minIntervalMs: 500 },
+  },
+  __DEV__ ? (line) => console.log(`[http] ${line}`) : undefined,
+);
+
+/** Prices, FX and refresh progress (LLD §4.3). */
+export const marketStore = createMarketStore({
+  refresh: createRefreshService({
+    http,
+    market: createMarketDataService({ providers: [createYahooProvider(http, clock)], kv, clock }),
+    fx: createFxService({ http, kv, clock }),
+    now: () => Date.now(),
+  }),
+  now: () => Date.now(),
+});
+
+/** UI preferences (filters, collapsed sectors), persisted in MMKV. */
+export const uiStore = createUiStore(kv);
 
 /** Toasts (import results, write failures). */
 export const toastStore = createToastStore();
@@ -63,6 +100,8 @@ export const sessionStore = createSessionStore({
     wipeUserData();
     instrumentStore.getState().reset();
     portfolioStore.getState().reset();
+    marketStore.getState().reset();
+    uiStore.getState().reset();
   },
 });
 
@@ -84,4 +123,14 @@ export function usePortfolio<T>(selector: (s: PortfolioState) => T): T {
 /** React hook selecting from the toast store. */
 export function useToast<T>(selector: (s: ToastState) => T): T {
   return useStore(toastStore, selector);
+}
+
+/** React hook selecting from the market store. */
+export function useMarket<T>(selector: (s: MarketState) => T): T {
+  return useStore(marketStore, selector);
+}
+
+/** React hook selecting from the UI store. */
+export function useUi<T>(selector: (s: UiState) => T): T {
+  return useStore(uiStore, selector);
 }

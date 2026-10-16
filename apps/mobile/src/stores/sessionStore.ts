@@ -5,6 +5,7 @@ import {
   type InstrumentKey,
   type ProfileRepository,
   type UserProfile,
+  type UserSettings,
 } from '@portfolio/core';
 import { createStore, type StoreApi } from 'zustand/vanilla';
 
@@ -44,6 +45,8 @@ export type SessionState = {
   clearError(): void;
   /** Adds platforms missing from the managed list (case-insensitive, ≤ 30 total). Optimistic. */
   addPlatforms(names: readonly string[]): Promise<void>;
+  /** Updates profile settings (e.g. the summary currency toggle). Optimistic. */
+  updateSettings(patch: Partial<UserSettings>): Promise<void>;
   /** Writes sector overrides (CSV `sector` column). Optimistic. */
   setSectorOverrides(overrides: Readonly<Record<InstrumentKey, string>>): Promise<void>;
 };
@@ -169,6 +172,18 @@ export function createSessionStore(deps: SessionDeps): StoreApi<SessionState> {
         } catch (e) {
           const now = get().profile;
           if (now) set({ profile: { ...now, platforms: profile.platforms }, error: toAppError(e).code });
+        }
+      },
+
+      updateSettings: async (patch) => {
+        const { user, profile } = get();
+        if (!user || !profile) return;
+        set({ profile: { ...profile, settings: { ...profile.settings, ...patch } } });
+        try {
+          await deps.profiles(user.uid).updateSettings(patch);
+        } catch (e) {
+          const now = get().profile;
+          if (now) set({ profile: { ...now, settings: profile.settings }, error: toAppError(e).code });
         }
       },
 

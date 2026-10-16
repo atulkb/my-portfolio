@@ -2,7 +2,7 @@ import type { StockHolding } from '@portfolio/core';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { MarketBadge, SymbolTile } from '@/components/Badges';
-import { formatMoney, formatQuantity } from '@/lib/format';
+import { formatDate, formatMoney, formatPct, formatQuantity, formatSignedMoney } from '@/lib/format';
 import { colors, radii, spacing, typography } from '@/theme/tokens';
 
 /** "Zerodha" or "Zerodha +1" (largest broker by invested first). */
@@ -11,22 +11,30 @@ export function brokerLabel(h: StockHolding): string {
   return h.brokers.length > 1 ? `${first} +${h.brokers.length - 1}` : first;
 }
 
+const signColor = (n: number | null): string =>
+  n === null || n === 0 ? colors.textSecondary : n > 0 ? colors.gain : colors.loss;
+
 /**
- * Stock card (S02) with cost basis only: quantity, average price, invested. Close, value, P/L
- * and labels join in M5–M7 when market data and analysis exist.
+ * Stock card (S02, LLD §4.4): symbol tile, name, market, broker, quantity, average, last close
+ * with day change, invested, current value, total return and CAGR. Performance/Health badges
+ * join with M6/M7.
  */
 export function HoldingCard({
   holding,
+  stale,
   onPress,
 }: {
   readonly holding: StockHolding;
+  /** Price is older than the expected session (shows "as of …"). */
+  readonly stale: boolean;
   readonly onPress: () => void;
 }): React.JSX.Element {
   const h = holding;
+  const dayUp = (h.dayChangePct ?? 0) >= 0;
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${h.name}, ${formatQuantity(h.quantity, h.currency)} shares, invested ${formatMoney(h.invested, h.currency)}. Open actions`}
+      accessibilityLabel={`${h.name}, ${formatQuantity(h.quantity, h.currency)} shares, value ${formatMoney(h.value, h.currency)}, return ${formatPct(h.pnlPct, { signed: true })}. Open actions`}
       onPress={onPress}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
     >
@@ -40,19 +48,46 @@ export function HoldingCard({
             <MarketBadge market={h.market} />
           </View>
           <Text style={styles.meta} numberOfLines={1}>
-            {`${h.symbol} · ${brokerLabel(h)} · ${formatQuantity(h.quantity, h.currency)} Shs · Avg ${formatMoney(h.avgPrice, h.currency)}`}
+            {`● ${brokerLabel(h)} · ${formatQuantity(h.quantity, h.currency)} Shs · Avg ${formatMoney(h.avgPrice, h.currency)}`}
           </Text>
-          {h.sector ? <Text style={styles.sector}>{h.sector}</Text> : null}
+        </View>
+        <View style={styles.price}>
+          <Text style={styles.close}>{h.close === null ? 'No price' : formatMoney(h.close, h.currency)}</Text>
+          {h.dayChangePct !== null ? (
+            <Text
+              style={[
+                styles.dayChip,
+                {
+                  color: dayUp ? colors.gain : colors.loss,
+                  backgroundColor: dayUp ? colors.gainTint : colors.lossTint,
+                },
+              ]}
+            >
+              {`${dayUp ? '▲' : '▼'} ${formatPct(Math.abs(h.dayChangePct))}`}
+            </Text>
+          ) : null}
         </View>
       </View>
+      {stale && h.priceDate ? (
+        <Text style={styles.stale}>{`as of ${formatDate(h.priceDate, { short: true })}`}</Text>
+      ) : null}
       <View style={styles.bottom}>
         <View>
           <Text style={styles.caption}>INVESTED</Text>
           <Text style={styles.value}>{formatMoney(h.invested, h.currency)}</Text>
         </View>
-        <View style={styles.right}>
+        <View>
           <Text style={styles.caption}>CURRENT</Text>
-          <Text style={styles.muted}>{formatMoney(h.value, h.currency)}</Text>
+          <Text style={styles.value}>{formatMoney(h.value, h.currency)}</Text>
+        </View>
+        <View style={styles.right}>
+          <Text style={styles.caption}>TOTAL RETURN</Text>
+          <Text style={[styles.value, { color: signColor(h.pnl) }]}>
+            {formatSignedMoney(h.pnl, h.currency)}
+          </Text>
+          <Text style={[styles.small, { color: signColor(h.pnl) }]}>
+            {`(${formatPct(h.pnlPct, { signed: true })})${h.xirrPct !== null ? ` · CAGR ${formatPct(h.xirrPct, { signed: true })}` : ''}`}
+          </Text>
         </View>
       </View>
     </Pressable>
@@ -74,16 +109,26 @@ const styles = StyleSheet.create({
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   name: { ...typography.metricMd, color: colors.textPrimary, flexShrink: 1 },
   meta: { ...typography.labelMd, color: colors.textSecondary },
-  sector: { ...typography.labelSm, color: colors.textMuted },
+  price: { alignItems: 'flex-end', gap: 4 },
+  close: { ...typography.metricMd, color: colors.textPrimary },
+  dayChip: {
+    ...typography.labelSm,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 2,
+    borderRadius: radii.base,
+    overflow: 'hidden',
+  },
+  stale: { ...typography.labelSm, color: colors.caution },
   bottom: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     borderTopWidth: 1,
     borderTopColor: colors.border,
     paddingTop: spacing.md,
+    gap: spacing.sm,
   },
-  right: { alignItems: 'flex-end' },
+  right: { alignItems: 'flex-end', flexShrink: 1 },
   caption: { ...typography.microBadge, color: colors.textMuted },
   value: { ...typography.metricMd, color: colors.textPrimary },
-  muted: { ...typography.metricMd, color: colors.textMuted },
+  small: { ...typography.labelSm },
 });
