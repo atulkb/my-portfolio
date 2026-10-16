@@ -14,6 +14,7 @@ import { useMemo } from 'react';
 import { localIsoDate } from '@/lib/dates';
 import { getInstrumentIndex } from '@/services/instruments/instrumentIndex';
 import { analysisStore, instrumentStore, marketStore, sessionStore, useAnalysis, useMarket } from '@/stores';
+import type { IndexHistories } from '@/services/refresh/refreshService';
 import type { AnalysisEntry, AnalysisRow } from '@/stores/analysisStore';
 import { resolveSectorCategory } from './sector';
 
@@ -95,21 +96,23 @@ export type PositionBenchmark = {
 };
 
 /** Benchmark for a holding (LLD §2.5): same amounts on the same dates in Nifty 50 / S&P 500. */
+export function positionBenchmark(holding: StockHolding, histories: IndexHistories): PositionBenchmark {
+  const bench = BENCHMARK_FOR_MARKET[holding.market];
+  const bars = histories[bench.index];
+  const buys = holding.brokers
+    .flatMap((b) => b.buys)
+    .map((t) => ({ date: t.tradeDate, amount: t.quantity * t.price }));
+  const result = bars ? benchmarkReturn(buys, bars, holding.priceDate ?? localIsoDate()) : null;
+  return {
+    name: bench.name,
+    result,
+    returnPct: benchmarkReturnPct(result),
+    excessPp: excessReturnPp(holding, result),
+  };
+}
+
+/** {@link positionBenchmark} for S04, memoised on the holding and the index histories. */
 export function usePositionBenchmark(holding: StockHolding | null): PositionBenchmark | null {
   const histories = useMarket((s) => s.indexHistory);
-  return useMemo(() => {
-    if (!holding) return null;
-    const bench = BENCHMARK_FOR_MARKET[holding.market];
-    const bars = histories[bench.index];
-    const buys = holding.brokers
-      .flatMap((b) => b.buys)
-      .map((t) => ({ date: t.tradeDate, amount: t.quantity * t.price }));
-    const result = bars ? benchmarkReturn(buys, bars, holding.priceDate ?? localIsoDate()) : null;
-    return {
-      name: bench.name,
-      result,
-      returnPct: benchmarkReturnPct(result),
-      excessPp: excessReturnPp(holding, result),
-    };
-  }, [holding, histories]);
+  return useMemo(() => (holding ? positionBenchmark(holding, histories) : null), [holding, histories]);
 }

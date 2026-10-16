@@ -999,7 +999,7 @@ type AiEntry<T> = { sessionDate: IsoDate; inputHash: string; model: string; prom
 - **On demand** (refresh button on S02/S07/S04): `force: true` re-runs all items of that screen, still subject to the budget.
 - Entries older than 3 sessions are pruned on launch. (Replaces the per-date `ai.*` keys listed in §1.9; same data, keyed per instrument.)
 
-**App Check:** not used in personal builds (HLD D32). The AI and Firestore services take no App Check dependency; for a Play release, `@react-native-firebase/app-check` (Play Integrity) is initialised at startup and enforcement is switched on in the console for Firestore and AI Logic. Nothing else changes.
+**App Check** (amended 2026-10-17, HLD D35 supersedes D32): Firebase enforces App Check for AI Logic. `services/appCheck.ts` initialises `@react-native-firebase/app-check` with the **debug provider** in every build (the app isn't distributed through Google Play) and passes it, with Auth, to `getAI`. Each device's debug secret is registered once in the console. Firestore enforcement stays off.
 
 **Proposed `AI_CONFIG` additions** (`src/config/ai.ts`): `rateLimit: { rpm: 5, dailyCap: 500 }`, `signalBatchSize: 25`, `maxOutputTokens.marketSentiment: 256`, `temperature.marketSentiment: 0.3`, and `model` per task (`flash` for all in v1; `flashLite` can be tried for ratings later by changing config only).
 
@@ -1430,6 +1430,50 @@ Recomputation is cheap (≤ 500 transactions, ≤ 150 instruments) and memoised 
   - Unlisted hosts default to 2 concurrent requests with 500 ms pacing.
   - Only transport failures (network, timeout, 5xx) count towards the circuit breaker, so 404s don't trip it.
 - **Verified on the emulator (2026-10-16):** live Yahoo prices; totals match a hand calculation (3.5 × $342.00 → ₹1,13,667.12 at the ECB rate of 94.96, plus ₹82,497); the ₹/$ toggle; filters with the live count; the in-progress US session is excluded.
+
+### 4.14 Implementation notes (M7, 2026-10-17)
+
+- **App Check (HLD D35):**
+  - The project already had App Check enforced for AI Logic, and Firebase makes that mandatory from 2026-11-02.
+  - All builds use the debug provider (`services/appCheck.ts`). `getAI` receives `appCheck` and `auth`, so authenticated-users mode can be switched on in the console without a code change.
+  - `@react-native-firebase/ai` imports `@react-native-firebase/app-check` statically, so the package is required even when unused.
+- **Spike S2:** `@react-native-firebase/ai` 26.4 with `gemini-3.5-flash` passes.
+  - Structured output (`responseMimeType` + `responseSchema`) returns valid JSON. Both batches (4 holdings) and the single tasks were accepted on the first attempt.
+  - `thinkingConfig.thinkingLevel` is supported. With `MINIMAL`, `thoughtsTokenCount` = 0. Thinking tokens count toward `maxOutputTokens`, hence the per-task levels.
+  - Measured on 4 holdings: ratings 689 tokens in / 175 out; signals 1,987 in / 261 out. Both are far under the caps.
+- **Config (`AI_CONFIG`):**
+  - Per-task `maxOutputTokens`, `temperature` and `thinkingLevel`, keyed by `PromptTaskId`.
+  - `rateLimit {rpm 5, dailyCap 500}`, `maxRpmWaitMs`, `batchSize 25`, `retryBackoffMs [1 s, 3 s]`.
+- **Budget (amends §3.5 step 1):**
+  - Over the per-minute limit, a request **waits** for a free slot (≤ 60 s) instead of failing, so a 4-batch refresh isn't cut short. The daily cap still refuses with `AI_BUDGET_EXCEEDED`.
+  - Every attempt (retries included) counts.
+- **Errors (amends §5.2 mapping):**
+  - HTTP 401 (App Check token missing or invalid) maps to `AI_NOT_AUTHORISED` with no retry.
+  - A batch that fails only on retryable errors reports the last error, so Settings shows it.
+- **Cache freshness (amends §3.5):**
+  - Per-instrument entries use the session of the **price data** they were built from (`snapshot.sessionDate`), not `sessionDateFor(now)`. Stale or offline data isn't re-sent each day with identical inputs.
+  - Freshness = same session + same input hash + same prompt version.
+  - The market note keys on the later of the IN and US sessions, as specified.
+- **Failed inputs:** an input that still fails after 3 attempts isn't re-sent in the same app session until it changes, or until a forced refresh. An older valid entry stays displayed.
+- **AI sync (`features/analysis/ai.ts`, §3.8 step 9):**
+  - Triggers, debounced 1.5 s: refresh end, index history, analysis changes, portfolio edits, and the AI suggestions toggle.
+  - Skipped while a refresh runs, so half-loaded data is never rated.
+  - Signals cover holdings only until watchlists arrive (M8).
+- **Screens:**
+  - S02 cards: AI reason line under the badges.
+  - S04 **AI Verdict** tab:
+    - "AI Synthesis & Outlook" card: summary, pros/cons tied to parameters, risks, watch-for, model and time, refresh icon.
+    - Signal chip with AI confidence (suggestions on).
+    - Similar alternatives (suggestions on, master-list checked).
+  - The deep analysis is generated only while the tab is visible and the data is ready (fundamentals loaded or failed).
+  - "Your position" shows the full rating reason.
+  - **Market note (deviation):** shown in the S04 Technicals market-context block until S07 exists (M8); generated only while shown.
+  - **Settings:** AI card with the suggestions toggle, "Refresh AI ratings now" (forced), last rated and requests left today. Dev builds also get an on-screen diagnostics log, because RN 0.86 console output doesn't reach Metro or logcat reliably. The log shows task, attempts, tokens, validator reasons and SDK error text, never prompts or replies.
+- **Verified on the emulator:** App Check debug token accepted.
+  - Ratings and reasons on S02 (AAPL "Good": "Clearly beating benchmark with an excess return of 12.91 percentage points…").
+  - S04 AAPL: AI synthesis grounded on supplied numbers; pros/cons tied to parameters; risks and watch-for; "Buy · AI confidence 85%" chip.
+  - Market note above the macro figures; position reason in "Your position".
+  - **Re-opening S04 and restarting the app cost 0 calls** (474 of 500 left before and after).
 
 ### 4.13 Implementation notes (M6, 2026-10-16)
 

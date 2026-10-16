@@ -7,12 +7,13 @@ import { Screen } from '@/components/Screen';
 import { undoImportWithToast } from '@/features/portfolio/csvImport';
 import { usePortfolio, useSession } from '@/stores';
 import { colors, radii, spacing, typography } from '@/theme/tokens';
+import { AiCard } from './AiCard';
 import { MarketDataCard } from './MarketDataCard';
 import { StockListCard } from './StockListCard';
 
 /**
- * S09 Settings, interim (M4): account, stock list, Undo last import, sign out. The full screen
- * (currency, platforms, AI, cache, delete account) is built in M9 (LLD §4.4).
+ * S09 Settings, interim: account, market data, AI (M7), stock list, Undo last import, sign out.
+ * The full screen (currency, platforms, cache, delete account) is built in M9 (LLD §4.4).
  */
 export function SettingsScreen(): React.JSX.Element {
   const profile = useSession((s) => s.profile);
@@ -51,6 +52,7 @@ export function SettingsScreen(): React.JSX.Element {
         </View>
       ) : null}
       <MarketDataCard />
+      <AiCard />
       <StockListCard />
       <Button label="Sign out" variant="secondary" loading={busy} onPress={() => void signOut()} />
     </Screen>

@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { AppState, View } from 'react-native';
 
 import { ToastHost } from '@/components/ToastHost';
+import { startAiSync } from '@/features/analysis/ai';
 import { startAnalysisSync } from '@/features/analysis/hooks';
 import { LoadingProfileScreen, ProfileErrorScreen } from '@/features/auth/GateScreens';
 import { hasUnpricedHoldings, hydrateMarket, refreshPortfolio } from '@/features/portfolio/hooks';
@@ -38,6 +39,7 @@ export default function AppLayout(): React.JSX.Element {
 
   // Indicators + Health follow market data, sector overrides and the stock list (LLD §4.3).
   useEffect(() => (gate === 'ready' ? startAnalysisSync() : undefined), [gate]);
+  useEffect(() => (gate === 'ready' ? startAiSync() : undefined), [gate]);
 
   // Prices: cached first, then the refresh pipeline (cheap when the cache is current, LLD §3.8).
   useEffect(() => {

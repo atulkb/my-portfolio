@@ -1,9 +1,46 @@
-import type { Exchange, Label, Market } from '@portfolio/core';
+import type { Exchange, Label, Market, SignalLabel } from '@portfolio/core';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { colors, labelColors, radii, spacing, typography } from '@/theme/tokens';
 
 const LABEL_TEXT: Readonly<Record<Label, string>> = { GOOD: 'Good', AVERAGE: 'Average', BAD: 'Bad' };
+
+/** Display text for AI signal labels (ANALYSIS_FRAMEWORK §7.2). */
+export const SIGNAL_TEXT: Readonly<Record<SignalLabel, string>> = {
+  STRONG_BUY: 'Strong buy',
+  BUY: 'Buy',
+  HOLD: 'Hold',
+  TRIM: 'Trim',
+  SELL: 'Sell',
+};
+
+const SIGNAL_TONE: Readonly<Record<SignalLabel, keyof typeof labelColors>> = {
+  STRONG_BUY: 'GOOD',
+  BUY: 'GOOD',
+  HOLD: 'AVERAGE',
+  TRIM: 'BAD',
+  SELL: 'BAD',
+};
+
+/** AI signal chip, e.g. "Buy · AI confidence 84%" (shown only when AI suggestions are on). */
+export function SignalBadge({
+  label,
+  confidencePct,
+}: {
+  readonly label: SignalLabel;
+  readonly confidencePct: number;
+}): React.JSX.Element {
+  const c = labelColors[SIGNAL_TONE[label]];
+  const text = `${SIGNAL_TEXT[label]} · AI confidence ${Math.round(confidencePct)}%`;
+  return (
+    <Text
+      style={[styles.label, { color: c.fg, backgroundColor: c.bg, borderColor: c.fg }]}
+      accessibilityLabel={`AI signal: ${text}`}
+    >
+      {text}
+    </Text>
+  );
+}
 
 /**
  * Performance or Health badge (LLD §4.5). `null` shows "Not rated" (Performance) or

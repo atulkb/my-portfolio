@@ -21,8 +21,10 @@ import { refFor, useHolding } from '@/features/portfolio/hooks';
 import { formatDate, formatMoney, formatPct, formatQuantity, formatSignedMoney } from '@/lib/format';
 import { userMessage } from '@/lib/messages';
 import { getInstrumentIndex } from '@/services/instruments/instrumentIndex';
-import { marketStore, uiStore, useInstruments, useMarket, useSession } from '@/stores';
+import { marketStore, uiStore, useAi, useInstruments, useMarket, useSession } from '@/stores';
 import { colors, labelColors, radii, spacing, typography } from '@/theme/tokens';
+import { useAiSuggestions, useDeepAnalysis, useMarketSentiment } from './ai';
+import { AiVerdictCard, AlternativesCard, MarketNote } from './AiVerdict';
 import { useAnalysisEntry, usePositionBenchmark } from './hooks';
 import { formatParamValue, PARAM_LABEL } from './params';
 import { resolveSector } from './sector';
@@ -32,7 +34,7 @@ const CHART_SESSIONS = 63;
 
 type Tab = 'VERDICT' | 'FUNDAMENTAL' | 'TECHNICAL';
 const TABS: readonly { value: Tab; label: string }[] = [
-  { value: 'VERDICT', label: 'Verdict' },
+  { value: 'VERDICT', label: 'AI Verdict' },
   { value: 'FUNDAMENTAL', label: 'Fundamentals' },
   { value: 'TECHNICAL', label: 'Technicals' },
 ];
@@ -95,6 +97,7 @@ const VIX_TEXT = { CALM: 'Calm', ELEVATED: 'Elevated', FEAR: 'Fear' } as const;
 const REGIME_TEXT = { ABOVE: 'above', NEAR: 'near', BELOW: 'below' } as const;
 
 function MacroBlock({ macro }: { readonly macro: MacroAssessment }): React.JSX.Element {
+  const sentiment = useMarketSentiment(macro, true);
   const vix = (v: MacroAssessment['vix']): string =>
     v.value === null || v.level === null ? '—' : `${v.value.toFixed(2)} · ${VIX_TEXT[v.level]}`;
   const trend = (t: MacroAssessment['nifty']): string =>
@@ -104,6 +107,7 @@ function MacroBlock({ macro }: { readonly macro: MacroAssessment }): React.JSX.E
   return (
     <Card>
       <Text style={styles.cardTitle}>Market context</Text>
+      <MarketNote entry={sentiment.entry} />
       <Text style={styles.muted}>Shown for context; not part of the Health score.</Text>
       <View style={styles.statGrid}>
         <Stat label="INDIA VIX" value={vix(macro.indiaVix)} />
@@ -116,9 +120,9 @@ function MacroBlock({ macro }: { readonly macro: MacroAssessment }): React.JSX.E
 }
 
 /**
- * S04 Research for one instrument (LLD §4.4), deterministic part: header, price card with the
- * 3-month chart and ranges, Health with strengths/weaknesses, Fundamentals and Technicals tabs,
- * market context and "Your position" for held stocks. AI text and the Rules tab join with M7/M8.
+ * S04 Research for one instrument (LLD §4.4): header, price card with the 3-month chart and
+ * ranges, AI Verdict (Health, AI synthesis, signal, alternatives), Fundamentals and Technicals
+ * tabs, market context with the AI note, and "Your position" for held stocks. Rules join with M8.
  */
 export function ResearchScreen({ instrumentKey }: { readonly instrumentKey: InstrumentKey | null }) {
   const key = instrumentKey;
@@ -132,11 +136,34 @@ export function ResearchScreen({ instrumentKey }: { readonly instrumentKey: Inst
   const entry = useAnalysisEntry(key);
   const holding = useHolding(key);
   const bench = usePositionBenchmark(holding);
+  const refreshRunning = useMarket((s) => s.refresh.running);
+  const suggestions = useAiSuggestions();
+  const signal = useAi((s) => (key && suggestions ? (s.signals[key]?.value ?? null) : null));
+  const performanceReason = useAi((s) => (key ? (s.performance[key]?.value.reason ?? null) : null));
 
   const hit = useMemo(
     () => (key && listVersion ? (getInstrumentIndex()?.byKey.get(key) ?? null) : null),
     [key, listVersion],
   );
+  const name = hit?.instrument.name ?? holding?.name ?? (key ? (parseInstrumentKey(key)?.symbol ?? key) : '');
+  const isEtf = hit?.instrument.type === 'ETF';
+  const sector = key
+    ? resolveSector(key, { overrides, profiles, index: hit ? getInstrumentIndex() : null })
+    : null;
+  const loading = load?.state === 'loading';
+  // Wait for fundamentals (or their failure) so the narrative isn't written from technicals alone.
+  const aiReady =
+    !!snapshot && !!entry && !loading && (fundamentalsKnown || isEtf || !!load?.failure || !refreshRunning);
+  const deep = useDeepAnalysis({
+    key: key ?? ('' as InstrumentKey),
+    name,
+    sector,
+    entry,
+    holding,
+    bench,
+    ready: !!key && aiReady,
+    visible: tab === 'VERDICT',
+  });
 
   useEffect(() => {
     if (!key) return;
@@ -154,16 +181,12 @@ export function ResearchScreen({ instrumentKey }: { readonly instrumentKey: Inst
     );
   }
   const currency = EXCHANGE_META[parsed.exchange].currency;
-  const name = hit?.instrument.name ?? holding?.name ?? parsed.symbol;
-  const isEtf = hit?.instrument.type === 'ETF';
-  const sector = resolveSector(key, { overrides, profiles, index: hit ? getInstrumentIndex() : null });
   const analysis = entry?.analysis ?? null;
   const ind = entry?.indicators ?? null;
   const lastBar = snapshot?.bars.at(-1) ?? null;
   const dayChange = snapshot && snapshot.prevClose !== null ? snapshot.close - snapshot.prevClose : null;
   const dayPct = snapshot && snapshot.prevClose ? ((dayChange ?? 0) / snapshot.prevClose) * 100 : null;
   const chart = snapshot ? snapshot.bars.slice(-CHART_SESSIONS).map((b) => b.adjClose) : [];
-  const loading = load?.state === 'loading';
   const params =
     analysis?.params.filter((p) =>
       tab === 'FUNDAMENTAL' ? p.group === 'FUNDAMENTAL' : p.group === 'TECHNICAL',
@@ -238,6 +261,16 @@ export function ResearchScreen({ instrumentKey }: { readonly instrumentKey: Inst
       </View>
 
       {tab === 'VERDICT' ? (
+        <AiVerdictCard
+          entry={deep.entry}
+          load={deep.load}
+          signal={signal}
+          canRefresh={deep.canRefresh}
+          onRefresh={deep.refresh}
+        />
+      ) : null}
+
+      {tab === 'VERDICT' ? (
         <Card>
           <View style={styles.rowBetween}>
             <Text style={styles.cardTitle}>Health</Text>
@@ -296,12 +329,19 @@ export function ResearchScreen({ instrumentKey }: { readonly instrumentKey: Inst
 
       {tab === 'TECHNICAL' && analysis ? <MacroBlock macro={analysis.macro} /> : null}
 
+      {tab === 'VERDICT' && suggestions && deep.entry ? (
+        <AlternativesCard analysis={deep.entry.value} />
+      ) : null}
+
       {holding ? (
         <Card>
           <View style={styles.rowBetween}>
             <Text style={styles.cardTitle}>Your position</Text>
             <LabelBadge kind="performance" label={holding.performance} />
           </View>
+          {holding.performance && performanceReason ? (
+            <Text style={styles.reason}>{`AI: ${performanceReason}`}</Text>
+          ) : null}
           <View style={styles.statGrid}>
             <Stat label="SHARES" value={formatQuantity(holding.quantity, currency)} />
             <Stat label="AVG PRICE" value={formatMoney(holding.avgPrice, currency)} />
@@ -341,7 +381,8 @@ export function ResearchScreen({ instrumentKey }: { readonly instrumentKey: Inst
 
       <Text style={styles.disclaimer}>
         For information only — not investment advice. Scores are computed from public market data, which may
-        be delayed, incomplete or wrong. Do your own research before investing.
+        be delayed, incomplete or wrong; AI text and signals can be mistaken. Do your own research before
+        investing.
       </Text>
     </Screen>
   );
