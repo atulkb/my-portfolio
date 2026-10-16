@@ -17,6 +17,9 @@ function tabIcon(name: IconName) {
 export default function TabsLayout(): React.JSX.Element {
   return (
     <Tabs
+      // Back returns to the tab the user came from (e.g. Watchlist → Research → back = Watchlist),
+      // not always to the first tab.
+      backBehavior="history"
       screenOptions={{
         headerShown: false,
         sceneStyle: { backgroundColor: colors.canvas },
