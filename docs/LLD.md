@@ -1,6 +1,6 @@
 # Low-Level Design (LLD): Portfolio & Watchlist Analyzer
 
-> Status: **Draft — in progress.** Source of truth: `docs/HLD.md` v1.3 (signed off 2026-10-16). Each section is reviewed and approved before implementation of that area starts.
+> Status: **v1 complete — all sections approved 2026-10-16.** Source of truth: `docs/HLD.md` v1.3 (signed off 2026-10-16). Each section is reviewed and approved before implementation of that area starts.
 
 | § | Section | Status |
 |---|---|---|
@@ -8,7 +8,7 @@
 | 2 | Core domain logic (holdings/XIRR, indicators, scoring, CSV, rules) | **Approved 2026-10-16** |
 | 3 | Services (market data, FX, Gemini, instrument sync, repositories) | **Approved 2026-10-16** |
 | 4 | App: navigation, state, screen → data mapping | **Approved 2026-10-16** |
-| 5 | Error taxonomy, test plan, delivery order | Not started |
+| 5 | Error taxonomy, test plan, delivery order | **Approved 2026-10-16** |
 
 ---
 
@@ -1077,7 +1077,7 @@ refresh({ force }):
 
 | Package | Where | Notes |
 |---|---|---|
-| `@react-native-firebase/app`, `auth`, `firestore`, `ai` (`app-check` at Play release) | mobile (`npx expo install`) | config plugins; requires a **development build** (Expo Go no longer usable from here on) |
+| `@react-native-firebase/app`, `auth`, `firestore`, `ai`, `crashlytics` (`app-check` at Play release) | mobile (`npx expo install`) | config plugins; requires a **development build** (Expo Go no longer usable from here on) |
 | `@react-native-google-signin/google-signin` | mobile | Google sign-in; needs SHA-1/SHA-256 of the dev build registered in Firebase |
 | `react-native-mmkv` (+ its Nitro peer if required by the installed major) | mobile | encrypted cache |
 | `expo-secure-store`, `expo-crypto` | mobile | MMKV key, sha256 |
@@ -1380,3 +1380,149 @@ Recomputation is cheap (≤ 500 transactions, ≤ 150 instruments) and memoised 
 4. Dark theme only in v1.
 5. Watchlist market card: AI-written headline + paragraph (new `marketSentiment` task, §3.5) above deterministic figures; can be revisited later.
 6. Undesigned secondary screens are built in the Obsidian style without Stitch mock-ups; adjusted later if needed.
+
+---
+
+## 5. Error Taxonomy, Test Plan & Delivery Order
+
+Traceability: HLD §10 (NFRs), §11; all previous LLD sections; `.claude/rules/generic/workflow.md`.
+
+### 5.1 Error model
+
+```ts
+// core/errors.ts (pure; services and stores share it)
+export type ErrorDomain = 'AUTH' | 'FS' | 'MD' | 'FX' | 'AI' | 'RULE' | 'SYNC' | 'IMPORT' | 'DEVICE' | 'APP';
+export class AppError extends Error {
+  constructor(
+    readonly code: AppErrorCode,          // e.g. 'AUTH_WRONG_PASSWORD'
+    readonly options: { cause?: unknown; retryable?: boolean; context?: Record<string, string | number> } = {},
+  ) { super(code); }
+}
+export function toAppError(e: unknown): AppError;   // maps SDK / ServiceError / zod errors; unknown → APP_UNEXPECTED
+```
+
+**Rules**
+- Services throw `AppError` only (SDK errors are mapped at the service boundary; §3.2 `ServiceError` maps 1:1 into the `MD_*`/`FX_*` codes).
+- Stores catch, put `{ code }` into state, and decide retry/rollback. Components never inspect raw errors.
+- User text comes only from `messages.ts` (`userMessage(code, context)`); raw codes, stack traces and SDK messages are never shown.
+- **Partial failure is normal**: a refresh with 3 failed instruments is a successful refresh with a report, not an error screen.
+- `context` never contains email, display name, broker names, prompts or AI output (privacy, HLD §10).
+- Each route exports an Expo Router `ErrorBoundary` ("Something went wrong · Try again"); a root boundary catches the rest.
+
+### 5.2 Error catalogue
+
+Severity: **silent** (log only) · **inline** (field/row message) · **toast** · **banner** (persistent until resolved) · **blocking** (screen-level).
+
+| Code | Raised when | User message | Severity | Retry / action |
+|---|---|---|---|---|
+| `AUTH_WRONG_PASSWORD` | `auth/invalid-credential`, `auth/wrong-password`, `auth/user-not-found` | "Email or password is incorrect." | inline | — (no hint which one) |
+| `AUTH_EMAIL_IN_USE` | `auth/email-already-in-use` | "An account with this email already exists. Sign in instead?" | inline | link to S01 |
+| `AUTH_WEAK_PASSWORD` | `auth/weak-password`, policy failure | "Use at least 8 characters with a number and a symbol." | inline | — |
+| `AUTH_TOO_MANY_ATTEMPTS` | `auth/too-many-requests` | "Too many attempts. Try again in a few minutes." | inline | — |
+| `AUTH_NOT_VERIFIED` | password user, `emailVerified = false` | "Verify your email to continue." | blocking (S01b) | resend (60 s cooldown) |
+| `AUTH_RECENT_LOGIN` | `auth/requires-recent-login` (delete account) | "Please sign in again to confirm." | inline | re-auth prompt |
+| `AUTH_GOOGLE_CANCELLED` | user closed Google picker | — | silent | — |
+| `AUTH_GOOGLE_CONFIG` | Google `DEVELOPER_ERROR` (SHA-1 not registered) | "Google sign-in isn't set up for this build." (+ dev hint in dev builds) | inline | register fingerprints |
+| `AUTH_NETWORK` | `auth/network-request-failed` | "No connection. Check your internet." | inline | retry |
+| `FS_PERMISSION` | `permission-denied` | "You don't have access to this data. Sign in again." | blocking | sign out → S01 |
+| `FS_UNAVAILABLE` | `unavailable`, `deadline-exceeded` | "Can't reach the server. Showing saved data." | banner | auto, SDK retries |
+| `FS_QUOTA` | `resource-exhausted` (Spark daily limit) | "Daily free database limit reached. Changes will sync tomorrow." | banner | — |
+| `FS_INVALID_DOC` | stored doc fails zod (§3.7) | "1 record couldn't be read." | toast (once) | skip doc |
+| `FS_WRITE_FAILED` | write rejected after optimistic update | "Couldn't save your change. It has been undone." | toast | rollback |
+| `MD_NOT_FOUND` | no provider knows the symbol | "No price data" on the card | inline | — |
+| `MD_STALE` | snapshot older than expected session | "as of 14 Oct" on the card; banner if > 50 % stale | inline / banner | next refresh |
+| `MD_RATE_LIMITED` / `MD_PROVIDER_DOWN` / `MD_NETWORK` / `MD_TIMEOUT` / `MD_BAD_RESPONSE` | §3.2 | none per item; refresh report "Prices updated for 97 of 100" | toast | fallback chain, then cache |
+| `MD_CURRENCY_MISMATCH` | quote currency ≠ exchange currency | "Price data looks wrong for this stock; skipped." | inline | — |
+| `FX_UNAVAILABLE` | Frankfurter + Yahoo FX failed | "Using exchange rate from 14 Oct." | inline (summary) | next refresh |
+| `AI_BUDGET_EXCEEDED` | client daily/minute cap (§3.5) | "AI limit reached for today." | toast (once/session) | tomorrow |
+| `AI_RATE_LIMITED` | 429 | "AI is busy. Try again in a minute." | toast | manual |
+| `AI_INVALID_OUTPUT` | validation failed after retries | ⚪ "Not rated" / "No signal" / "Analysis unavailable" | inline | refresh button |
+| `AI_BLOCKED` | safety block | "AI couldn't answer this one." | inline | — |
+| `AI_NOT_AUTHORISED` | 403 (AI Logic off / App Check later) | "AI features are unavailable." | banner (dev hint) | config |
+| `AI_TIMEOUT` / `AI_UNAVAILABLE` | timeout, 5xx after retries | "AI didn't respond. Try again." | inline | refresh button |
+| `RULE_UNSUPPORTED` | compile returned UNSUPPORTED (e.g. intraday) | model's reason + "Rules run on daily closes." | inline | edit text |
+| `RULE_INVALID` | whitelist validation issues | issue list ("`peRatio` isn't a known value — did you mean P/E?") | inline | edit text |
+| `RULE_SCOPE` | scope check (§2.8) | "This rule uses your P/L, so it can't apply to watchlists." | inline | change toggle |
+| `RULE_LIMIT` | > 25 rules | "You can have up to 25 rules." | inline | — |
+| `IMPORT_INVALID` | CSV has errors (§2.9) | error sheet (S05) | blocking (sheet) | fix file |
+| `IMPORT_NO_MASTER` | stock list not downloaded yet | "Stock list is still downloading; try again shortly." | toast | wait |
+| `IMPORT_FILE` | unreadable / > 1 MB / not text | "This file can't be read as CSV (max 1 MB)." | toast | — |
+| `SYNC_HASH_MISMATCH` / `SYNC_FAILED` | instrument download problems (§3.6) | — (old list kept); Settings shows "Update failed, will retry" | silent / inline | next launch |
+| `DEVICE_BIOMETRIC_UNAVAILABLE` | no enrolled biometrics | "Set up a fingerprint or face unlock in Android settings first." | inline (S09) | — |
+| `DEVICE_STORAGE` | MMKV / secure store failure | "Local storage error. Cached data was reset." | toast | wipe cache, keep going |
+| `LIMIT_WATCHLISTS` / `LIMIT_WATCHLIST_ITEMS` | > 20 lists / > 100 items | "Up to 20 watchlists / 100 stocks per list." | inline | — |
+| `APP_OFFLINE` | NetInfo offline | "Offline · showing data as of 15 Oct" | banner | auto |
+| `APP_UNEXPECTED` | anything unmapped | "Something went wrong." | toast / boundary | try again |
+
+### 5.3 Logging & diagnostics
+
+- `src/lib/log.ts`: `log.debug/info/warn/error(event, fields)`; dev builds print to Metro; release builds keep a **ring buffer of the last 200 entries in memory** (no network). Settings → About → "Copy diagnostics" copies the buffer (codes, counts, durations; no PII) for debugging.
+- **Crash reporting:** Firebase Crashlytics (`@react-native-firebase/crashlytics`, free on Spark), added in M2. Collection **disabled in dev builds**, enabled in release builds. Sends crashes and `recordError` for `APP_UNEXPECTED` / boundary errors with the error code only; no user ID, email, prompts or financial data (`setUserId` is never called). `log.ts` breadcrumbs go to Crashlytics as codes and counts only.
+- Never logged: tokens, API keys, email, prompts, AI responses, CSV contents.
+
+### 5.4 Test strategy (consolidated)
+
+| Level | Scope | Tool | Gate |
+|---|---|---|---|
+| Unit (core) | §2 functions, schemas, prompts, grounding, errors | Jest + ts-jest | **≥ 90 % line coverage** on `packages/core` |
+| Service | adapters, http client, AI client, sync, caches | Jest + recorded fixtures + fakes (no live network) | all fixtures parse; retry/fallback cases |
+| Security rules | `firebase/firestore.rules` | Firestore emulator + `@firebase/rules-unit-testing` | every case in §1.13 |
+| Repository | Firestore repositories | emulator | §1.13 / §3.10 cases |
+| Component / screen | stores, hooks, screens | `jest-expo` + RNTL | §4.8 cases |
+| Manual device | dev build on the user's phone | checklist per milestone | checklist ticked in the PR |
+| Live smoke (manual, optional) | real Yahoo / Frankfurter / Gemini | `npm run smoke` script, never in CI | run before each milestone sign-off |
+
+**Fixtures:** `packages/core/test/fixtures/` (CSV files, bars, reference XIRR values) and `apps/mobile/test/fixtures/` (recorded Yahoo/Twelve Data/Finnhub/Frankfurter/quote-page responses, Gemini outputs incl. invalid ones). Fixtures contain no personal data.
+
+**CI** (`.github/workflows/ci.yml`, GitHub Actions, free for public repos, no secrets): on push/PR to `release1/v1` and `main` → `npm ci` → lint → typecheck → tests (core + mobile, with coverage gate) → rules tests (emulator, Java 21) → Prettier check. Takes ~5 min.
+
+### 5.5 Definition of done (per feature)
+
+1. Covered by an approved LLD section (deviations recorded in the LLD first).
+2. Code + tests from that section's test plan; lint, typecheck, tests and Prettier pass locally and in CI.
+3. Manual device checklist ticked on a dev build (for UI features).
+4. No secrets, no inline prompts, no model names outside `config/ai.ts`.
+5. Docs updated if behaviour changed (LLD / CLAUDE.md).
+
+### 5.6 Delivery order (milestones)
+
+Each milestone is small enough to review and ends with something runnable.
+
+| # | Milestone | Contents | Exit criteria |
+|---|---|---|---|
+| **M0** | Foundations | core deps (zod, papaparse, technicalindicators, json-logic-engine); `models/` + `ports.ts` + `errors.ts`; theme tokens + Inter; CI workflow | §1.13 schema tests pass; CI green |
+| **M1** | Core domain | holdings, XIRR, benchmark, indicators, analysis, rules, CSV, instrument build/search, prompt builders + grounding | §2.11 + prompt tests pass; core coverage ≥ 90 % |
+| **M2** | Firebase + dev build + auth | RNFB app/auth/firestore/crashlytics, Google sign-in, first **development build** (local Gradle build; EAS optional), SHA fingerprints registered, S01/S01a/S01b, app gate, `createIfMissing`, security rules + emulator tests, **rules deployed** | sign in on phone (Google + email), profile + "My Watchlist" created; rules tests pass |
+| **M3** | Instrument master | sync script (`build`, `upload` via gcloud ADC), first upload; device sync + search; MMKV + secure store | 18.5k instruments on phone; search < 50 ms; re-launch costs 1 read |
+| **M4** | Portfolio data entry | transactions repo; S06 add/edit buy; S05 CSV import + duplicates + Undo; S02c edit buys; S02b actions + remove | own CSV imports; edits sync; undo works |
+| **M5** | Market data + portfolio view | spikes S1/S3; http client, Yahoo bars, FX, caches, refresh pipeline (deterministic steps); S02 + S02a with P/L, CAGR, sectors, summary toggle | portfolio values match broker statements within rounding; cold refresh of own portfolio < 30 s |
+| **M6** | Research (deterministic) | fundamentals + profile, analysis store, S04 header/price/tabs/position without AI; Health labels on S02 | Health labels and parameters shown; ⚪ for missing data |
+| **M7** | Gemini | spike S2; AI client (budget, retries, grounding, cache); performance ratings; deep analysis; signals; market sentiment | ratings on S02, verdict on S04; budget + cache verified (re-open costs 0 calls) |
+| **M8** | Watchlists + Rules | watchlist repo + S07; rule compile/dry run/save S08a; hub S08; evaluation on refresh + results | rule from a sentence matches the expected stocks in a dry run; results survive reinstall |
+| **M9** | Settings, resilience, release | S09 incl. platforms, clear cache, delete account; biometric lock; fallbacks (Twelve Data, Finnhub, quote-page scrape); offline polish; diagnostics; **signed release APK** for personal install | full manual checklist on a release build; delete account leaves no data |
+
+Dependencies: M0 → M1 → (M2 ∥ M3 partly) → M4 → M5 → M6 → M7 → M8 → M9. M8's rule compile needs M7's AI client; watchlist CRUD could move earlier if wanted.
+
+**Credentials needed per milestone** (prompted when reached, never pasted in chat): M2 — dev build SHA-1/SHA-256 into Firebase, `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` in `.env.local`; M3 — gcloud ADC (done); M9 — Twelve Data and Finnhub free keys in `.env.local`, release keystore (stored outside the repo) + its SHA fingerprints in Firebase.
+
+**Build environment:** local builds with Android Studio's SDK + **JDK 17** (`JAVA_HOME`, `ANDROID_HOME` set); `npm run android:native` builds and installs the dev client. EAS cloud builds remain an option.
+
+**Branching:** one branch per milestone off `release1/v1` (`feat/m0-foundations`, `feat/m1-core`, …), merged into `release1/v1` by PR after the user's review and green CI. `main` is updated from `release1/v1` only at release points.
+
+### 5.7 Risks
+
+| Risk | Impact | Mitigation |
+|---|---|---|
+| Yahoo changes/blocks endpoints | no prices / fundamentals | adapter isolation, fallbacks (§3.3), stale cache, fixture tests flag changes fast |
+| Gemini free-tier limits or model changes | AI features degrade | config-driven model, budget, caching, ⚪ fallbacks; app fully usable without AI |
+| Expo SDK 57 / RNFB / MMKV version incompatibility | build failures | pin via `npx expo install`; dev build in M2 de-risks early; `npm run doctor` in CI |
+| Firestore Spark quota | writes blocked for the day | read budget ≤ ~650 per cold start; no listeners on collections; `FS_QUOTA` banner |
+| Scraped fallback breaks | last-resort fallback lost | isolated, optional (`FEATURES.scrapeFallback`), fixture test |
+
+### 5.8 Review decisions (2026-10-16)
+1. Firebase Crashlytics in v1 (release builds only, codes and stack traces, no personal data).
+2. GitHub Actions CI added in M0.
+3. One branch per milestone, merged into `release1/v1` by PR after review.
+4. Milestone order unchanged.
+5. Local builds (Android Studio installed; JDK 17 to be installed/configured); EAS optional.
+6. Coverage gate ≥ 90 % on `packages/core`; screen tests cover the main features, no hard gate on the app.

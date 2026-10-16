@@ -3,8 +3,8 @@
 - **Name:** Portfolio & Watchlist Analyzer
 - **Description:** Android-first personal app to consolidate stock holdings across brokers (NSE/BSE + US), show P/L in INR & USD grouped by sector, run deterministic technical/fundamental scoring with Gemini-written explanations, and evaluate natural-language watchlist rules on daily closes.
 - **Audience:** Personal use now; may ship to Play Store later — keep public-release concerns (feature flags, disclaimers) in place from day one; App Check is added for the Play release (HLD D32).
-- **Current phase:** HLD v1.3 signed off (2026-10-16) → writing the LLD. No feature code until the matching LLD section is approved.
-- **Branches:** `main` = clean/stable; active v1 work happens on `release1/v1`.
+- **Current phase:** HLD v1.3 and LLD v1 approved (2026-10-16) → implementation, milestone by milestone (LLD §5.6, M0 first). No feature code outside an approved LLD section.
+- **Branches:** `main` = clean/stable; `release1/v1` = v1 integration branch; one branch per milestone (`feat/m0-foundations`, …) merged into `release1/v1` by PR after review.
 
 # Tech Stack
 
@@ -21,7 +21,7 @@
 # Docs
 
 - **HLD:** `docs/HLD.md` (source of truth for scope & architecture)
-- **LLD:** `docs/LLD.md` (to be regenerated from the HLD — current file is a stale draft)
+- **LLD:** `docs/LLD.md` (v1 complete; §5.6 = delivery milestones, §5.2 = error catalogue)
 - **Analysis framework:** `docs/ANALYSIS_FRAMEWORK.md` (parameters, thresholds, scoring, R/G/Y)
 - **UI reference:** `docs/ui/` — Google Stitch exports kept as downloaded (`docs/ui/screens/<stitch_folder>/screen.png` + `code.html`), design system in `docs/ui/screens/obsidian_capital/DESIGN.md`, folder → screen-ID map in `docs/ui/README.md`. Read the screen's PNG (and HTML for exact values) before building or changing it; translate the HTML to React Native, never copy it in.
 
