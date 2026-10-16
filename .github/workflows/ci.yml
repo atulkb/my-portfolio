@@ -1,0 +1,43 @@
+# Lint, type-check, test and format check on every push / PR (LLD §5.4).
+# No secrets are used. Firestore rules tests (emulator) are added in M2.
+name: CI
+
+on:
+  push:
+    branches: [main, 'release1/**', 'feat/**']
+  pull_request:
+    branches: [main, 'release1/**']
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Test (core coverage gate ≥ 90 %, app)
+        run: npm test
+
+      - name: Format check
+        run: npm run format:check

@@ -8,4 +8,13 @@ module.exports = {
       { tsconfig: { module: 'Node16', moduleResolution: 'Node16', isolatedModules: true } },
     ],
   },
+  collectCoverageFrom: [
+    'src/**/*.ts',
+    '!src/**/*.test.ts',
+    '!src/index.ts',
+    '!src/ports.ts',
+    '!src/**/types.ts',
+  ],
+  // LLD §5.4: ≥ 90 % line coverage gate on packages/core.
+  coverageThreshold: { global: { lines: 90 } },
 };
