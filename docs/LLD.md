@@ -1,13 +1,13 @@
 # Low-Level Design (LLD): Portfolio & Watchlist Analyzer
 
-> Status: **Draft — in progress.** Source of truth: `docs/HLD.md` v1.2 (signed off 2026-10-16). Each section is reviewed and approved before implementation of that area starts.
+> Status: **Draft — in progress.** Source of truth: `docs/HLD.md` v1.3 (signed off 2026-10-16). Each section is reviewed and approved before implementation of that area starts.
 
 | § | Section | Status |
 |---|---|---|
 | 1 | Data models & Firestore schema | **Approved 2026-10-16** |
 | 2 | Core domain logic (holdings/XIRR, indicators, scoring, CSV, rules) | **Approved 2026-10-16** |
 | 3 | Services (market data, FX, Gemini, instrument sync, repositories) | **Approved 2026-10-16** |
-| 4 | App: navigation, state, screen → data mapping | Not started |
+| 4 | App: navigation, state, screen → data mapping | **Approved 2026-10-16** |
 | 5 | Error taxonomy, test plan, delivery order | Not started |
 
 ---
@@ -279,6 +279,7 @@ Encryption key: 32 random bytes generated on first launch, stored in `expo-secur
 | `ai.performance` | map InstrumentKey → rating entry (own session date + input hash) | Gemini service | per entry: new session, changed inputs, or on-demand refresh (D26) |
 | `ai.signals` | map InstrumentKey → signal entry | Gemini service | as above |
 | `ai.analysis.<InstrumentKey>` | deep-analysis entry | Gemini service | as above |
+| `ai.marketSentiment` | watchlist market-context paragraph entry | Gemini service | new session in either market, or on-demand refresh |
 | `ai.usage.<YYYY-MM-DD>` | Gemini request count for the day | Gemini service | pruned after 3 days |
 | `import.lastBatch` | `{ importBatchId, importedAt, count }` | CSV import | 7 days, or after Undo |
 | `ui.*` | last filters, collapsed sectors | UI | — |
@@ -936,7 +937,7 @@ It exposes one port to the rest of the app: `GenerativePort.generate({ task, bui
 **Prompt builders** (`core/prompts/`, pure, no SDK types):
 ```ts
 export type PromptTask<I, O> = {
-  id: 'performanceRating' | 'signals' | 'deepAnalysis' | 'ruleCompile';
+  id: 'performanceRating' | 'signals' | 'deepAnalysis' | 'ruleCompile' | 'marketSentiment';
   version: string;                        // e.g. 'perf-rating@1' — bumped on any wording change; recorded with results
   model: 'flash' | 'flashLite';
   build(input: I): { system: string; user: string; allowedNumbers: number[] };
@@ -949,7 +950,7 @@ export type PromptTask<I, O> = {
 - **Untrusted text** (the user's rule sentence) is JSON-encoded inside a delimited block (`<user_rule>…</user_rule>`); the system instruction says content inside the block is data, never instructions.
 - **Grounding check** (`prompts/grounding.ts`): every number found in generated prose must match a value in `allowedNumbers` after rounding to 0, 1 or 2 dp (thresholds quoted in the prompt, e.g. 90 days, are included). A stray number fails validation → retry. This enforces "every number must come from the input payload".
 
-**The four tasks:**
+**The five tasks:**
 
 | Task | When | Input (per item) | Output (zod) & post-checks | Batch / caps |
 |---|---|---|---|---|
@@ -957,6 +958,8 @@ export type PromptTask<I, O> = {
 | `signals` (D29, §7.2) — only if effective `aiSuggestions` | daily after refresh; on demand | params (key, value, level), `healthScore`, macro, `pnlPct` (holdings), `targetEntryPrice/ExitPrice` (watchlist) | `{ signals: [{ symbol, exchange, label: STRONG_BUY…SELL, confidencePct 0–100 int, targetEntryPrice?, reason ≤ 25 words }] }`; exact set; `targetEntryPrice` must equal the supplied target or is stripped; insufficient-data stock must be `HOLD`; grounding | ≤ 25 per call, temp 0, 2,048 tokens |
 | `deepAnalysis` (§7) | user opens Research (S04) | one stock: `AnalysisResult` params, indicators, fundamentals, macro, performance metrics if held | `{ summary ≤ 80 words, pros: [{ paramKey, text }] ≤ 5, cons ≤ 5, risks ≤ 3, watchFor ≤ 3, alternatives? ≤ 3 }`; `pros[].paramKey` ∈ GOOD params, `cons[].paramKey` ∈ BAD params; `alternatives` dropped unless flag on, and each must exist in the master list (else that entry is dropped); grounding | 1 per call, temp 0.3, 1,024 tokens |
 | `ruleCompile` (§2.8) | user taps Compile in S08a | sentence + catalogue generated from `RULE_VARIABLES` (key, type, label, allowed values, scopes) + allowed ops + 4 worked examples | `{ status: 'OK', logicJson: string, suggestedName ≤ 60 } \| { status: 'UNSUPPORTED', reason ≤ 30 words }` (e.g. intraday "4H"). `logicJson` → `JSON.parse` → `validateRuleLogic`; issues are fed back on retry ("unknown variable `peRatio`; use one of …") | 1 per call, temp 0, 512 tokens |
+
+| `marketSentiment` (S07 market card) | daily after refresh (once both markets' macro is loaded); on demand with the S07 refresh | deterministic macro only: India VIX + level, CBOE VIX + level, Nifty 50 / S&P 500 vs SMA-200 (% and regime), USD/INR + day change | `{ headline ≤ 8 words, paragraph ≤ 50 words }`; grounding on both; no buy/sell or allocation instructions (prompt rule + banned-phrase check: "buy", "sell", "allocate", "stop-loss"); the Calm/Elevated/Fear level shown on the card stays deterministic (framework §6) | 1 per call, temp 0.3, 256 tokens |
 
 `logicJson` is a string because Gemini's response schema can't express recursive JSON-Logic; the whitelist validator, not the schema, is the gate.
 
@@ -976,6 +979,7 @@ type AiEntry<T> = { sessionDate: IsoDate; inputHash: string; model: string; prom
 'ai.performance'               → Record<InstrumentKey, AiEntry<{ rating: Label; reason: string }>>
 'ai.signals'                   → Record<InstrumentKey, AiEntry<Signal>>
 'ai.analysis.<InstrumentKey>'  → AiEntry<DeepAnalysis>
+'ai.marketSentiment'           → AiEntry<{ headline: string; paragraph: string }>   // sessionDate = later of IN/US sessions; inputHash over the macro input
 ```
 - An entry is **fresh** when `sessionDate == sessionDateFor(market)` **and** `inputHash` matches the current input (FNV-1a over the canonical rounded input, computed in `core`).
 - **Portfolio updates** (add/edit/remove a buy, CSV import, Undo import) change only the affected stocks' inputs, so **only those stocks** are re-rated (one small batch, ≤ 25 per call); everything else is served from cache.
@@ -985,7 +989,7 @@ type AiEntry<T> = { sessionDate: IsoDate; inputHash: string; model: string; prom
 
 **App Check:** not used in personal builds (HLD D32). The AI and Firestore services take no App Check dependency; for a Play release, `@react-native-firebase/app-check` (Play Integrity) is initialised at startup and enforcement is switched on in the console for Firestore and AI Logic. Nothing else changes.
 
-**Proposed `AI_CONFIG` additions** (`src/config/ai.ts`): `rateLimit: { rpm: 5, dailyCap: 500 }`, `signalBatchSize: 25`, and `model` per task (`flash` for all in v1; `flashLite` can be tried for ratings later by changing config only).
+**Proposed `AI_CONFIG` additions** (`src/config/ai.ts`): `rateLimit: { rpm: 5, dailyCap: 500 }`, `signalBatchSize: 25`, `maxOutputTokens.marketSentiment: 256`, `temperature.marketSentiment: 0.3`, and `model` per task (`flash` for all in v1; `flashLite` can be tried for ratings later by changing config only).
 
 ### 3.6 Instrument master: sync script & device sync
 
@@ -1117,3 +1121,262 @@ Exact versions are pinned by `npx expo install` / the lockfile at implementation
 6. AI cache is one map per task keyed by instrument with per-entry session date; §1.9 amended.
 7. Sync script credentials: Application Default Credentials via the user's `gcloud` login; no service-account key.
 8. ANALYSIS_FRAMEWORK §7.1 now uses the full `Exchange` enum.
+
+---
+
+## 4. App: Navigation, State & Screen → Data Mapping (`apps/mobile/src/`)
+
+Traceability: HLD §3, §4, §7, §8, §14, §16, D12, D19, D20, D22, D23, D25, D26, D28, D29, D31; `docs/ui/README.md` (screen IDs S01–S09).
+
+Principles: routes are **thin** (layout + wiring); features own components and hooks; stores hold state and call services (§3); every number on screen comes from a `core` function, never from inline arithmetic in a component. Stitch screens are layout references; the deviations needed to match the HLD are listed in 4.9.
+
+### 4.1 Route tree (Expo Router, `src/app/`)
+
+```
+src/app/
+  _layout.tsx                    Root: providers (theme, fonts, query of stores), AppGate (4.2), <Stack>
+  (auth)/
+    _layout.tsx                  Stack, no header
+    login.tsx                    S01   (Forgot password = sheet inside the screen)
+    sign-up.tsx                  S01a
+    verify-email.tsx             S01b  (not in Stitch; same style)
+  (app)/
+    _layout.tsx                  Stack: tabs + pushed screens + sheets
+    (tabs)/
+      _layout.tsx                Tabs: Portfolio · Watchlist · Rules · Research
+      portfolio.tsx              S02
+      watchlist.tsx              S07
+      rules.tsx                  S08
+      research/
+        _layout.tsx              Stack inside the Research tab
+        index.tsx                S04 empty state: search + recently viewed
+        [key].tsx                S04 for one instrument (key = encodeURIComponent("NSE:RELIANCE"))
+    holding/[key]/edit.tsx       S02c Edit buys grouped by broker (not in Stitch; same style)
+    settings/
+      index.tsx                  S09
+      platforms.tsx              Manage platforms (rename / delete unused)
+      legal/[doc].tsx            privacy | disclaimer (static text)
+    sheets/                      presentation: 'formSheet' (native sheet, detents)
+      filter.tsx                 S02a
+      holding-actions.tsx        S02b   (?key=)
+      add-buy.tsx                S06    (?key=&txId= for edit, ?platform= prefill)
+      csv-result.tsx             S05    error sheet / duplicate review
+      watchlist-pick.tsx         add instrument to one or more watchlists
+      watchlist-edit.tsx         create / rename / delete a watchlist
+      create-rule.tsx            S08a   (?ruleId= for edit)
+      remove-holding.tsx         S02b → Remove confirmation (lists brokers and quantities)
+      delete-account.tsx         S09 → Delete account confirmation
+```
+
+- **Sheets as routes** (`presentation: 'formSheet'`, `sheetAllowedDetents`) instead of a bottom-sheet library: no extra dependency, back button closes them, and they receive params. If Android formSheet behaviour proves unreliable in the spike build, swap to `@gorhom/bottom-sheet` inside the same route files.
+- **The + button** on S02 is a floating speed-dial component (not a route): **Add stock** → `sheets/add-buy`; **Upload CSV** → `expo-document-picker` → parse → toast or `sheets/csv-result`. On S07 the + opens search → `watchlist-pick`; on S08 it opens `create-rule`.
+- **Deep Research from Portfolio/Watchlist** navigates to `/(tabs)/research/[key]`, switching to the Research tab with its own back stack.
+- Header gear (S02/S07) → `settings`; avatar → `settings`.
+
+### 4.2 App gate (root `_layout.tsx`)
+
+`sessionStore.gate` drives `Stack.Protected` groups:
+
+| Gate state | Condition | Shows |
+|---|---|---|
+| `booting` | fonts, MMKV key, auth state, cached data loading | splash (kept until ready, ≤ 1 s typical) |
+| `signedOut` | no Firebase user | `(auth)` |
+| `unverified` | password user with `emailVerified = false` | `verify-email` (resend, "I've verified" → `reloadUser`) |
+| `locked` | biometric lock on and lock condition met | full-screen lock → `expo-local-authentication`; fallback to device PIN; "Sign out" link |
+| `ready` | profile loaded/created (`createIfMissing`) | `(app)` |
+
+**Biometric lock condition:** cold start, or returning to foreground after **≥ `LOCK_AFTER_BACKGROUND_MS`** (default 5 minutes, in `src/config/app.ts`) in background (`AppState`). Stored in MMKV `device.biometricLock` (per device, §1.9).
+
+**Startup sequence when `ready`:** load cached snapshots/AI entries/instrument index from MMKV → render → load Firestore collections (profile listener, transactions, watchlists + items, rules, today's results) → `refreshService.refresh({ force: false })` (§3.8).
+
+**Foreground trigger:** on `AppState` → active, if the expected session date of either market is newer than the cached one, run `refresh({ force: false })`. No background tasks in v1.
+
+### 4.3 Stores (Zustand, `src/stores/`)
+
+One store per domain; actions call services and update state; components use selector hooks with shallow equality. No store imports another store's internals; cross-store needs go through selector hooks in features.
+
+| Store | State | Actions (→ service) |
+|---|---|---|
+| `sessionStore` | `gate`, `authUser`, `profile`, `effectiveAiSuggestions` (= profile setting ∧ `FEATURES.aiSuggestions`) | `signIn…`, `signUp`, `verify`, `signOut` (cleanup §1.12), `updateSettings`, `setSummaryCurrency`, `deleteAccount` |
+| `portfolioStore` | `transactions: BuyTransaction[]`, `loadState`, `pendingWrites: number`, `lastImport` | `load`, `addBuy`, `updateBuy`, `deleteBuys`, `removeHolding(key)`, `removeFromBroker(key, platform)`, `importCsv(result)`, `undoLastImport` — all optimistic (§3.7) |
+| `watchlistStore` | `watchlists`, `itemsByList: Record<id, WatchlistItem[]>`, `activeListId` | `create`, `rename`, `delete`, `addItem(listIds[], ref)`, `updateItem`, `removeItem`, `setActive` |
+| `rulesStore` | `rules`, `todayResults`, `dryRun: { state, readBack, matches, insufficient, issues }` | `compile(text, scopes)` (→ AI), `dryRun`, `save`, `toggle`, `delete`, `evaluateAll` (called by refresh) |
+| `marketStore` | `snapshots`, `fundamentals`, `profiles`, `macro`, `fx`, `indexHistory`, `refresh: { running, progress, report, lastAt }` | `refresh({ force })` → `refreshService` |
+| `analysisStore` | `byKey: Map<InstrumentKey, { indicators, analysis }>` (derived, not persisted) | `recompute(keys)` — pure `core` calls after snapshots/fundamentals change |
+| `aiStore` | `performance`, `signals`, `analysis` maps, `marketSentiment` (from MMKV), `status` per task, `budgetLeftToday` | `ratePerformance(keys, { force })`, `generateSignals(keys, { force })`, `deepAnalysis(key, { force })`, `marketSentiment({ force })` |
+| `instrumentStore` | `status: 'missing' \| 'downloading' \| 'ready' \| 'error'`, `meta` | `ensureFresh`, `search(query, market?)` (sync, core), `resolve(key)` |
+| `uiStore` | `portfolioFilters`, `collapsedSectors`, `watchlistFilters` (market, signal), `rulesFilter` | setters; persisted to MMKV `ui.*` |
+
+**Derived views (selector hooks in `features/*/hooks`, memoised):**
+```ts
+usePricingContext()   // marketStore + aiStore labels + analysisStore health + sector resolution → core PricingContext
+usePortfolioView()    // aggregateHoldings(tx, ctx, filters) → groupBySector → summarisePortfolio(summaryCurrency)
+useHolding(key)       // single StockHolding incl. brokers[] (unfiltered) for S02b/S02c/S04
+useWatchlistView(id)  // items + snapshot + analysis + signal → WatchlistRow[] filtered/sorted
+useRuleSummary()      // counts, today's triggered keys, per-rule last triggered
+```
+Recomputation is cheap (≤ 500 transactions, ≤ 150 instruments) and memoised on the input references.
+
+### 4.4 Screen → data mapping
+
+**S02 Portfolio** (`usePortfolioView`)
+
+| UI element | Source |
+|---|---|
+| Net portfolio worth + $/₹ toggle | `summary.totalValue` in `profile.settings.summaryCurrency`; toggle writes the setting (same as S09) |
+| "1 USD ≈ ₹83.42 · ECB · 15 Oct" | `fx.usdInr`, `fx.asOf` |
+| US / India cards (value, weight %, CAGR) | `summary.markets[]` (`value` native, `weightPct`, `xirrPct` labelled **CAGR**; "—" when null with "< 1 yr" hint) |
+| 1-day P/L, total unrealised P/L, overall CAGR | `summary.dayChange/Pct`, `unrealisedPnl/Pct`, `xirrPct` |
+| Allocation bar | `summary.markets[].weightPct` |
+| "Platforms · 4" + Filters button (dot when active) | distinct platforms in transactions; `uiStore.portfolioFilters` non-empty |
+| Holdings (N assets) + sort button | `holdings.length`; sort cycles `VALUE_DESC → DAY_PNL_PCT_DESC → PNL_PCT_DESC` |
+| Sector header (collapsible) | `SectorGroup` value, pnl, pnlPct, weightPct, count; collapse state in `uiStore` |
+| Stock card | `StockHolding`: symbol tile, name, market badge, broker ("Zerodha" or "Zerodha +1"), qty, avg, close, day change %, invested, value, total return (pnl, pnlPct), CAGR (`xirrPct`) |
+| Badges + reason | `performance` label (⚪ "Not rated" when null) + `health` label; reason line = AI performance reason (hidden when not rated) |
+| Stale / scraped hints | snapshot `stale` → "as of 14 Oct"; `priceSource = 'SCRAPE'` → "price from web" |
+| Empty state | no transactions → "Add your first stock" + "Upload CSV" |
+| Pull to refresh | `marketStore.refresh({ force: false })` |
+
+**S02a Filter sheet:** markets (with counts), exchanges (present ones only), sectors (multi-select with weight % and member names), **Performance** chips GOOD/AVERAGE/BAD/Not rated, **Health** chips GOOD/AVERAGE/BAD/Insufficient, platforms (with holding counts), sort. Live "N of M matched" from `aggregateHoldings` with the draft filters. Apply → `uiStore`; Reset clears.
+
+**S02b Holding actions sheet** (`useHolding(key)`): header (symbol, name); **View deep research & rules** → `research/[key]`; **Edit buys** → `holding/[key]/edit`; **Remove from portfolio** → `remove-holding` with **Delete all records** selected and **Keep history** disabled ("Coming later").
+
+**S02c Edit buys** (`useHolding(key).brokers`): per broker header (platform, quantity, avg price, invested) + its buys (date, qty, price; tap → `add-buy?txId=`; swipe/⋮ delete); "Remove from <broker>" (confirm) → `removeFromBroker`; "Add buy" → `add-buy?key=`.
+
+**S04 Research** (`research/[key]`)
+
+| UI element | Source |
+|---|---|
+| Search bar | `instrumentStore.search` (debounce 150 ms, top 20, market filter) |
+| Header: symbol, exchange badge, name · sector; ★ (add to watchlist → `watchlist-pick`) | master list + `sectorOf(key)` |
+| Price card: close, day change, "Close · 15 Oct" | snapshot; not held/watched instruments are fetched on open (one chart call, cached) |
+| 3-month line chart | last ~63 `adjClose` bars (react-native-svg path) |
+| Day range, 52W range | last bar high/low; `indicators.high52w/low52w` |
+| Tab **AI Verdict** | `aiStore.analysis[key]` (summary, pros/cons with param keys, risks, watch-for); header chip "Health 72 · Good" and, if `effectiveAiSuggestions`, signal label + "AI confidence 84%"; refresh icon → `deepAnalysis(key, { force: true })` |
+| Tab **Fundamentals** | `analysis.params` group FUNDAMENTAL: value, level colour, reason; ⚪ for null |
+| Tab **Technicals** | `analysis.params` group TECHNICAL + macro block (VIX, index trend) |
+| Tab **Rules** | enabled rules whose scope covers this instrument, with today's result (Match / No match / Insufficient data) |
+| "Your position" (held only) | `useHolding`: qty, avg, invested, value, P/L, CAGR, benchmark return, excess (pp), holding days, Performance label + full reason |
+| Similar alternatives (flag on) | `analysis.alternatives`: symbol, name, reason; tap → `research/[key]` |
+| Disclaimer footer | static, always |
+
+**S06 Add / edit buy** (`add-buy`)
+
+| Field | Behaviour |
+|---|---|
+| Market toggle US / India | narrows search; sets currency symbol |
+| Ticker search | `instrumentStore.search`; selecting shows name, sector, last close + day change (fetched on select if not cached) |
+| Price | numeric; **Use close** button fills last close |
+| Quantity | integer for India (keyboard + validation), up to 4 decimals for US |
+| Date | date picker, 1990-01-01 … today |
+| Platform | dropdown from `profile.platforms` + "Add new…" |
+| Summary | outlay = qty × price (native), est. weight (summary currency), unrealised gain at close; FX note with ECB rate |
+| Submit | zod-validated → `addBuy` / `updateBuy`; likely duplicate → inline non-blocking warning (D31) |
+
+**S05 CSV flow** — success: toast "45 buys imported" (+ "3 look like duplicates · Review") with **Undo** for 10 s; Undo also in Settings → Data for 7 days. Failure: `csv-result` sheet listing issues (file · line · row preview · message · suggested fix), sorted by line, with a "Copy issues" button. Review: duplicates grouped, each linking to Edit buys.
+
+**S07 Watchlist** (`useWatchlistView(activeListId)`)
+
+| UI element | Source |
+|---|---|
+| "Signals as of 15 Oct · 16:05" + refresh | newest `aiStore.signals` entry time; refresh → `generateSignals(listKeys, { force: true })` |
+| Search bar | instrument search → `watchlist-pick` |
+| Watchlist chips (name, count, ✎) | `watchlistStore`; ✎ → `watchlist-edit`; "+ New list" chip |
+| Market chips: All / US / India | `uiStore.watchlistFilters.market` |
+| Market context card | AI headline + paragraph (`aiStore.marketSentiment`, hidden if unavailable) above the deterministic figures: India VIX, CBOE VIX (Calm/Elevated/Fear, framework §6), Nifty/S&P vs SMA-200, USD/INR; "Analysed 15 Oct" |
+| Signal chips with counts: All / Strong buy / Buy / Hold / Trim / Sell | `aiStore.signals` (hidden when AI suggestions off) |
+| Row | symbol, market + exchange badge, name, close, day change, 3-month sparkline, signal label + "AI conf. 88%" (or Health label when AI off), target entry/exit if set, reason (1 line, AI) |
+| Row tap | `research/[key]`; long-press/⋮ → edit targets/notes, move/copy to list, remove |
+
+**S08 Rules hub** (`useRuleSummary`): stat tiles (active / paused counts; triggered today + symbols; cadence "Daily close · checked when the app refreshes"); chips All / Portfolio / Watchlist / Paused; rule card = enabled toggle, **read-back** text (variables highlighted), scope tags, "Triggered today (NVDA, INFY)" / "Last checked 15 Oct" / "Insufficient data for 2"; Edit → `create-rule?ruleId=`; delete (confirm).
+
+**S08a Create rule sheet:**
+1. Text box (≤ 500 chars) + example chips (pre-written sentences, e.g. "Oversold dip", "Breakout volume", "Low debt + yield").
+2. Scope toggles: Apply to Portfolio, Apply to Watchlists (all lists, D28). Cadence row is display-only "Daily market close".
+3. **Run dry test** = compile (AI) → validate → read-back → dry run. Shows the read-back ("This rule will match when: …"), matches and insufficient-data stocks, or the issues/UNSUPPORTED reason.
+4. Name field (prefilled from `suggestedName`, editable).
+5. **Save** is enabled only after a successful dry test of the current text and scopes; saving stores the read-back the user saw (§2.8). Editing the text invalidates the dry test.
+
+**S09 Settings**
+
+| Row | Source / action |
+|---|---|
+| Account: name, email, provider badge | `authUser`, `profile` |
+| Change password (email accounts only) | sends reset email to the account address |
+| Portfolio summary currency | `settings.summaryCurrency` |
+| Sort holdings by default | `settings.defaultSort` |
+| Biometric app lock | MMKV `device.biometricLock`; enabling requires one successful biometric prompt |
+| AI suggestions & buy/sell signals | `settings.aiSuggestions` (hidden when build flag off) |
+| Refresh AI ratings now · "Last rated today 16:05" | `ratePerformance(all, { force: true })` + signals if on |
+| Stock list · "18,512 stocks · updated 15 Oct 2026" · Check for update | `instrumentStore.meta`; check ignores the 24 h throttle |
+| Market data · "Prices as of 15 Oct close" · Refresh | `marketStore.refresh({ force: true })` |
+| Undo last import (shown for 7 days) | `portfolioStore.undoLastImport` |
+| Platforms → | `settings/platforms` (rename = batched rewrite, §1.4; delete only when unused) |
+| Clear local cache · size | wipes `market.*`, `fx.*`, `ai.*` (keeps instruments, `device.*`, `ui.*`); next refresh refetches |
+| App version | `expo-constants` (version + build) |
+| Privacy policy, Disclaimer | `settings/legal/[doc]` |
+| Sign out / Delete account | §1.12 flows; delete via `delete-account` sheet (type "DELETE" to confirm) |
+
+### 4.5 Shared UI building blocks (`src/components/`, `src/theme/`)
+
+- **Theme tokens** (`theme/tokens.ts`) generated by hand from `obsidian_capital/DESIGN.md`: colours (surface ramp, primary `#46fc8b`, error, tertiary), spacing, radii, typography scale. **Inter** via `expo-font` (bundled); numbers use tabular figures. **Dark theme only in v1** (the design system is dark).
+- **Label colours:** GOOD = primary green, AVERAGE = tertiary amber, BAD = error red, null = outline grey with "Not rated" / "Insufficient data". Signal labels: STRONG_BUY/BUY green, HOLD amber, TRIM/SELL red. Colour is never the only cue (text always present).
+- **Components:** `MoneyText` (native currency, sign, colour by sign), `PctText`, `LabelBadge`, `SignalBadge`, `MarketBadge`, `ExchangeBadge`, `SymbolTile`, `Sparkline` (svg), `RangeBar`, `StatTile`, `SectionHeader`, `Chip`, `Toast`, `StaleBanner`, `OfflineBanner`, `Disclaimer`, `EmptyState`, `SpeedDialFab`.
+- **Formatting** (`lib/format.ts`, the only place numbers become text): INR `en-IN` grouping (₹49,04,360.00), USD `en-US` ($92,144.68); 2 decimals for money and %, sign for changes; dates "15 Oct" / "15 Oct 2026"; `null` → "—". Uses `Intl` (Hermes).
+- **Accessibility:** touch targets ≥ 44 dp, `accessibilityLabel` on icon buttons and badges ("Performance: Good"), font scaling allowed (layouts wrap, no fixed-height text rows).
+
+### 4.6 Loading, empty, error and offline states
+
+| Situation | Behaviour |
+|---|---|
+| First launch, no cache | skeleton cards while Firestore + first refresh run; refresh progress "Fetching prices 34/100" |
+| Refresh running with cache | cached data shown, thin progress bar under the header |
+| Stale snapshot | per-card "as of" date; header banner if > 50 % of holdings are stale |
+| Offline | `@react-native-community/netinfo` → banner "Offline · showing data as of 15 Oct"; writes queue (pending chip), AI/compile buttons disabled with reason |
+| AI unavailable / budget exceeded | ⚪ badges; toast once per session "AI limit reached for today" |
+| AI suggestions off | signal chips, labels, confidence and alternatives hidden everywhere; Health label used instead |
+| Instrument list missing | search shows "Downloading stock list…"; CSV upload waits for it (needed for validation) |
+| Firestore doc skipped (invalid) | one-time toast "1 record couldn't be read" (§3.7) |
+| Errors | mapped to friendly messages via the §5 taxonomy; never raw codes |
+
+### 4.7 Dependencies introduced by this section
+
+`zustand`, `react-native-svg`, `@react-native-community/netinfo`, `expo-local-authentication`, `expo-document-picker`, `expo-font` + Inter font files, `expo-constants`, `@react-native-community/datetimepicker`. All via `npx expo install` (versions pinned at implementation time).
+
+### 4.8 Test plan for this section
+
+| Area | Tool | Key cases |
+|---|---|---|
+| Selector hooks | Jest (`jest-expo`) | `usePortfolioView` with filters/currency toggle matches `core` fixtures; memoisation (same inputs → same reference) |
+| Stores | Jest with fake services | optimistic add + rollback on failure; undo import; pending-write counter; effective `aiSuggestions` when build flag off |
+| App gate | Jest + RNTL | each gate state renders the right group; unverified user can't reach `(app)`; lock after 5 min background, not after 4 |
+| Screens | RNTL | S02 empty / loaded / stale / not-rated states; S02a live count; S06 integer-only India quantity; S08a Save disabled until dry test passes and re-disabled on text edit; S09 hides AI row when build flag off |
+| Formatting | Jest | INR lakh grouping, USD, negative values, null → "—" |
+| Manual (device) | checklist | biometric prompt, file picker, formSheet sheets, offline banner, font scaling at 130 % |
+
+### 4.9 Deviations from the Stitch designs (to match HLD/v1 scope)
+
+| Screen | Stitch shows | Built as | Reason |
+|---|---|---|---|
+| S02 cards | "Moderate (64/100)", "Health: Stable" | "Performance: Good/Average/Bad" + "Health: …" labels only | D22 labels only |
+| S02 | "CAGR" | "CAGR" kept; value is money-weighted XIRR (ⓘ explains) | D30; label kept by user decision |
+| S02 | "Live Mid-Market" FX | "ECB · 15 Oct" | daily ECB rate with date |
+| S02 | "Platforms · 4 Synced" | "Platforms · 4" | no broker sync in v1 |
+| S02a | score-band chips | Performance / Health label chips | D22 |
+| S02b | "Keep history" selected | "Delete all records" selected; Keep history disabled | D20 |
+| S04 | intraday chart, "At close 4:00 PM EST", News tab, bell icon | 3-month daily line, "Close · 15 Oct", **Rules** tab instead of News, no bell | daily closes; news later (D15) |
+| S04 | "Score 92 · Strong Buy" | "Health 72 · Good" + signal chip when flag on | Health is deterministic; signal separate (D29) |
+| S04 alternatives | score + price per alternative | symbol, name, reason | avoids extra fetches; tap opens full research |
+| S06 | "LIVE QUOTE", FIFO note | "Last close", no FIFO text | daily closes; no lot accounting |
+| S07 | AI sentiment narrative card | AI headline + paragraph (grounded, no advice wording) over deterministic VIX/index/FX figures | user decision; level colour stays deterministic |
+| S07 | "Buy dip", "Hold/Trim", "on 4H" | exact labels STRONG_BUY…SELL; daily only | §7.2 enum; daily closes |
+| S08 | "Next: 4:00 PM" | "Checked when the app refreshes after close" | no background jobs in v1 (alerts v1.1) |
+| S09 | "quotes & vectors" | "market data & AI results" | accurate copy |
+
+### 4.10 Review decisions (2026-10-16)
+1. Keep the label **CAGR** for the money-weighted (XIRR) annualised return; an ⓘ explains it.
+2. Rules are evaluated on app refresh in v1; the hub says so. Scheduled checks come with v1.1 notifications.
+3. Biometric lock on app open and after `LOCK_AFTER_BACKGROUND_MS` (default 5 min) in background.
+4. Dark theme only in v1.
+5. Watchlist market card: AI-written headline + paragraph (new `marketSentiment` task, §3.5) above deterministic figures; can be revisited later.
+6. Undesigned secondary screens are built in the Obsidian style without Stitch mock-ups; adjusted later if needed.

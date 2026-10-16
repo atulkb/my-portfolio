@@ -3,7 +3,7 @@
 - **Name:** Portfolio & Watchlist Analyzer
 - **Description:** Android-first personal app to consolidate stock holdings across brokers (NSE/BSE + US), show P/L in INR & USD grouped by sector, run deterministic technical/fundamental scoring with Gemini-written explanations, and evaluate natural-language watchlist rules on daily closes.
 - **Audience:** Personal use now; may ship to Play Store later — keep public-release concerns (feature flags, disclaimers) in place from day one; App Check is added for the Play release (HLD D32).
-- **Current phase:** HLD v1.2 signed off (2026-10-16) → writing the LLD. No feature code until the matching LLD section is approved.
+- **Current phase:** HLD v1.3 signed off (2026-10-16) → writing the LLD. No feature code until the matching LLD section is approved.
 - **Branches:** `main` = clean/stable; active v1 work happens on `release1/v1`.
 
 # Tech Stack

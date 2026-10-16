@@ -99,6 +99,8 @@ Default weights: all 1.0, except `trend200`, `roe`, `de`, `epsGrowth` = 1.5 (mos
 
 Macro context is passed to Gemini so the narrative can say, e.g., "fundamentals are strong, but the market regime is risk-off."
 
+The Watchlist market card also shows a Gemini-written **market sentiment** headline (≤ 8 words) and paragraph (≤ 50 words) generated once per day from these figures only (HLD D34). It describes conditions; it never tells the user to buy, sell, allocate or set stop-losses. The Calm/Elevated/Fear levels above stay deterministic.
+
 ## 7. AI Narrative Contract (Gemini output, validated by zod)
 ```
 {
