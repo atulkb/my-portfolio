@@ -7,7 +7,7 @@ import { colors, MIN_TOUCH, radii, spacing, typography } from '@/theme/tokens';
 export type ButtonProps = {
   readonly label: string;
   readonly onPress: () => void;
-  readonly variant?: 'primary' | 'secondary' | 'destructive' | 'link';
+  readonly variant?: 'primary' | 'secondary' | 'destructive' | 'link' | 'destructiveLink';
   readonly icon?: ReactNode;
   readonly disabled?: boolean;
   readonly loading?: boolean;
@@ -66,6 +66,7 @@ const styles = StyleSheet.create({
   secondary: { backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.border, minHeight: 48 },
   destructive: { borderWidth: 1, borderColor: colors.destructiveBorder },
   link: { paddingHorizontal: spacing.xs },
+  destructiveLink: { paddingHorizontal: spacing.xs },
   pressed: { opacity: 0.8 },
   disabled: { opacity: 0.5 },
   label: { ...typography.bodyLg, fontFamily: typography.metricMd.fontFamily },
@@ -76,4 +77,5 @@ const labelStyles = StyleSheet.create({
   secondary: { color: colors.textPrimary },
   destructive: { color: colors.loss },
   link: { color: colors.gain },
+  destructiveLink: { color: colors.loss },
 });

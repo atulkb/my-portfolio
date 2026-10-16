@@ -1,4 +1,6 @@
-import { SignedInHome } from '@/features/auth/SignedInHome';
+import { Redirect } from 'expo-router';
 
-/** Temporary signed-in home until the Portfolio tab lands (M4/M5). */
-export default SignedInHome;
+/** Signed-in entry: the Portfolio tab. */
+export default function AppIndex(): React.JSX.Element {
+  return <Redirect href="/portfolio" />;
+}

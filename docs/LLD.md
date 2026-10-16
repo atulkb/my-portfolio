@@ -1408,6 +1408,19 @@ Recomputation is cheap (≤ 500 transactions, ≤ 150 instruments) and memoised 
 5. Watchlist market card: AI-written headline + paragraph (new `marketSentiment` task, §3.5) above deterministic figures; can be revisited later.
 6. Undesigned secondary screens are built in the Obsidian style without Stitch mock-ups; adjusted later if needed.
 
+### 4.11 Implementation notes (M4, 2026-10-16)
+
+- **Port change (§1.10):** `TransactionRepository.newIds(n)` creates Firestore document IDs on the device (no network). `addMany` takes `{ id, tx }[]` and returns nothing. This lets optimistic adds use their real IDs, so a buy can be edited or deleted before the server confirms it.
+- **Optimistic writes:** each store action applies its change, then writes. On failure it applies the exact inverse (remove the added IDs, re-insert the removed buys, restore the old buy), so other changes made in the meantime survive. Failures surface as a toast (`FS_WRITE_FAILED` for unexpected errors). The "Saving…" label shows while writes are pending.
+- **Interim S02:** holdings are derived from transactions with an empty pricing context, so close, value and P/L are `null` and shown as "—", never 0. The screen shows invested amounts per currency, the platform count, the holdings list, the empty state and the + speed dial. The summary header, sectors, filters, prices and CAGR come with M5. The tab bar is hidden until a second tab exists (M6–M8).
+- **Interim S09:** `settings/index` holds the account details, the stock-list card from M3, **Undo last import** (7 days) and sign-out. The full screen comes in M9.
+- **S06:** last close, "Use close", estimated weight and unrealised gain need market data (M5). M4 shows the outlay only. India quantities use the number pad and are validated as whole numbers. The date picker is the Android native dialog (1990-01-01 to today). New platforms are added to `profile.platforms` (`sessionStore.addPlatforms`, case-insensitive, at most 30).
+- **S02b:** "View deep research & rules" is shown disabled until M6.
+- **S05:** the picker accepts `text/*` and the common CSV MIME types (Android file managers label CSVs inconsistently). Files over 1 MB are rejected before reading. If the stock list isn't loaded yet, the upload shows `IMPORT_NO_MASTER`. CSV sector values are written as profile overrides (`sessionStore.setSectorOverrides`).
+  - **Success:** a toast with **Undo** (10 s) and **Review** when there are likely duplicates. Each duplicate group opens Edit buys.
+  - **Failure:** the `csv-result` sheet lists every issue (file · line · preview · message · fix), with "Copy issues".
+- **Sheets:** `formSheet` routes use a 92 % detent for long forms and `fitToContents` for short sheets. Toasts accept several actions.
+
 ---
 
 ## 5. Error Taxonomy, Test Plan & Delivery Order
