@@ -1,11 +1,11 @@
 # High-Level Design (HLD): Portfolio & Watchlist Analyzer
 
-> Status: **v1.1 — Signed off 2026-10-16** (v1.1: duplicate buys allowed, D31). Changes after sign-off go through the Decision Log (§12) and bump the version. History: v0.2 initial review · v0.3 CSV name column, filters, AI-rated Performance, package ID, news deferred · v0.4 instrument master list (§15) · v0.5 auth & holding actions (§16) · v0.6 labels-only badges, named watchlists, Cloud Function sync later · v0.7 currency display, daily/on-demand re-rating, duplicate rejection, rule scope, AI buy/sell signals · v0.8 individual BUY transactions (D30), Settings · v1.1 duplicate buys allowed with post-import heads-up and Undo import (D31, supersedes D27).
+> Status: **v1.2 — Signed off 2026-10-16** (v1.2: App Check deferred to Play release, D32; scraped latest-close fallback, D33). Changes after sign-off go through the Decision Log (§12) and bump the version. History: v0.2 initial review · v0.3 CSV name column, filters, AI-rated Performance, package ID, news deferred · v0.4 instrument master list (§15) · v0.5 auth & holding actions (§16) · v0.6 labels-only badges, named watchlists, Cloud Function sync later · v0.7 currency display, daily/on-demand re-rating, duplicate rejection, rule scope, AI buy/sell signals · v0.8 individual BUY transactions (D30), Settings · v1.1 duplicate buys allowed with post-import heads-up and Undo import (D31, supersedes D27) · v1.2 App Check deferred to Play release (D32), scraped latest-close fallback and price-index benchmark (D33).
 
 ## 1. Executive Summary & Core Intent
 An Android-first mobile app (Expo / React Native, TypeScript) for **personal** portfolio tracking across multiple brokers, covering Indian (NSE/BSE) and US markets. It consolidates holdings, shows P/L in INR and USD grouped **Sector → Stock → Lots**, runs a **deterministic technical + fundamental scoring** of each stock (pros/cons, R/G/Y), uses **Gemini Flash** to explain that analysis in plain language and to compile **natural-language rules** into safe JSON-Logic, and evaluates those rules on **daily closes**.
 
-Personal use first; Play Store release is a possible later step, so public-release safeguards (App Check, feature flags, disclaimers) are designed in from the start.
+Personal use first; Play Store release is a possible later step, so public-release safeguards (feature flags, disclaimers, App Check seam) are designed in from the start. App Check itself is switched on only for a Play release (D32).
 
 ### Key capabilities
 - Bulk CSV import (simple fixed format, §7) and manual single-stock add/edit/delete.
@@ -44,7 +44,7 @@ flowchart LR
   subgraph Firebase["Firebase (Spark plan)"]
     AUTH["Auth"]
     FS[("Cloud Firestore<br/>users/{uid}/...")]
-    AC["App Check"]
+    AC["App Check<br/>(Play release only, D32)"]
     AIL["Firebase AI Logic → Gemini Flash<br/>(Gemini Developer API)"]
   end
 
@@ -87,7 +87,7 @@ flowchart LR
 | **Firestore** | Source of truth for user data (holdings, watchlist, rules, settings). |
 | **MMKV** | Local cache of daily market snapshots, AI results and the instrument master list; enables offline viewing and search. |
 | **Instrument sync** | v1: a dev script builds the master list from the snapshot in `data/instruments/` and uploads it. Later: a scheduled Cloud Function downloads fresh lists weekly with the same `core` parsers (§15). |
-| **Firebase AI Logic** | Proxies Gemini calls so no API key lives in the app; enforced by App Check. |
+| **Firebase AI Logic** | Proxies Gemini calls so no API key lives in the app; enforced by App Check from the Play release (D32). |
 
 ## 4. Data Model (conceptual — field-level schema is LLD)
 
@@ -142,7 +142,7 @@ Usage estimate: ≤ 100 instruments, 1 refresh/day ⇒ ~100–300 HTTP calls/day
 
 | Need | Primary | Fallback | Notes |
 |---|---|---|---|
-| Daily OHLCV, CMP (NSE, BSE, US), indices, VIX | **Yahoo Finance** chart endpoint (no key; `RELIANCE.NS`, `500325.BO`, `AAPL`, `^NSEI`, `^INDIAVIX`, `^GSPC`, `^VIX`) | **Twelve Data** free key (≈800 req/day, 8/min) | Yahoo is unofficial — no SLA, may change/break. Adapter interface allows swapping without touching the app. |
+| Daily OHLCV, CMP (NSE, BSE, US), indices, VIX | **Yahoo Finance** chart endpoint (no key; `RELIANCE.NS`, `500325.BO`, `AAPL`, `^NSEI`, `^INDIAVIX`, `^GSPC`, `^VIX`) | **Twelve Data** free key (≈800 req/day, 8/min), then **latest close scraped from a public quote page** (D33) | Yahoo is unofficial — no SLA, may change/break. Adapter interface allows swapping without touching the app. |
 | Fundamentals (P/E, P/B, ROE, D/E, margins, growth) | Yahoo quote/summary modules (best effort; needs cookie/crumb) | **Finnhub** free key (≈60 req/min) for US basic financials | Indian fundamentals coverage on free APIs is patchy → missing values shown as "insufficient data", never guessed. Fundamentals are cached for 7 days (they change quarterly). |
 | FX USD/INR | **Frankfurter** (ECB rates, no key) | Yahoo `USDINR=X` | Daily rate with `asOf` date. |
 | LLM | **Gemini Flash** via Firebase AI Logic (Gemini Developer API) | — | Model name in config/Remote Config. Free tier is rate-limited; caching keeps usage low. |
@@ -221,18 +221,18 @@ Two schedules are needed either way: after NSE close (~16:00 IST) and after US c
 | Offline | Last snapshot and holdings viewable offline; edits queued via Firestore offline persistence. |
 | Cost | ₹0 in v1: Firebase Spark, free market-data tiers, Gemini free tier. |
 | Reliability | Market-data provider failure falls back to secondary provider, then to the cached snapshot with a "stale as of" banner. |
-| Security / privacy | Data only under `users/{uid}`; App Check enforced on Firestore & AI in release builds; no PII sent to Gemini (only tickers and numbers). |
+| Security / privacy | Data only under `users/{uid}`; App Check enforced on Firestore & AI from the Play release (D32); no PII sent to Gemini (only tickers and numbers). |
 | Retention | User data kept until the user deletes it; account deletion removes `users/{uid}` recursively. |
 | Search | Ticker/company search over ~20k instruments returns top 20 results in < 50 ms, fully offline after first sync. |
 | Master-list freshness | v1: static development snapshot, uploaded manually. Later: refreshed weekly by a Cloud Function. Device checks at most once per 24 h (1 Firestore read) and downloads only when the version changed (~5 reads). |
 
 ## 11. Security, Privacy & Compliance
-1. **App Check** (Play Integrity in release, debug provider in dev) protects Firestore and Firebase AI Logic from non-app clients.
+1. **App Check** (Play Integrity) protects Firestore and Firebase AI Logic from non-app clients **from the Play release on** (D32). Personal builds run without it: Firestore is still protected by Auth + security rules, and the project has no billing, so misuse of the AI endpoint can at worst exhaust the free quota.
 2. **Firestore rules:** `match /users/{uid}/{document=**} { allow read, write: if request.auth != null && request.auth.uid == uid; }` plus per-collection field validation (LLD). `reference/**` is read-only for signed-in users and never writable from clients (the sync job uses the Admin SDK). Tested with the emulator.
 3. **No unsafe execution:** AI rules are JSON-Logic only, validated against a whitelist of variables and operators; never `eval`.
 4. **Prompt injection:** user-written rule text is passed as a delimited data field; output must match a strict schema.
 5. **Compliance:** analysis shows a "for personal information, not investment advice" disclaimer. AI stock suggestions **and buy/sell signals with confidence** are behind `features.aiSuggestions` (on for personal builds, off by default for public release). Confidence is the model's own self-reported estimate, labelled as such in the UI, not a statistical probability. Using Yahoo's unofficial endpoints is acceptable for personal use; a public release needs a licensed data provider.
-6. **Sync credentials:** the dev upload script uses a service-account key stored in a local git-ignored file; the later Cloud Function uses its built-in service identity (no key file). Neither is ever in the repo or the app.
+6. **Sync credentials:** the dev upload script uses Application Default Credentials from the developer's own `gcloud` login (no key file anywhere); the later Cloud Function uses its built-in service identity (no key file). Neither is ever in the repo or the app.
 
 ## 12. Decision Log
 
@@ -269,6 +269,8 @@ Two schedules are needed either way: after NSE close (~16:00 IST) and after US c
 | D29 | AI buy/sell signal labels with confidence %, behind `features.aiSuggestions` | No buy/sell language | User decision for personal use. Enum labels + schema validation + disclaimer; off for public release. |
 | D30 | Store every individual buy as a `BUY` transaction; derive holdings, average price and XIRR in `core`; SELL/dividends later in the same collection | One position per broker (D21) | User decision. Accurate money-weighted returns, simple portfolio view (average price only), and a direct path to full buy/sell history without migration. |
 | D31 | Duplicate buys allowed (CSV and manual); non-blocking duplicate heads-up after import + one-tap **Undo import** | Reject duplicates (D27) | User decision: identical buys can be real. Undo import (by `importBatchId`) covers accidental double uploads. |
+| D32 | App Check not used in personal builds; Play Integrity App Check enforced for Firestore + AI Logic from the Play release | Debug-provider App Check with enforcement in v1 | User decision. Personal sideloaded app; Firestore is protected by Auth + rules, and the Spark project has no billing, so the residual risk is free-quota abuse only. |
+| D33 | Last-resort price fallback: scrape the latest close from a public quote page when Yahoo and Twelve Data both fail; benchmark uses price indices (bonuses/dividends not considered) | Cached snapshot only; total-return indices | User decision. Scraping is fragile and against some sites' terms, so it is isolated in one adapter, used only after the market has closed, and updates price/P&L only (indicators stay on cached bars). |
 
 ## 13. Open Questions
 None blocking. Remaining details (field-level schemas, error codes, exact UI copy) are resolved in the LLD.

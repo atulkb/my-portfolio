@@ -1,12 +1,12 @@
 # Low-Level Design (LLD): Portfolio & Watchlist Analyzer
 
-> Status: **Draft — in progress.** Source of truth: `docs/HLD.md` v1.1 (signed off 2026-10-16). Each section is reviewed and approved before implementation of that area starts.
+> Status: **Draft — in progress.** Source of truth: `docs/HLD.md` v1.2 (signed off 2026-10-16). Each section is reviewed and approved before implementation of that area starts.
 
 | § | Section | Status |
 |---|---|---|
 | 1 | Data models & Firestore schema | **Approved 2026-10-16** |
 | 2 | Core domain logic (holdings/XIRR, indicators, scoring, CSV, rules) | **Approved 2026-10-16** |
-| 3 | Services (market data, FX, Gemini, instrument sync, repositories) | Not started |
+| 3 | Services (market data, FX, Gemini, instrument sync, repositories) | **Approved 2026-10-16** |
 | 4 | App: navigation, state, screen → data mapping | Not started |
 | 5 | Error taxonomy, test plan, delivery order | Not started |
 
@@ -273,14 +273,17 @@ Encryption key: 32 random bytes generated on first launch, stored in `expo-secur
 | `market.bars.<InstrumentKey>` | daily OHLCV, ~260 sessions | market-data service (§3) | new session |
 | `market.fundamentals.<InstrumentKey>` | fundamentals snapshot | market-data service | 7 days |
 | `market.profile.<InstrumentKey>` | sector/industry from provider | market-data service | 30 days |
-| `market.macro` | indices, VIX, FX snapshot | market-data/fx service | new session |
-| `ai.performance.<sessionDate>` | ratings batch result | Gemini service | next session / on-demand refresh (D26) |
-| `ai.signals.<sessionDate>` | buy/sell signals | Gemini service | next session / on-demand refresh |
-| `ai.analysis.<InstrumentKey>.<sessionDate>` | deep-analysis narrative | Gemini service | next session / on-demand refresh |
+| `market.macro` | indices, VIX snapshot | market-data service | new session |
+| `market.index.<NIFTY50\|SP500>` | index adjClose history back to the earliest buy (benchmark) | market-data service | extended, never discarded |
+| `fx.usdInr` | latest USD/INR + history | fx service | latest: new IN session; history: extended |
+| `ai.performance` | map InstrumentKey → rating entry (own session date + input hash) | Gemini service | per entry: new session, changed inputs, or on-demand refresh (D26) |
+| `ai.signals` | map InstrumentKey → signal entry | Gemini service | as above |
+| `ai.analysis.<InstrumentKey>` | deep-analysis entry | Gemini service | as above |
+| `ai.usage.<YYYY-MM-DD>` | Gemini request count for the day | Gemini service | pruned after 3 days |
 | `import.lastBatch` | `{ importBatchId, importedAt, count }` | CSV import | 7 days, or after Undo |
 | `ui.*` | last filters, collapsed sectors | UI | — |
 
-Exact shapes of `market.*` and `ai.*` values are specified with their services in §3. Old-session `ai.*` entries are pruned on launch (keep 3 days).
+Exact shapes of `market.*`, `fx.*` and `ai.*` values are specified with their services in §3 (amended on §3 approval). AI entries older than 3 sessions are pruned on launch.
 
 ### 1.10 Repositories (`apps/mobile/src/services/firestore/`)
 
@@ -730,3 +733,387 @@ Ties broken by: listing on NSE/NASDAQ/NYSE before others, then shorter name. Ind
 3. Non-ISO CSV dates produce an error with a suggested fix, never auto-converted: approved.
 4. Rule read-back is rendered deterministically by code from the validated AST: approved.
 5. CSV error references (file name, line, row preview) exist only in the error sheet; nothing about files or lines is persisted.
+
+---
+
+## 3. Services (`apps/mobile/src/services/`, `tools/instrument-sync/`)
+
+Traceability: HLD §3, §5, §6, §10, §11, §15, D3, D7, D10, D11, D16, D17, D26, D29; `ANALYSIS_FRAMEWORK.md` §4.1, §6, §7; rules `.claude/rules/project/firebase-ai.md`.
+
+Services do **all I/O** and nothing else: they fetch, validate (zod), cache and hand plain data to `core`. They never compute scores or P/L. Screens and stores reach them only through the interfaces below (ports live in `core/ports.ts`, so tests use fakes).
+
+### 3.1 Layout & ports
+
+```
+apps/mobile/src/services/
+  http/          httpClient.ts (timeout, retry, rate limit), errors.ts
+  cache/         kv.ts (MMKV wrapper + zod-validated get/set), keys.ts
+  market-data/   provider.ts (port), yahoo/, twelvedata/, finnhub/, quotepage/ (scrape, D33), symbols.ts, marketDataService.ts
+  fx/            frankfurter.ts, fxService.ts
+  ai/            firebaseAi.ts (SDK wrapper), aiClient.ts (retry/validate/budget), aiService.ts (4 tasks), usage.ts
+  instruments/   instrumentSyncService.ts, instrumentIndex.ts
+  firestore/     §1.10 repositories + converters.ts
+  auth/          authService.ts
+  refresh/       refreshService.ts (daily pipeline, §3.8)
+```
+
+```ts
+// core/ports.ts (additions to §1.10)
+export interface Clock { now(): EpochMs }
+export interface KeyValueCache {
+  get<T>(key: string, schema: z.ZodType<T>): T | null;     // invalid/old-shape value → deleted, returns null
+  set<T>(key: string, value: T): void;
+  delete(key: string): void;
+  keys(prefix: string): string[];
+}
+export interface MarketDataProvider {
+  readonly id: 'yahoo' | 'twelvedata' | 'finnhub' | 'quotepage';
+  supports(cap: Capability, exchange: Exchange): boolean;   // Capability = 'BARS' | 'LATEST_CLOSE' | 'FUNDAMENTALS' | 'PROFILE'
+  getDailyBars?(req: BarsRequest): Promise<BarsResult>;
+  getLatestClose?(ref: InstrumentRef): Promise<{ close: number; sessionDate: IsoDate; currency: Currency }>;
+  getFundamentals?(key: InstrumentRef): Promise<Fundamentals>;
+  getProfile?(key: InstrumentRef): Promise<InstrumentProfile>;
+}
+export type InstrumentRef = { key: InstrumentKey; symbol: string; exchange: Exchange; bseCode: string | null; type: 'EQUITY' | 'ETF' | 'INDEX' };
+export type BarsRequest = { ref: InstrumentRef; range: { kind: '1y' } | { kind: 'from'; from: IsoDate } };
+export type BarsResult = { bars: DailyBar[]; currency: Currency | null; adjusted: boolean; provider: string };
+```
+
+`InstrumentRef` is built from the master list (`bseCode` comes from `Listing.providerCode`). Index/macro symbols (`^NSEI`, `^GSPC`, `^INDIAVIX`, `^VIX`) use pseudo-keys `INDEX:NIFTY50`, `INDEX:SP500`, `INDEX:INDIAVIX`, `INDEX:VIX` inside services only (never persisted in Firestore).
+
+### 3.2 HTTP client (`http/`)
+
+One `httpGetJson(url, schema, opts)` / `httpGetText(url, opts)` used by every market-data and FX adapter:
+
+| Concern | Behaviour |
+|---|---|
+| Timeout | `AbortController`, default **10 s** per request. |
+| Retries | ≤ 2 retries on network error, timeout, 5xx; backoff 500 ms → 1.5 s (+ jitter). **No retry** on 4xx (404 = not found, 401/403 = key/blocked, 429 = rate limited). |
+| Rate limit | Per-host token bucket + concurrency cap (table below). Requests queue; nothing is dropped silently. |
+| Circuit breaker | 3 consecutive failures for a host within one refresh → host marked `down` for the rest of that refresh (avoids 100 sequential timeouts); next refresh starts fresh. |
+| Validation | Response parsed with the adapter's zod schema; failure → `ServiceError('BAD_RESPONSE')`, never passed on. |
+| Logging | Dev builds: URL (API keys redacted), status, duration. Release: counts only. |
+
+| Host | Concurrency | Rate |
+|---|---|---|
+| Yahoo (`query1/query2.finance.yahoo.com`) | 4 | ≤ 5 req/s |
+| Twelve Data | 1 | ≤ 8 req/min, ≤ 800/day (counter in MMKV) |
+| Finnhub | 2 | ≤ 50 req/min |
+| Frankfurter | 2 | no stated limit; ≤ 2 req/s |
+| Quote page (scrape) | 1 | ≤ 1 req/s, ≤ 100 per refresh |
+
+```ts
+export type ServiceErrorCode =
+  | 'NETWORK' | 'TIMEOUT' | 'RATE_LIMITED' | 'NOT_FOUND' | 'AUTH' | 'BAD_RESPONSE'
+  | 'PROVIDER_DOWN' | 'CURRENCY_MISMATCH' | 'UNSUPPORTED';
+export class ServiceError extends Error { code: ServiceErrorCode; provider: string; retryable: boolean; }
+```
+(§5 consolidates these with Firestore/AI/auth codes into the app-wide taxonomy and user messages.)
+
+### 3.3 Market data (`market-data/`)
+
+**Provider symbols** (`symbols.ts`, the only place they are produced):
+
+| Exchange | Yahoo | Twelve Data | Finnhub | Quote page (Google Finance) |
+|---|---|---|---|---|
+| NSE | `RELIANCE.NS` | `symbol=RELIANCE&exchange=NSE` | — (not used) | `RELIANCE:NSE` |
+| BSE | `500325.BO` (numeric code from master); `RELIANCE.BO` if code missing | `symbol=RELIANCE&exchange=BSE` | — | `500325:BOM` |
+| US (all five) | `BRK-B` (`.` → `-`) | `BRK.B` | `BRK.B` | `BRK.B:NYSE` (NASDAQ, NYSE, NYSEARCA, NYSEAMERICAN, BATS) |
+| Indices | `^NSEI`, `^GSPC`, `^INDIAVIX`, `^VIX` | — | — | — |
+
+**Capabilities and fallback chain** (first provider that `supports()` and succeeds wins):
+
+| Capability | Chain | Cache (MMKV, §1.9) | Refetch when |
+|---|---|---|---|
+| Daily bars (1 y) | Yahoo chart → Twelve Data → cached (stale) | `market.bars.<key>` | cached `sessionDate` < expected session, or force |
+| Latest close (last resort, D33) | quote-page scrape, only when bars are stale and the market is closed | stored on the snapshot (`priceSource: 'SCRAPE'`) | as bars |
+| Index history (benchmark) | Yahoo chart (`period1` = earliest buy − 7 d) | `market.index.<NIFTY50\|SP500>` | earliest buy moves earlier, else extended from the daily 1 y fetch |
+| Fundamentals | Yahoo quoteSummary → Finnhub (US only) → cached → `null` | `market.fundamentals.<key>` | older than 7 days |
+| Profile (sector/industry) | Yahoo assetProfile → Finnhub profile (US only) → master `industry` (BSE) → `null` | `market.profile.<key>` | older than 30 days |
+
+**Yahoo chart** — `GET /v8/finance/chart/{sym}?range=1y&interval=1d&events=div%2Csplits&includeAdjustedClose=true` (or `period1/period2` for index history). No cookie or crumb needed.
+- zod schema covers `chart.result[0].meta { currency, exchangeTimezoneName, instrumentType }`, `timestamp[]`, `indicators.quote[0] { open, high, low, close, volume }` (entries nullable), `indicators.adjclose[0].adjclose[]`; `chart.error` non-null → `NOT_FOUND`/`BAD_RESPONSE`.
+- Timestamps → exchange-local `IsoDate` using `exchangeTimezoneName`. Rows with any null price are dropped; duplicate dates keep the last row.
+- **In-progress session dropped:** a bar dated after `sessionDateFor(market, now)` (i.e. today before the close) is removed, so a cached snapshot is always a completed session.
+- `meta.currency` must equal `EXCHANGE_META[exchange].currency` (INR/USD), else `CURRENCY_MISMATCH` (guards against wrong listings such as GBp quotes).
+- The full year is re-fetched each new session (≈ 15–20 KB per stock) rather than appended, because `adjClose` history is rewritten after every dividend or split.
+
+**Yahoo quoteSummary (fundamentals + profile)** — `GET /v10/finance/quoteSummary/{sym}?modules=financialData,defaultKeyStatistics,summaryDetail,assetProfile&crumb=…`. Needs a session cookie + crumb: `GET https://fc.yahoo.com` (sets cookie; non-2xx is expected) → `GET /v1/test/getcrumb` → crumb cached in memory for the app session; on 401 refresh once. **Best effort:** any failure falls through the chain; nothing breaks if Yahoo removes this endpoint (fundamentals become ⚪ "insufficient data"). Spike S1 (§3.11) confirms RN's cookie handling works before implementation.
+
+`Fundamentals` (`core/market/fundamentals.ts`; consumed by §2.7). All fields `number | null`; percentages as **percent** (15 = 15 %):
+
+| Field | Yahoo source (conversion) | Finnhub `metric` source |
+|---|---|---|
+| `pe` | `summaryDetail.trailingPE` | `peTTM` |
+| `pb` | `defaultKeyStatistics.priceToBook` | `pb` |
+| `peg` | `defaultKeyStatistics.pegRatio`; else `pe / epsGrowthPct` when growth > 0 | same derivation |
+| `roePct` | `financialData.returnOnEquity` × 100 | `roeTTM` |
+| `roce`, `interestCoverage`, `promoterHoldingPct`, `pledgePct` | not available → `null` | `netInterestCoverageTTM` for interest cover; others `null` |
+| `de` | `financialData.debtToEquity` ÷ 100 (Yahoo reports percent) | `totalDebt/totalEquityQuarterly` |
+| `currentRatio` | `financialData.currentRatio` | `currentRatioQuarterly` |
+| `revenueGrowthPct`, `epsGrowthPct` | `financialData.revenueGrowth`/`earningsGrowth` × 100 (YoY) | `revenueGrowth3Y`/`epsGrowth3Y` (3-yr CAGR), else `…TTMYoy` |
+| `netMarginPct` | `financialData.profitMargins` × 100 | `netProfitMarginTTM` |
+| `fcf` | `financialData.freeCashflow` (TTM; trend unknown → `trend: null`) | `null` |
+| `dividendYieldPct` | `summaryDetail.dividendYield` × 100 | `dividendYieldIndicatedAnnual` |
+
+Plus `growthBasis: 'CAGR3Y' | 'YOY'`, `asOf: IsoDate`, `provider`. Exact Finnhub field names are pinned from a recorded fixture during implementation; the mapping lives in one file per provider. FCF with unknown trend is classified as "positive, flat" (AVERAGE) by §2.7, never GOOD.
+
+`InstrumentProfile = { sector: string | null; industry: string | null }`. ETFs get sector `"ETF"` from the master `type` without a network call.
+
+**Twelve Data (fallback bars only)** — `GET /time_series?symbol=…&exchange=…&interval=1day&outputsize=260&apikey=…`. Numbers arrive as strings (zod `coerce`). No adjusted close: `adjClose = close`, `adjusted: false` (indicators then show a split as a price jump; acceptable for a fallback, flagged in the report). Free-plan coverage of NSE/BSE is **unverified** (spike S3); if India isn't covered, `supports('BARS', 'NSE'|'BSE')` returns false and Indian stocks fall back straight to the cached snapshot. Fallback use is capped at **16 instruments per refresh** (holdings first, then watchlist) because of the 8/min limit; the rest stay stale.
+
+**Quote-page scrape (last-resort latest close, HLD D33)** — `GET https://www.google.com/finance/quote/{SYM}:{EXCH}` (browser User-Agent), price read from one documented attribute/selector in `quotepage/parse.ts`; parsed value must be a positive number in the expected currency, else `BAD_RESPONSE`.
+- Used **only** for instruments whose bars are still stale after Yahoo and Twelve Data, and **only while the market is closed** (after the session close, before the next open), so the scraped price is that session's close, never an intraday price (v1 = daily closes).
+- It updates `close`, `prevClose` (= last cached bar's close), value, P/L and day change. **Indicators, Health and rules stay on the cached bars**; the snapshot carries `priceSource: 'SCRAPE'` and `indicatorsAsOf`, and the card shows "price from web · indicators as of 14 Oct".
+- Fragile by nature (page changes) and against some sites' terms: isolated in one adapter, with a recorded HTML fixture test that fails loudly when the page changes. Disabled for public builds (`FEATURES.scrapeFallback`, on for personal builds).
+
+**Finnhub (US fundamentals + profile only)** — `/stock/metric?symbol=…&metric=all`, `/stock/profile2?symbol=…` (`finnhubIndustry` → sector). Its candle endpoint is not on the free plan, so it is never used for bars.
+
+**API keys:** `EXPO_PUBLIC_TWELVEDATA_KEY`, `EXPO_PUBLIC_FINNHUB_KEY` in `apps/mobile/.env.local` (git-ignored). They are **public in the bundle** (acceptable for personal use, HLD §6); missing key → that provider reports `supports() = false`. Before a public release these move behind a Cloud Function proxy.
+
+**`MarketDataService`** (what the refresh pipeline calls):
+```ts
+interface MarketDataService {
+  getSnapshots(refs: InstrumentRef[], opts: { force: boolean; onProgress?: (done: number, total: number) => void }):
+    Promise<{ snapshots: Map<InstrumentKey, MarketSnapshot & { stale: boolean; provider: string; priceSource: 'BARS' | 'SCRAPE'; indicatorsAsOf: IsoDate }>; failures: Failure[] }>;
+  getIndexHistory(index: 'NIFTY50' | 'SP500', from: IsoDate): Promise<DailyBar[]>;
+  getFundamentals(refs: InstrumentRef[]): Promise<Map<InstrumentKey, Fundamentals | null>>;
+  getProfiles(refs: InstrumentRef[]): Promise<Map<InstrumentKey, InstrumentProfile>>;
+  getMacro(opts: { force: boolean }): Promise<MacroSnapshot>;   // NIFTY50, SP500 (1 y for trend), INDIAVIX, VIX
+}
+```
+- Order: holdings first, then watchlist-only instruments, so the portfolio renders first.
+- `stale = true` when the returned snapshot's `sessionDate` (of its close price) is older than the expected session for its market (provider down, or a holiday — the data's own date is shown either way: "as of 14 Oct").
+- `NOT_FOUND` from every provider → `failure.code = 'NOT_FOUND'`; the holding shows "No price data" and the "not in latest exchange list" hint if the master list also lacks it (HLD §15). Never deleted.
+- Budget: 100 instruments + 4 macro symbols ≈ 104 chart calls at ≤ 5/s with 4 in flight → **~10–15 s** cold, well inside the 30 s NFR. Fundamentals/profile calls are spread over the week by their TTLs (~15/day on average).
+
+**Cached shapes** (columnar to keep MMKV small; ~15 KB per instrument):
+```ts
+type CachedBars = { v: 1; key: string; provider: string; currency: Currency; adjusted: boolean;
+  sessionDate: IsoDate; fetchedAt: EpochMs;
+  d: IsoDate[]; o: number[]; h: number[]; l: number[]; c: number[]; a: number[]; vol: number[] };
+type CachedIndexHistory = { v: 1; index: 'NIFTY50' | 'SP500'; from: IsoDate; d: IsoDate[]; a: number[] };
+type CachedFundamentals = { v: 1; key: string; fetchedAt: EpochMs; data: Fundamentals | null };   // null cached too (no re-hammering)
+type CachedProfile = { v: 1; key: string; fetchedAt: EpochMs; profile: InstrumentProfile };
+```
+Every cached value has a zod schema; a value that fails parsing (old shape) is deleted and refetched.
+
+**Benchmark note (HLD D33):** `^NSEI` and `^GSPC` are **price** indices; bonuses and dividends are not considered on either side (the stock's return also ignores dividends in v1). The Research screen labels it "Nifty 50 / S&P 500 (price index)".
+
+### 3.4 FX (`fx/`)
+
+Frankfurter (ECB reference rates, no key), base URL `https://api.frankfurter.dev/v1`:
+
+| Call | Request | Use |
+|---|---|---|
+| Latest | `/latest?base=USD&symbols=INR` | summary conversion, `fx.usdInr` + `asOf` |
+| History | `/{from}..{to}?base=USD&symbols=INR` | portfolio-level XIRR (§2.3): each buy converted at its trade-date rate |
+
+- History is fetched **once** from the earliest buy date (minus 7 days) and then only extended forward (past ECB rates never change). If a new buy predates `from`, the missing range is fetched and merged.
+- Lookup = nearest **earlier** available date (ECB publishes on TARGET business days only; gaps are normal, and long ranges may come back at lower granularity). ECB INR rates start in 1999; an earlier buy uses the first available rate and the summary marks XIRR "approximate".
+- Fallback for latest: Yahoo chart `USDINR=X` (last close). If both fail: last cached rate with its `asOf` shown.
+- Cache: `fx.usdInr` → `{ v: 1; latest: { rate: number; asOf: IsoDate }; history: { from: IsoDate; d: IsoDate[]; r: number[] }; fetchedAt }`. Latest refreshed once per IN session.
+
+### 3.5 Gemini (`ai/`)
+
+**SDK wrapper** (`firebaseAi.ts`, the only file importing `@react-native-firebase/ai`):
+```ts
+const ai = getAI(getApp(), { backend: new GoogleAIBackend() });
+const model = getGenerativeModel(ai, {
+  model: AI_CONFIG.models[task.model],                     // never a literal
+  systemInstruction: built.system,
+  generationConfig: {
+    responseMimeType: 'application/json',
+    responseSchema: toSdkSchema(task.responseSchema),        // plain JSON-schema subset from core → SDK Schema
+    temperature: AI_CONFIG.temperature[task.id],
+    maxOutputTokens: AI_CONFIG.maxOutputTokens[task.id],
+    // thinkingConfig per task if supported by the SDK (spike S2)
+  },
+});
+```
+It exposes one port to the rest of the app: `GenerativePort.generate({ task, built, signal }) → { text, finishReason, usage }`.
+
+**Prompt builders** (`core/prompts/`, pure, no SDK types):
+```ts
+export type PromptTask<I, O> = {
+  id: 'performanceRating' | 'signals' | 'deepAnalysis' | 'ruleCompile';
+  version: string;                        // e.g. 'perf-rating@1' — bumped on any wording change; recorded with results
+  model: 'flash' | 'flashLite';
+  build(input: I): { system: string; user: string; allowedNumbers: number[] };
+  responseSchema: JsonSchemaSubset;       // object/array/string/number/integer/boolean/enum, no recursion
+  outputSchema: z.ZodType<O>;             // stricter than responseSchema (lengths, enums, cross-checks)
+  postValidate(input: I, output: O): Result<O, string[]>;   // grounding + set equality checks
+};
+```
+- **Input hygiene:** numbers are rounded to 2 dp before being sent; nulls are sent as `null` with the instruction "null = insufficient data, say so". Only tickers, company names and numbers are sent — no email, display name, broker or quantities (HLD §10 privacy).
+- **Untrusted text** (the user's rule sentence) is JSON-encoded inside a delimited block (`<user_rule>…</user_rule>`); the system instruction says content inside the block is data, never instructions.
+- **Grounding check** (`prompts/grounding.ts`): every number found in generated prose must match a value in `allowedNumbers` after rounding to 0, 1 or 2 dp (thresholds quoted in the prompt, e.g. 90 days, are included). A stray number fails validation → retry. This enforces "every number must come from the input payload".
+
+**The four tasks:**
+
+| Task | When | Input (per item) | Output (zod) & post-checks | Batch / caps |
+|---|---|---|---|---|
+| `performanceRating` (D11, framework §4.1/§7.1) | daily after refresh; on demand | `symbol, exchange, pnlPct, xirrPct, benchmarkReturnPct, excessReturnPp, holdingDays, healthScore, healthLabel, drawdownPct, volatilityPct` | `{ ratings: [{ symbol, exchange: Exchange, rating: GOOD\|AVERAGE\|BAD, reason ≤ 20 words }] }`; **exactly** the requested set (missing/extra = invalid); grounding on `reason` | ≤ 25 per call, temp 0, 2,048 tokens |
+| `signals` (D29, §7.2) — only if effective `aiSuggestions` | daily after refresh; on demand | params (key, value, level), `healthScore`, macro, `pnlPct` (holdings), `targetEntryPrice/ExitPrice` (watchlist) | `{ signals: [{ symbol, exchange, label: STRONG_BUY…SELL, confidencePct 0–100 int, targetEntryPrice?, reason ≤ 25 words }] }`; exact set; `targetEntryPrice` must equal the supplied target or is stripped; insufficient-data stock must be `HOLD`; grounding | ≤ 25 per call, temp 0, 2,048 tokens |
+| `deepAnalysis` (§7) | user opens Research (S04) | one stock: `AnalysisResult` params, indicators, fundamentals, macro, performance metrics if held | `{ summary ≤ 80 words, pros: [{ paramKey, text }] ≤ 5, cons ≤ 5, risks ≤ 3, watchFor ≤ 3, alternatives? ≤ 3 }`; `pros[].paramKey` ∈ GOOD params, `cons[].paramKey` ∈ BAD params; `alternatives` dropped unless flag on, and each must exist in the master list (else that entry is dropped); grounding | 1 per call, temp 0.3, 1,024 tokens |
+| `ruleCompile` (§2.8) | user taps Compile in S08a | sentence + catalogue generated from `RULE_VARIABLES` (key, type, label, allowed values, scopes) + allowed ops + 4 worked examples | `{ status: 'OK', logicJson: string, suggestedName ≤ 60 } \| { status: 'UNSUPPORTED', reason ≤ 30 words }` (e.g. intraday "4H"). `logicJson` → `JSON.parse` → `validateRuleLogic`; issues are fed back on retry ("unknown variable `peRatio`; use one of …") | 1 per call, temp 0, 512 tokens |
+
+`logicJson` is a string because Gemini's response schema can't express recursive JSON-Logic; the whitelist validator, not the schema, is the gate.
+
+**`AiClient.run(task, input, { force })`** — the bounded loop around the port:
+1. **Budget check** (`usage.ts`): ≤ `AI_CONFIG.rateLimit.rpm` (default 5) requests/min and ≤ `AI_CONFIG.rateLimit.dailyCap` (default 500) per local day, counted in MMKV `ai.usage.<YYYY-MM-DD>`. Over budget → `AI_BUDGET_EXCEEDED` (UI: "AI limit reached for today"), no call.
+2. Call with `AI_CONFIG.requestTimeoutMs` (20 s).
+3. Parse JSON → `outputSchema` → `postValidate`.
+4. **Retry** (max `AI_CONFIG.maxRetries` = 2, i.e. ≤ 3 attempts) on: invalid JSON, schema/post-check failure, `MAX_TOKENS` truncation, timeout, 5xx. For batches, a retry asks only for the **missing/invalid items**. Backoff 1 s, 3 s.
+5. **No retry** on: 429 (`AI_RATE_LIMITED`), `SAFETY`/blocked (`AI_BLOCKED`), 400 (`AI_BAD_REQUEST`, a bug), 403 (`AI_NOT_AUTHORISED`: AI Logic not enabled, or App Check rejected once enabled).
+6. After the last attempt, items still invalid → `null` ⇒ UI shows ⚪ "Not rated" / "No signal". Never a default value.
+7. Release builds log only task id, version, attempts, token usage and error code; never prompts or responses.
+
+**Caching** (D26). Entries carry their own session date because IN and US sessions differ:
+```ts
+type AiEntry<T> = { sessionDate: IsoDate; inputHash: string; model: string; promptVersion: string; createdAt: EpochMs; value: T };
+// MMKV
+'ai.performance'               → Record<InstrumentKey, AiEntry<{ rating: Label; reason: string }>>
+'ai.signals'                   → Record<InstrumentKey, AiEntry<Signal>>
+'ai.analysis.<InstrumentKey>'  → AiEntry<DeepAnalysis>
+```
+- An entry is **fresh** when `sessionDate == sessionDateFor(market)` **and** `inputHash` matches the current input (FNV-1a over the canonical rounded input, computed in `core`).
+- **Portfolio updates** (add/edit/remove a buy, CSV import, Undo import) change only the affected stocks' inputs, so **only those stocks** are re-rated (one small batch, ≤ 25 per call); everything else is served from cache.
+- **Daily:** after each refresh, stale/missing entries are batched and sent (≈ 4 calls for 100 holdings).
+- **On demand** (refresh button on S02/S07/S04): `force: true` re-runs all items of that screen, still subject to the budget.
+- Entries older than 3 sessions are pruned on launch. (Replaces the per-date `ai.*` keys listed in §1.9; same data, keyed per instrument.)
+
+**App Check:** not used in personal builds (HLD D32). The AI and Firestore services take no App Check dependency; for a Play release, `@react-native-firebase/app-check` (Play Integrity) is initialised at startup and enforcement is switched on in the console for Firestore and AI Logic. Nothing else changes.
+
+**Proposed `AI_CONFIG` additions** (`src/config/ai.ts`): `rateLimit: { rpm: 5, dailyCap: 500 }`, `signalBatchSize: 25`, and `model` per task (`flash` for all in v1; `flashLite` can be tried for ratings later by changing config only).
+
+### 3.6 Instrument master: sync script & device sync
+
+**Dev script** (`tools/instrument-sync/`, Node 24 + `tsx`, its own workspace; uses `@portfolio/core` `buildInstrumentMaster`):
+
+| Command | Does |
+|---|---|
+| `npm run sync -- build --snapshot data/instruments/snapshot-2026-10-15` | parse the four raw files → TSV + meta in `tools/instrument-sync/out/` (git-ignored); prints counts and sanity-check result |
+| `npm run sync -- upload --dry-run` | compare with live meta (version, counts ±20 %), print what would be written |
+| `npm run sync -- upload` | write `chunks/{version}-{i}` → meta → delete older-version chunks |
+| `npm run sync -- download --out data/instruments/snapshot-<date>` | optional: fetch fresh NSE/BSE/Nasdaq Trader files into a new snapshot folder (same URLs the later Cloud Function will use) |
+
+- **Chunking:** split at line boundaries so each chunk's **UTF-8 byte** length ≤ 900,000 (Firestore doc limit is 1 MiB). ≈ 2 chunks today.
+- `version = <max source date>.<n>`; `sha256` over the concatenated chunk texts in order.
+- **Credentials:** Firebase Admin SDK with **Application Default Credentials** from the developer's own login (`gcloud auth application-default login`, quota project `my-portfolio-2d6c0`). No service-account key file is created or stored. The script passes `projectId` explicitly and refuses to run if ADC is missing (message: run the login command). Admin SDK bypasses security rules, so this is the only writer of `reference/**`.
+- Cost: ~3 writes + ~2 deletes per upload; free.
+- **Later (Blaze):** the same `download → build → upload` code moves into a scheduled Cloud Function (weekly); the script stays for manual runs.
+
+**Device sync** (`InstrumentSyncService.ensureFresh()`, called on launch, non-blocking):
+1. If `instruments.lastCheckAt` < 24 h ago and a local copy exists → done.
+2. `getMeta()` (1 read). Same `version` as local → update `lastCheckAt`, done.
+3. `getChunks(meta)` (≈ 2 reads, from server) → sort by `index` → all `version`s must equal `meta.version` → concatenate → `sha256` (`expo-crypto`) must equal `meta.sha256`.
+4. Write `instruments.tsv.next` → swap to `instruments.tsv` + `instruments.meta` → rebuild the in-memory `InstrumentIndex` (`core.parseInstrumentTsv`, ≈ 50–100 ms for 18.5k rows).
+5. Any failure → keep the previous copy, retry next launch. No local copy at all → search shows "Downloading stock list…" (HLD §15).
+
+`instrumentIndex.ts` holds the parsed index as a module singleton, loaded from MMKV at startup and exposed to search, CSV import (`CsvDeps`) and `InstrumentRef` construction.
+
+### 3.7 Firestore repositories & auth
+
+**SDK:** `@react-native-firebase/firestore` (modular API). Offline persistence is on by default on Android (cache 100 MB default).
+
+| Concern | Implementation |
+|---|---|
+| Converters (`converters.ts`) | One per collection: Firestore `Timestamp` → epoch ms, add `id`, `Schema.safeParse`. An invalid document is **skipped and counted** (`{ items, skipped }`), logged in dev, and surfaced as "1 record couldn't be read" — never a crash. |
+| Writes | Input validated with the `New…` zod schema (without timestamps) → `createdAt/updatedAt = serverTimestamp()`. |
+| Batches | ≤ 500 ops per `writeBatch`, committed sequentially; multi-batch operations (rename platform, delete account, undo import) are idempotent so a retry after partial failure is safe. |
+| `deleteByImportBatch` | `where('importBatchId', '==', id)` (automatic single-field index) → batched deletes. |
+| `renamePlatform` | Firestore can't query case-insensitively → filter the in-memory transaction list → batched updates. |
+| Reads | Default source (server, cache when offline). Collections are read once per app start (≈ 650 reads, §1.10) and then held in stores; no real-time listeners in v1 except on the profile doc (1 listener, cheap). |
+| Offline writes | RNFB write promises resolve only when the server acknowledges. Stores apply changes **optimistically** and show a "Saving… will sync when online" chip if a write is still pending after 3 s; Firestore replays queued writes on reconnect. |
+| `createIfMissing` | `runTransaction`: create profile + "My Watchlist" only if the profile doc is absent (needs network; first sign-in is online by definition). |
+
+**`AuthService`** (`@react-native-firebase/auth` + `@react-native-google-signin/google-signin`):
+```ts
+interface AuthService {
+  onAuthStateChanged(cb: (u: AuthUser | null) => void): Unsubscribe;
+  signInWithGoogle(): Promise<AuthUser>;                   // webClientId from EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID (public OAuth client ID)
+  signUpWithEmail(name: string, email: string, password: string): Promise<AuthUser>;   // sends verification email
+  signInWithEmail(email: string, password: string): Promise<AuthUser>;
+  sendVerificationEmail(): Promise<void>;
+  reloadUser(): Promise<AuthUser>;                         // "I've verified" → checks emailVerified
+  sendPasswordReset(email: string): Promise<void>;
+  reauthenticate(): Promise<void>;                         // before delete account
+  deleteCurrentUser(): Promise<void>;
+  signOut(): Promise<void>;                                // + cleanup per §1.12
+}
+type AuthUser = { uid: string; email: string; displayName: string | null; emailVerified: boolean; provider: 'google' | 'password' };
+```
+Password policy (≥ 8 chars, 1 number, 1 symbol) is checked in the form **and** configured in Firebase Auth's password policy. Firebase error codes map to friendly messages in §5.
+
+### 3.8 Refresh pipeline (`refresh/refreshService.ts`)
+
+The single orchestrator behind app open and pull-to-refresh. Stores (§4) call it and render progress.
+
+```
+refresh({ force }):
+  0. show cached data immediately (snapshots, AI entries) — cold render < 1 s
+  1. instruments.ensureFresh()                                   (parallel, non-blocking)
+  2. refs = holdings ∪ watchlist items ∪ macro indices
+  3. market.getSnapshots(refs, { force, onProgress })            holdings first
+  4. fx.latest(); fx.history(earliestBuyDate)                    parallel with 3
+  5. market.getIndexHistory(NIFTY50/SP500, earliest buy per market)
+  6. market.getFundamentals / getProfiles for expired entries    after 3, low priority
+  7. core: indicators → analysis → holdings/summary → benchmark  → stores (UI updates)
+  8. rules: evaluate enabled rules → ruleRepo.saveResults(today) (only if inputs changed)
+  9. AI: performance ratings for stale entries; signals if aiSuggestions (holdings + watchlist)
+ 10. return RefreshReport { fetched, fromCache, stale[], failed[{ key, code }], aiCalls, durationMs }
+```
+- Only one refresh runs at a time (a second call joins the running one).
+- Without `force`, step 3 skips instruments whose cached session is current, so reopening the app the same evening costs no network calls.
+- Steps 8–9 never block the portfolio from rendering; their results stream into the stores.
+- The ruleResults write is skipped when nothing changed since the last evaluation for that session (saves writes on repeated opens).
+
+### 3.9 Dependencies introduced by this section
+
+| Package | Where | Notes |
+|---|---|---|
+| `@react-native-firebase/app`, `auth`, `firestore`, `ai` (`app-check` at Play release) | mobile (`npx expo install`) | config plugins; requires a **development build** (Expo Go no longer usable from here on) |
+| `@react-native-google-signin/google-signin` | mobile | Google sign-in; needs SHA-1/SHA-256 of the dev build registered in Firebase |
+| `react-native-mmkv` (+ its Nitro peer if required by the installed major) | mobile | encrypted cache |
+| `expo-secure-store`, `expo-crypto` | mobile | MMKV key, sha256 |
+| `zod`, `papaparse`, `technicalindicators`, `json-logic-engine` | core | §2 |
+| `firebase-admin`, `tsx` | `tools/instrument-sync` | dev only |
+| `@firebase/rules-unit-testing` | root dev | rules tests (§1.13) |
+
+Exact versions are pinned by `npx expo install` / the lockfile at implementation time.
+
+### 3.10 Test plan for this section
+
+| Area | Tool | Key cases |
+|---|---|---|
+| HTTP client | Jest + fake timers + mocked `fetch` | timeout aborts; 5xx retried twice then fails; 404/429 not retried; token bucket spacing; circuit breaker opens after 3 failures |
+| Yahoo adapter | Jest with **recorded fixtures** (no live calls in tests) | NSE/BSE/US/index responses parse; null rows dropped; in-progress bar dropped before close, kept after; currency mismatch rejected; `chart.error` → NOT_FOUND; BSE numeric code used; `BRK.B` → `BRK-B` |
+| quoteSummary | fixtures | unit conversions (D/E ÷ 100, ROE × 100); missing modules → nulls; crumb refresh on 401 once |
+| Twelve Data / Finnhub | fixtures | string numbers coerced; `adjusted: false`; missing key → `supports() = false`; fallback cap of 16 |
+| Quote-page scrape | recorded HTML fixtures | price parsed for NSE/BSE/US pages; changed page → BAD_RESPONSE (test fails loudly); not used while the market is open; updates price/P&L only, `indicatorsAsOf` kept |
+| Market service | fakes for providers + in-memory KV | fallback chain order; stale flag; cache hit skips network; force refetches; holdings fetched before watchlist |
+| FX | fixtures | nearest-earlier lookup over gaps; history extension merges without duplicates; Yahoo fallback |
+| Prompt builders | Jest snapshot | each task's prompt is stable; user rule text appears only inside the delimited block; no email/platform/quantity in any prompt |
+| Grounding & post-validation | Jest | invented number rejected; rounded variants accepted; missing/extra batch items rejected; `targetEntryPrice` mismatch stripped; non-HOLD for insufficient data rejected; alternative not in master list dropped |
+| AiClient | fake `GenerativePort` | retry only missing items; stops at 3 attempts → nulls; 429/SAFETY not retried; budget blocks the 501st call of the day; cache freshness by session + input hash; force bypasses cache |
+| Instrument sync | Jest on a small fixture snapshot | chunk byte limit respected with multi-byte names; sha256 matches; meta written after chunks (call order); sanity abort leaves nothing written; device sync rejects hash mismatch and keeps old copy |
+| Repositories | emulator (§1.13) | plus: invalid doc skipped and counted; batch idempotency on retry |
+
+### 3.11 Spikes before implementation (≤ ½ day each, results recorded here)
+
+| # | Question | If it fails |
+|---|---|---|
+| S1 | Does the Yahoo cookie + crumb flow work from RN on Android (cookie jar)? | Fundamentals from Finnhub (US) only; Indian fundamentals ⚪ until a source is found |
+| S2 | `@react-native-firebase/ai` with `gemini-3.5-flash`: structured output, `thinkingConfig` support, and whether thinking tokens count toward `maxOutputTokens` | Raise token caps or set minimal thinking per task in `AI_CONFIG` |
+| S3 | Twelve Data free plan: are NSE/BSE daily series included? | India fallback = cached snapshot only |
+
+### 3.12 Review decisions (2026-10-16)
+1. Fallback: Yahoo → Twelve Data → scraped latest close from a public quote page (market closed only; price/P&L only) → cached snapshot (HLD D33).
+2. Benchmark uses price indices; bonuses and dividends are not considered (HLD D33).
+3. App Check is not used in personal builds; added with Play Integrity for a Play release (HLD D32).
+4. Gemini budget: ≤ 5 requests/min, ≤ 500 requests/day (`AI_CONFIG.rateLimit`).
+5. Portfolio updates re-rate only the affected stocks; the refresh button re-rates everything (D26).
+6. AI cache is one map per task keyed by instrument with per-entry session date; §1.9 amended.
+7. Sync script credentials: Application Default Credentials via the user's `gcloud` login; no service-account key.
+8. ANALYSIS_FRAMEWORK §7.1 now uses the full `Exchange` enum.

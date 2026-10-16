@@ -117,7 +117,7 @@ Rules for the model: use only the numbers supplied; don't predict prices; don't 
 {
   ratings: {
     symbol: string,
-    exchange: 'NSE' | 'BSE' | 'NASDAQ' | 'NYSE',
+    exchange: Exchange,   // NSE | BSE | NASDAQ | NYSE | NYSE_ARCA | NYSE_AMERICAN | CBOE
     rating: 'GOOD' | 'AVERAGE' | 'BAD',
     reason: string (≤ 20 words, must cite a supplied number)
   }[]   // exactly one entry per requested holding

@@ -2,8 +2,8 @@
 
 - **Name:** Portfolio & Watchlist Analyzer
 - **Description:** Android-first personal app to consolidate stock holdings across brokers (NSE/BSE + US), show P/L in INR & USD grouped by sector, run deterministic technical/fundamental scoring with Gemini-written explanations, and evaluate natural-language watchlist rules on daily closes.
-- **Audience:** Personal use now; may ship to Play Store later — keep public-release concerns (App Check, feature flags, disclaimers) in place from day one.
-- **Current phase:** HLD v1.0 signed off (2026-10-16) → writing the LLD. No feature code until the matching LLD section is approved.
+- **Audience:** Personal use now; may ship to Play Store later — keep public-release concerns (feature flags, disclaimers) in place from day one; App Check is added for the Play release (HLD D32).
+- **Current phase:** HLD v1.2 signed off (2026-10-16) → writing the LLD. No feature code until the matching LLD section is approved.
 - **Branches:** `main` = clean/stable; active v1 work happens on `release1/v1`.
 
 # Tech Stack
@@ -11,7 +11,7 @@
 - **Language:** TypeScript (strict) everywhere. Node.js LTS (v22+). npm workspaces monorepo.
 - **Mobile:** Expo (managed workflow + development builds, Expo Router), React Native.
 - **State / cache:** Zustand; `react-native-mmkv` (encrypted) for local cache.
-- **Backend (BaaS):** Firebase — Auth, Cloud Firestore, App Check, Remote Config (later). Spark (free) plan in v1.
+- **Backend (BaaS):** Firebase — Auth, Cloud Firestore; App Check and Remote Config later (Play release). Spark (free) plan in v1.
 - **AI:** Gemini Flash via Firebase AI Logic (`@react-native-firebase/ai`, Gemini Developer API). Model name lives in `apps/mobile/src/config/ai.ts`, never at call sites.
 - **Market data:** Pluggable `MarketDataProvider` adapters (primary: Yahoo Finance chart/quote endpoints; fallbacks per `docs/HLD.md` §6). FX via Frankfurter (ECB).
 - **Domain logic:** `technicalindicators`, `json-logic-engine`, `zod`, `papaparse` — inside `packages/core` (pure TS, no RN/Firebase imports).
