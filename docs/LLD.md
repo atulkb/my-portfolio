@@ -1134,6 +1134,21 @@ Exact versions are pinned by `npx expo install` / the lockfile at implementation
 7. Sync script credentials: Application Default Credentials via the user's `gcloud` login; no service-account key.
 8. ANALYSIS_FRAMEWORK §7.1 now uses the full `Exchange` enum.
 
+### 3.13 Implementation notes (M3, 2026-10-16)
+
+- **Core helpers** (`core/instruments/chunks.ts`): `chunkTsv` (UTF-8 byte limit, chunks concatenate back to the input exactly), `nextMasterVersion`, `buildMasterUpload` (meta validated with its schema), `assembleChunks` (order + version check; the caller verifies the hash, because core has no crypto).
+- **Sync tool** (`tools/instrument-sync`, workspace `@portfolio/instrument-sync`, run as `npm run sync -- …` from the root): `build` writes `out/instruments.tsv` + `out/build.json` and checks counts against the previous local build; `upload` checks them against the **live** meta, and does nothing when the live `sha256` already matches. Project ID comes from `.firebaserc` (`--project` overrides it). `download --out` only writes inside `data/instruments/`, and the folder must not exist yet.
+- **Source dates:** BSE comes from the bhavcopy file name (its trading day). NSE and US come from the snapshot folder name, because those lists carry no date.
+- **First upload 2026-10-16:** version `2026-10-15.1`, 18,108 instruments (NSE 2,605 · BSE 5,048 · US 12,878), 2 chunks (879 KB + 403 KB). So a full download is 3 reads. The "18.5k" in earlier sections was an estimate.
+- **Device:**
+  - The MMKV encryption key is a **32-character** random string (192 bits from `expo-crypto`), because MMKV AES-256 takes a key string of at most 32 bytes. It replaces "32 random bytes" in §1.9.
+  - The key lives in `expo-secure-store`; the synchronous API lets the store open on first use, with no extra boot step.
+  - If the store can't be opened, it is recreated empty, since it only holds re-fetchable cache.
+- **No `instruments.tsv.next` key:** MMKV writes each key atomically, so the sync writes the TSV first and the meta last. If the app crashes in between, the verified TSV is left with the old meta, and the next check downloads again. This is simpler than copying 1.3 MB twice.
+- **Reads:** the repository uses `getDocFromServer`, so a stale Firestore cache can never answer "same version". When offline, the local copy is kept.
+- **Sign-out:** wipes MMKV except `device.*`, re-encrypts it with a new key, and clears the in-memory index (§1.12). Firestore `clearPersistence` stays with account deletion in M9.
+- The M2 placeholder home screen shows a temporary **Stock list** card: count and date, "Check for update", and search with a market filter and dev-only timing. It moves to Settings and ticker search in M4–M5.
+
 ---
 
 ## 4. App: Navigation, State & Screen → Data Mapping (`apps/mobile/src/`)

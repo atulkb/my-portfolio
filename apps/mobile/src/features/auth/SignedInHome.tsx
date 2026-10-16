@@ -4,6 +4,7 @@ import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { useSession } from '@/stores';
 import { colors, radii, spacing, typography } from '@/theme/tokens';
+import { StockListCard } from '@/features/instruments/StockListCard';
 import { AuthHeader } from './AuthHeader';
 
 /** M2 placeholder: confirms sign-in and profile creation until the Portfolio tab exists. */
@@ -22,6 +23,7 @@ export function SignedInHome(): React.JSX.Element {
         <Row label="Signed in with" value={profile?.authProvider === 'google' ? 'Google' : 'Email'} />
         <Row label="Summary currency" value={profile?.settings.summaryCurrency ?? '—'} />
       </View>
+      <StockListCard />
       <Button label="Sign out" variant="secondary" loading={busy} onPress={() => void signOut()} />
     </Screen>
   );

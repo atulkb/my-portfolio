@@ -27,6 +27,7 @@ const unverified: AuthUser = { ...googleUser, uid: 'u2', provider: 'password', e
 function setup(overrides: Partial<AuthService> = {}, repo: Partial<ProfileRepository> = {}) {
   let listener: (u: AuthUser | null) => void = () => undefined;
   const createIfMissing = jest.fn(async () => profile);
+  const onSignedOut = jest.fn();
   const auth: AuthService = {
     onAuthStateChanged: (cb) => {
       listener = cb;
@@ -44,13 +45,14 @@ function setup(overrides: Partial<AuthService> = {}, repo: Partial<ProfileReposi
   const store = createSessionStore({
     auth,
     profiles: () => ({ createIfMissing, ...repo }) as unknown as ProfileRepository,
+    onSignedOut,
   });
   store.getState().start();
   const emit = async (u: AuthUser | null): Promise<void> => {
     listener(u);
     await new Promise((r) => setTimeout(r, 0));
   };
-  return { store, auth, emit, createIfMissing };
+  return { store, auth, emit, createIfMissing, onSignedOut };
 }
 
 describe('session gate', () => {
@@ -136,5 +138,15 @@ describe('session actions', () => {
   it('reports password reset success', async () => {
     const { store } = setup();
     await expect(store.getState().sendPasswordReset('a@b.c')).resolves.toBe(true);
+  });
+
+  it('wipes local data only after a successful sign-out', async () => {
+    const ok = setup();
+    await ok.store.getState().signOut();
+    expect(ok.onSignedOut).toHaveBeenCalledTimes(1);
+
+    const failing = setup({ signOut: jest.fn(async () => Promise.reject(new AppError('AUTH_NETWORK'))) });
+    await failing.store.getState().signOut();
+    expect(failing.onSignedOut).not.toHaveBeenCalled();
   });
 });

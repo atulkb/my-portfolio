@@ -3,7 +3,7 @@
 Raw exchange ticker lists used to build the instrument master list during development (HLD §15).
 Downloaded 2026-10-16. **Not live data** — in production a scheduled Cloud Function refreshes the list (later release).
 
-> **The raw files are not in git** (`data/instruments/snapshot-*/` is git-ignored) because exchange data must not be redistributed from a public repository. Download them locally into `data/instruments/snapshot-<YYYY-MM-DD>/` from the sources below; a download script will be added with the instrument-sync implementation. NSE and BSE need a browser-like `User-Agent` header (BSE also a `Referer: https://www.bseindia.com/`).
+> **The raw files are not in git** (`data/instruments/snapshot-*/` is git-ignored) because exchange data must not be redistributed from a public repository. Download them locally into `data/instruments/snapshot-<YYYY-MM-DD>/` from the sources below; or run `npm run sync -- download --out data/instruments/snapshot-<YYYY-MM-DD>` (see `tools/instrument-sync`). NSE and BSE need a browser-like `User-Agent` header (BSE also a `Referer: https://www.bseindia.com/`).
 
 | File                                              | Source                                                                                                   | Rows                        | Key columns                                                                                                              |
 | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------ |

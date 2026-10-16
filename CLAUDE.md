@@ -43,7 +43,7 @@ packages/core/            Pure TypeScript shared by app (and Cloud Functions in 
   src/rules/              JSON-Logic whitelist validation + evaluation
   src/prompts/            prompt builder functions (no prompts anywhere else)
 firebase/                 firestore.rules, firestore.indexes.json, rules tests
-tools/instrument-sync/    (planned) weekly NSE/BSE/US ticker-list sync → Firestore reference/instruments (HLD §15)
+tools/instrument-sync/    dev script: NSE/BSE/US ticker lists → Firestore reference/instruments (HLD §15, LLD §3.6); weekly Cloud Function later
 .github/workflows/        (planned) scheduled instrument sync
 functions/                (v1.1) Cloud Functions — not created yet
 docs/                     HLD, LLD, analysis framework, ui/ (Stitch screen designs)
@@ -65,6 +65,7 @@ docs/                     HLD, LLD, analysis framework, ui/ (Stitch screen desig
 - **Format:** `npm run format`
 - **Firestore rules tests (emulator):** `npm run test:rules` — firebase-tools needs Java 21+: set `FIREBASE_JAVA_HOME` (e.g. Android Studio's `jbr`) so Android builds keep JDK 17
 - **Firebase emulators:** `firebase emulators:start`
+- **Stock list sync (gcloud ADC login needed):** `npm run sync -- download --out data/instruments/snapshot-<YYYY-MM-DD>` → `npm run sync -- build --snapshot data/instruments/snapshot-<YYYY-MM-DD>` → `npm run sync -- upload --dry-run` → `npm run sync -- upload`
 - **Expo dependency health:** `npm run doctor`
 
 # Coding Guidelines (details in `.claude/rules/`)
