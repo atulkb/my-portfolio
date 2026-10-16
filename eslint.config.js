@@ -16,6 +16,12 @@ module.exports = defineConfig([
   },
   {
     files: ['**/*.ts', '**/*.tsx'],
+    settings: {
+      // Resolve each workspace's tsconfig `paths` (e.g. the app's `@/` alias) when linting from the root.
+      'import/resolver': {
+        typescript: { project: ['apps/mobile/tsconfig.json', 'packages/core/tsconfig.json'] },
+      },
+    },
     rules: {
       '@typescript-eslint/no-explicit-any': 'error',
     },
