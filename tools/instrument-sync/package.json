@@ -1,0 +1,23 @@
+{
+  "name": "@portfolio/instrument-sync",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Dev script: build the instrument master list from exchange files and upload it to Firestore reference/instruments (LLD §3.6).",
+  "scripts": {
+    "sync": "tsx src/cli.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@portfolio/core": "*",
+    "firebase-admin": "^14.5.0",
+    "tsx": "^4.23.15"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.0.0",
+    "jest": "^30.5.2",
+    "ts-jest": "^29.4.15",
+    "typescript": "~6.0.3"
+  }
+}

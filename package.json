@@ -6,7 +6,8 @@
   "workspaces": [
     "apps/*",
     "packages/*",
-    "firebase"
+    "firebase",
+    "tools/*"
   ],
   "engines": {
     "node": ">=22"
@@ -21,7 +22,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test:rules": "npm run test:rules -w @portfolio/firebase-rules"
+    "test:rules": "npm run test:rules -w @portfolio/firebase-rules",
+    "sync": "npm run sync -w @portfolio/instrument-sync --"
   },
   "devDependencies": {
     "eslint": "^9.39.5",

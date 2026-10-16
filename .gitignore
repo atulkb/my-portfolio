@@ -92,3 +92,6 @@ venv/
 
 # Raw exchange ticker lists (NSE/BSE/Nasdaq Trader) — local only, not redistributed (see data/instruments/README.md)
 data/instruments/snapshot-*/
+
+# Instrument sync build output (generated, contains exchange data)
+tools/instrument-sync/out/

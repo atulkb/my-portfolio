@@ -57,6 +57,7 @@ export { parseHoldingsCsv } from './csv/parse';
 export * from './instruments/build';
 export * from './instruments/tsv';
 export * from './instruments/search';
+export * from './instruments/chunks';
 
 // Prompts (LLD §3.5)
 export type * from './prompts/types';

@@ -1,7 +1,8 @@
 import { Stack } from 'expo-router';
+import { useEffect } from 'react';
 
 import { LoadingProfileScreen, ProfileErrorScreen } from '@/features/auth/GateScreens';
-import { useSession } from '@/stores';
+import { instrumentStore, useSession } from '@/stores';
 import { colors } from '@/theme/tokens';
 
 /**
@@ -10,6 +11,12 @@ import { colors } from '@/theme/tokens';
  */
 export default function AppLayout(): React.JSX.Element {
   const gate = useSession((s) => s.gate);
+
+  // Stock list: load the local copy and check for a newer version (≤ 1×/24 h), non-blocking.
+  useEffect(() => {
+    if (gate === 'ready') void instrumentStore.getState().ensureFresh();
+  }, [gate]);
+
   if (gate === 'loadingProfile') return <LoadingProfileScreen />;
   if (gate === 'profileError') return <ProfileErrorScreen />;
   return <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.canvas } }} />;

@@ -41,6 +41,8 @@ export type SessionState = {
 export type SessionDeps = {
   readonly auth: AuthService;
   readonly profiles: (uid: string) => ProfileRepository;
+  /** Local cleanup after an explicit sign-out (LLD §1.12: wipe MMKV except `device.*`). */
+  readonly onSignedOut?: () => void;
 };
 
 /** Creates the session store (vanilla zustand; bound to React in `stores/index.ts`). */
@@ -127,7 +129,10 @@ export function createSessionStore(deps: SessionDeps): StoreApi<SessionState> {
       sendPasswordReset: (email) => act(() => deps.auth.sendPasswordReset(email)),
       retryProfile: () => enter(get().user),
       signOut: async () => {
-        await act(() => deps.auth.signOut());
+        await act(async () => {
+          await deps.auth.signOut();
+          deps.onSignedOut?.();
+        });
       },
       clearError: () => set({ error: null, errorDetail: null }),
     };
