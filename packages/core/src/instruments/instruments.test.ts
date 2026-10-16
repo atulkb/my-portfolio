@@ -173,15 +173,19 @@ const SNAPSHOT = join(__dirname, '../../../../data/instruments/snapshot-2026-10-
 const describeSnapshot = existsSync(SNAPSHOT) ? describe : describe.skip;
 
 describeSnapshot('development snapshot', () => {
-  const read = (f: string): string => readFileSync(join(SNAPSHOT, f), 'utf8');
-  const result = buildInstrumentMaster({
-    nseEquityCsv: read('nse_equity_list.csv'),
-    bseBhavcopyCsv: read('bse_bhavcopy_2026-10-15.csv'),
-    nasdaqListed: read('us_nasdaqlisted.txt'),
-    otherListed: read('us_otherlisted.txt'),
+  // Read in beforeAll: a skipped describe still runs its body, so file access must not happen here.
+  let result: ReturnType<typeof buildInstrumentMaster>;
+  beforeAll(() => {
+    const read = (f: string): string => readFileSync(join(SNAPSHOT, f), 'utf8');
+    result = buildInstrumentMaster({
+      nseEquityCsv: read('nse_equity_list.csv'),
+      bseBhavcopyCsv: read('bse_bhavcopy_2026-10-15.csv'),
+      nasdaqListed: read('us_nasdaqlisted.txt'),
+      otherListed: read('us_otherlisted.txt'),
+    });
   });
 
-  it('builds ≈ 18.5k instruments and passes the sanity check', () => {
+  it('builds ≈ 18k instruments and passes the sanity check', () => {
     expect(result.counts.total).toBeGreaterThan(17_000);
     expect(result.counts.total).toBeLessThan(20_000);
     expect(result.counts.nseBseOverlap).toBeGreaterThan(2_000);
