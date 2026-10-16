@@ -28,6 +28,10 @@ function codeOf(e: unknown): string | null {
 export function mapAuthError(e: unknown): AppError {
   if (isAppError(e)) return e;
   const code = codeOf(e);
+  if (__DEV__) {
+    // Dev builds only: SDK code + message to diagnose setup problems. Never tokens or user data.
+    console.warn('[auth]', code, e instanceof Error ? e.message : String(e));
+  }
   if (code !== null) {
     const mapped = FIREBASE_AUTH_CODES[code];
     if (mapped) return new AppError(mapped, { cause: e, retryable: mapped === 'AUTH_NETWORK' });

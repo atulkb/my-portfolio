@@ -4,7 +4,6 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
-import { LoadingProfileScreen, ProfileErrorScreen } from '@/features/auth/GateScreens';
 import { initCrashlytics } from '@/services/crashlytics';
 import { sessionStore, useSession } from '@/stores';
 import { INTER, INTER_FONT_MAP } from '@/theme/fonts';
@@ -50,24 +49,20 @@ export default function RootLayout(): React.JSX.Element | null {
   }, [fontsReady, gate]);
 
   if (!fontsReady || gate === 'booting') return null;
+  const signedIn = gate === 'ready' || gate === 'loadingProfile' || gate === 'profileError';
 
   return (
     <ThemeProvider value={navigationTheme}>
       <StatusBar style="light" />
-      {gate === 'loadingProfile' ? (
-        <LoadingProfileScreen />
-      ) : gate === 'profileError' ? (
-        <ProfileErrorScreen />
-      ) : (
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.canvas } }}>
-          <Stack.Protected guard={gate === 'ready'}>
-            <Stack.Screen name="(app)" />
-          </Stack.Protected>
-          <Stack.Protected guard={gate === 'signedOut' || gate === 'unverified'}>
-            <Stack.Screen name="(auth)" />
-          </Stack.Protected>
-        </Stack>
-      )}
+      {/* The navigator is never swapped out (that froze transitions); the gate only flips guards. */}
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.canvas } }}>
+        <Stack.Protected guard={signedIn}>
+          <Stack.Screen name="(app)" />
+        </Stack.Protected>
+        <Stack.Protected guard={!signedIn}>
+          <Stack.Screen name="(auth)" />
+        </Stack.Protected>
+      </Stack>
     </ThemeProvider>
   );
 }

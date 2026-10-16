@@ -1,6 +1,7 @@
 import { toAppError, type AppErrorCode, type ProfileRepository, type UserProfile } from '@portfolio/core';
 import { createStore, type StoreApi } from 'zustand/vanilla';
 
+import { devErrorDetail } from '@/lib/devError';
 import type { AuthService, AuthUser, Unsubscribe } from '@/services/auth/types';
 
 /**
@@ -21,6 +22,8 @@ export type SessionState = {
   readonly profile: UserProfile | null;
   /** Last error from a user action (shown inline), cleared on the next action. */
   readonly error: AppErrorCode | null;
+  /** Dev builds only: SDK code/message behind `error`, for diagnosing setup problems. */
+  readonly errorDetail: string | null;
   readonly busy: boolean;
   start(): Unsubscribe;
   signInWithGoogle(): Promise<void>;
@@ -61,19 +64,21 @@ export function createSessionStore(deps: SessionDeps): StoreApi<SessionState> {
         });
         if (get().user?.uid === user.uid) set({ gate: 'ready', profile });
       } catch (e) {
-        if (get().user?.uid === user.uid) set({ gate: 'profileError', error: toAppError(e).code });
+        if (get().user?.uid === user.uid) {
+          set({ gate: 'profileError', error: toAppError(e).code, errorDetail: devErrorDetail(e) });
+        }
       }
     }
 
     /** Runs a user action with busy/error handling; returns false on failure. */
     async function act(fn: () => Promise<void>): Promise<boolean> {
-      set({ busy: true, error: null });
+      set({ busy: true, error: null, errorDetail: null });
       try {
         await fn();
         return true;
       } catch (e) {
         const code = toAppError(e).code;
-        set({ error: code === 'AUTH_GOOGLE_CANCELLED' ? null : code });
+        set({ error: code === 'AUTH_GOOGLE_CANCELLED' ? null : code, errorDetail: devErrorDetail(e) });
         return false;
       } finally {
         set({ busy: false });
@@ -85,6 +90,7 @@ export function createSessionStore(deps: SessionDeps): StoreApi<SessionState> {
       user: null,
       profile: null,
       error: null,
+      errorDetail: null,
       busy: false,
 
       start: () => deps.auth.onAuthStateChanged((u) => void enter(u)),
@@ -123,7 +129,7 @@ export function createSessionStore(deps: SessionDeps): StoreApi<SessionState> {
       signOut: async () => {
         await act(() => deps.auth.signOut());
       },
-      clearError: () => set({ error: null }),
+      clearError: () => set({ error: null, errorDetail: null }),
     };
   });
 }
