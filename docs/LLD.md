@@ -735,6 +735,18 @@ Ties broken by: listing on NSE/NASDAQ/NYSE before others, then shorter name. Ind
 4. Rule read-back is rendered deterministically by code from the validated AST: approved.
 5. CSV error references (file name, line, row preview) exist only in the error sheet; nothing about files or lines is persisted.
 
+### 2.13 Implementation notes (M1, 2026-10-16)
+Small refinements made while implementing; behaviour matches the sections above unless noted.
+1. **P/B absolute fallback** — the framework defines P/B only relative to a sector median. v1 uses `good < 1.5`, `bad > 3` (1.5–3 average), in `THRESHOLDS.pb`. **Pending user review.**
+2. **Buy date "not in the future"** is checked only on write (`newBuyTransactionSchema(today)`); stored documents are read with format + ≥ 1990 checks only, so a wrong device clock never hides existing buys.
+3. **Sector groups** (`groupBySector(holdings, fx, currency)`) report value / P&L / weight in the summary currency; holdings stay native (D25).
+4. **`AnalysisInput.market`** added (needed for India-only promoter holding and VIX relevance).
+5. **Percentage differences** are rounded to 6 dp before threshold comparison, so float noise (102/100 − 1) cannot cross a band edge.
+6. **CSV**: extra error code `CSV_TOO_LONG` (name > 120 / platform > 40 chars). Row line numbers are real file lines, including blank lines and multi-line quoted fields.
+7. **Instrument master** from the 2026-10-15 snapshot: 18,108 instruments (NSE 2,605 · BSE 5,048 · overlap 2,423 · US 12,878). US rows skipped: 37 test issues, 17 IEX-only, 374 symbols outside the symbol format (mostly preferreds like `AHT$D`). The BSE bhavcopy has no industry column, so `industry` is always null in v1. TSV ≈ 1.31 MB → 2 chunks.
+8. **Prompt tasks** are split into `SinglePromptTask` (deep analysis, rule compile, market sentiment) and `BatchPromptTask` (ratings, signals) with per-item `validate` so the client retries only rejected items. Grounding allows integers 0–10 and indicator/index constants (14, 50, 200, 500 …). `<` in the DATA block is escaped as `<` so user text cannot close the block.
+9. **Rule compile**: scope problems are returned as `scopeIssues` (shown to the user) rather than retried, since the model cannot fix them.
+
 ---
 
 ## 3. Services (`apps/mobile/src/services/`, `tools/instrument-sync/`)
