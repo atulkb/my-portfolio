@@ -45,3 +45,25 @@ export function formatDate(iso: IsoDate, opts: { readonly short?: boolean } = {}
   const month = MONTHS[Number(m[2]) - 1] ?? '';
   return opts.short ? `${day} ${month}` : `${day} ${month} ${m[1]}`;
 }
+
+/** Signed money for changes: `+₹1,401.00`, `-$12.50`; zero has no sign. */
+export function formatSignedMoney(amount: number | null, currency: Currency): string {
+  if (amount === null || !Number.isFinite(amount)) return '—';
+  const text = MONEY[currency].format(Math.abs(amount));
+  return amount > 0 ? `+${text}` : amount < 0 ? `-${text}` : text;
+}
+
+const PCT = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+/** Percentage with 2 decimals; `signed` adds + for gains: `+14.30%`. */
+export function formatPct(pct: number | null, opts: { readonly signed?: boolean } = {}): string {
+  if (pct === null || !Number.isFinite(pct)) return '—';
+  const text = `${PCT.format(Math.abs(pct))}%`;
+  if (pct < 0) return `-${text}`;
+  return opts.signed && pct > 0 ? `+${text}` : text;
+}
+
+/** USD/INR rate line, e.g. "1 USD ≈ ₹94.96". */
+export function formatFxRate(usdInr: number): string {
+  return Number.isFinite(usdInr) ? `1 USD ≈ ${MONEY.INR.format(usdInr)}` : '';
+}
