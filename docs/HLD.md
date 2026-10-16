@@ -1,6 +1,6 @@
 # High-Level Design (HLD): Portfolio & Watchlist Analyzer
 
-> Status: **Draft v0.4 — awaiting sign-off.** v0.2: review on 2026-10-16. v0.3: user answers (CSV name column, filters, AI-rated Performance, package ID, news deferred). v0.4: instrument master list with weekly sync (§15). v0.5: auth methods, holding actions sheet (§16). v0.6: one position per stock per broker, labels-only badges on cards, multiple named watchlists, Cloud Function sync (later) with a dev snapshot now. v0.7: currency display, daily/on-demand re-rating, duplicate-upload rejection, rule scope, AI buy/sell signals. v0.8: individual buys stored as BUY transactions (supersedes D21), Settings screen — see §12 Decision Log.
+> Status: **v1.0 — Signed off 2026-10-16.** Changes after sign-off go through the Decision Log (§12) and bump the version. History: v0.2 initial review · v0.3 CSV name column, filters, AI-rated Performance, package ID, news deferred · v0.4 instrument master list (§15) · v0.5 auth & holding actions (§16) · v0.6 labels-only badges, named watchlists, Cloud Function sync later · v0.7 currency display, daily/on-demand re-rating, duplicate rejection, rule scope, AI buy/sell signals · v0.8 individual BUY transactions (D30), Settings.
 
 ## 1. Executive Summary & Core Intent
 An Android-first mobile app (Expo / React Native, TypeScript) for **personal** portfolio tracking across multiple brokers, covering Indian (NSE/BSE) and US markets. It consolidates holdings, shows P/L in INR and USD grouped **Sector → Stock → Lots**, runs a **deterministic technical + fundamental scoring** of each stock (pros/cons, R/G/Y), uses **Gemini Flash** to explain that analysis in plain language and to compile **natural-language rules** into safe JSON-Logic, and evaluates those rules on **daily closes**.
@@ -31,7 +31,7 @@ Personal use first; Play Store release is a possible later step, so public-relea
 ```mermaid
 flowchart LR
   subgraph Device["Android device — Expo app"]
-    UI["Screens (Expo Router)<br/>Portfolio · Watchlist · Rules · Analysis · Settings"]
+    UI["Screens (Expo Router)<br/>Portfolio · Watchlist · Rules · Research (+ Settings via gear)"]
     ST["Zustand stores"]
     SVC["Service layer<br/>firestore · market-data · fx · ai"]
     CORE["@portfolio/core (pure TS)<br/>CSV · indicators · scoring · rules · prompts · schemas"]
