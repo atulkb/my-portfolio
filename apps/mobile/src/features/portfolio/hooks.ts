@@ -21,12 +21,16 @@ import {
 } from '@portfolio/core';
 import { useMemo } from 'react';
 
-import { resolveSector } from '@/features/analysis/sector';
+import { resolveSector, type SectorSources } from '@/features/analysis/sector';
 import { localIsoDate } from '@/lib/dates';
 import { getInstrumentIndex } from '@/services/instruments/instrumentIndex';
 import {
+  aiStore,
+  analysisStore,
   marketStore,
   portfolioStore,
+  sessionStore,
+  useAi,
   useAnalysis,
   useInstruments,
   useMarket,
@@ -34,6 +38,7 @@ import {
   useSession,
   useUi,
 } from '@/stores';
+import type { AnalysisEntry } from '@/stores/analysisStore';
 
 /** Placeholder rate while no FX is known: converted totals become NaN and display as "—". */
 const NO_FX: FxContext = { usdInr: Number.NaN, asOf: '1970-01-01', history: [] };
@@ -101,26 +106,67 @@ export function hasUnpricedHoldings(): boolean {
   return holdingKeys(portfolioStore.getState().transactions).some((k) => !snaps.has(k));
 }
 
-/**
- * Pricing context from the stores (LLD §4.3 `usePricingContext`): Health labels from the
- * analysis store; Performance labels join with M7 (AI) and stay `null` ("Not rated") until then.
- */
+/** Inputs of {@link buildPricingContext}. */
+export type PricingSources = {
+  readonly snapshots: PricingContext['snapshots'];
+  readonly fx: FxContext | null;
+  readonly sector: SectorSources;
+  readonly analysis: ReadonlyMap<InstrumentKey, AnalysisEntry>;
+  readonly performance: Readonly<Record<InstrumentKey, { readonly value: { readonly rating: Label } }>>;
+};
+
+/** Pricing context (LLD §2.2): Health labels from the analysis store, Performance from the AI cache. */
+export function buildPricingContext(src: PricingSources): PricingContext {
+  const sectorOf = (key: InstrumentKey): string | null => resolveSector(key, src.sector);
+  const labels = new Map<InstrumentKey, { performance: Label | null; health: Label | null }>();
+  for (const [key, entry] of src.analysis)
+    labels.set(key, { performance: null, health: entry.analysis.healthLabel });
+  for (const [key, entry] of Object.entries(src.performance) as [
+    InstrumentKey,
+    { value: { rating: Label } },
+  ][])
+    labels.set(key, { performance: entry.value.rating, health: labels.get(key)?.health ?? null });
+  return { valuationDate: localIsoDate(), snapshots: src.snapshots, fx: src.fx ?? NO_FX, sectorOf, labels };
+}
+
+/** Every holding from the current store state (outside React, e.g. the AI sync). */
+export function currentHoldings(): StockHolding[] {
+  const m = marketStore.getState();
+  const ctx = buildPricingContext({
+    snapshots: m.snapshots,
+    fx: m.fx,
+    sector: {
+      overrides: sessionStore.getState().profile?.sectorOverrides,
+      profiles: m.profiles,
+      index: getInstrumentIndex(),
+    },
+    analysis: analysisStore.getState().byKey,
+    performance: aiStore.getState().performance,
+  });
+  return aggregateHoldings(portfolioStore.getState().transactions, ctx, { ...NO_FILTERS, sort: 'NAME_ASC' });
+}
+
+/** Pricing context from the stores (LLD §4.3 `usePricingContext`). */
 export function usePricingContext(): PricingContext {
   const snapshots = useMarket((s) => s.snapshots);
   const fx = useMarket((s) => s.fx);
   const profiles = useMarket((s) => s.profiles);
   const analysis = useAnalysis((s) => s.byKey);
+  const performance = useAi((s) => s.performance);
   const overrides = useSession((s) => s.profile?.sectorOverrides);
   const listVersion = useInstruments((s) => s.meta?.version);
   const index = listVersion ? getInstrumentIndex() : null;
-  return useMemo(() => {
-    const src = { overrides, profiles, index };
-    const sectorOf = (key: InstrumentKey): string | null => resolveSector(key, src);
-    const labels = new Map<InstrumentKey, { performance: Label | null; health: Label | null }>();
-    for (const [key, entry] of analysis)
-      labels.set(key, { performance: null, health: entry.analysis.healthLabel });
-    return { valuationDate: localIsoDate(), snapshots, fx: fx ?? NO_FX, sectorOf, labels };
-  }, [snapshots, fx, profiles, analysis, overrides, index]);
+  return useMemo(
+    () =>
+      buildPricingContext({
+        snapshots,
+        fx,
+        sector: { overrides, profiles, index },
+        analysis,
+        performance,
+      }),
+    [snapshots, fx, profiles, analysis, performance, overrides, index],
+  );
 }
 
 /** Every holding, unfiltered (S02b / S02c / filter counts). */

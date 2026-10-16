@@ -1,7 +1,15 @@
 import * as Crypto from 'expo-crypto';
 import { useStore } from 'zustand';
 
+import { AI_CONFIG } from '@/config/ai';
 import { localIsoDate } from '@/lib/dates';
+import { devErrorDetail } from '@/lib/devError';
+import { userMessage } from '@/lib/messages';
+import { createAiClient } from '@/services/ai/aiClient';
+import { createAiService } from '@/services/ai/aiService';
+import { firebaseGenerativePort } from '@/services/ai/firebaseAi';
+import { pushAiDevLog } from '@/services/ai/devLog';
+import { createAiUsage } from '@/services/ai/usage';
 import { firebaseAuthService } from '@/services/auth/firebaseAuthService';
 import { createKeyValueCache } from '@/services/cache/kv';
 import { mmkvRawStore, wipeUserData } from '@/services/cache/storage';
@@ -21,6 +29,7 @@ import { createHttpClient } from '@/services/http/httpClient';
 import { createMarketDataService } from '@/services/market-data/marketDataService';
 import { createYahooProvider } from '@/services/market-data/yahoo/yahooProvider';
 import { createRefreshService } from '@/services/refresh/refreshService';
+import { createAiStore, type AiState } from './aiStore';
 import { createAnalysisStore, type AnalysisState } from './analysisStore';
 import { createMarketStore, type MarketState } from './marketStore';
 import { createSessionStore, type SessionState } from './sessionStore';
@@ -78,6 +87,41 @@ export const marketStore = createMarketStore({
 /** Indicators and Health per instrument, derived from market data (LLD §4.3). */
 export const analysisStore = createAnalysisStore();
 
+const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+const aiUsage = createAiUsage({
+  kv,
+  clock,
+  sleep,
+  limits: { ...AI_CONFIG.rateLimit, maxWaitMs: AI_CONFIG.maxRpmWaitMs },
+});
+
+/** Gemini ratings, signals, deep analysis and market sentiment (LLD §3.5, §4.3). */
+export const aiStore = createAiStore({
+  service: createAiService({
+    client: createAiClient({
+      port: firebaseGenerativePort,
+      usage: aiUsage,
+      config: AI_CONFIG,
+      sleep,
+      log: __DEV__
+        ? (line) => {
+            console.log(`[ai] ${line}`);
+            pushAiDevLog(line);
+          }
+        : undefined,
+      describeError: devErrorDetail,
+    }),
+    usage: aiUsage,
+    kv,
+    clock,
+  }),
+  now: () => Date.now(),
+  onNotice: (code) => {
+    const message = userMessage(code);
+    if (message) toastStore.getState().show(message);
+  },
+});
+
 /** UI preferences (filters, collapsed sectors), persisted in MMKV. */
 export const uiStore = createUiStore(kv);
 
@@ -107,6 +151,7 @@ export const sessionStore = createSessionStore({
     portfolioStore.getState().reset();
     marketStore.getState().reset();
     analysisStore.getState().reset();
+    aiStore.getState().reset();
     uiStore.getState().reset();
   },
 });
@@ -139,6 +184,11 @@ export function useMarket<T>(selector: (s: MarketState) => T): T {
 /** React hook selecting from the analysis store. */
 export function useAnalysis<T>(selector: (s: AnalysisState) => T): T {
   return useStore(analysisStore, selector);
+}
+
+/** React hook selecting from the AI store. */
+export function useAi<T>(selector: (s: AiState) => T): T {
+  return useStore(aiStore, selector);
 }
 
 /** React hook selecting from the UI store. */

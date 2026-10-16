@@ -1,11 +1,11 @@
 # High-Level Design (HLD): Portfolio & Watchlist Analyzer
 
-> Status: **v1.3 — Signed off 2026-10-16** (v1.3: AI market-sentiment paragraph on Watchlist, D34). Changes after sign-off go through the Decision Log (§12) and bump the version. History: v0.2 initial review · v0.3 CSV name column, filters, AI-rated Performance, package ID, news deferred · v0.4 instrument master list (§15) · v0.5 auth & holding actions (§16) · v0.6 labels-only badges, named watchlists, Cloud Function sync later · v0.7 currency display, daily/on-demand re-rating, duplicate rejection, rule scope, AI buy/sell signals · v0.8 individual BUY transactions (D30), Settings · v1.1 duplicate buys allowed with post-import heads-up and Undo import (D31, supersedes D27) · v1.2 App Check deferred to Play release (D32), scraped latest-close fallback and price-index benchmark (D33) · v1.3 AI market-sentiment paragraph on Watchlist (D34).
+> Status: **v1.4 — Signed off 2026-10-16, amended 2026-10-17** (v1.4: App Check with the debug provider in personal builds, D35 supersedes D32). Changes after sign-off go through the Decision Log (§12) and bump the version. History: v0.2 initial review · v0.3 CSV name column, filters, AI-rated Performance, package ID, news deferred · v0.4 instrument master list (§15) · v0.5 auth & holding actions (§16) · v0.6 labels-only badges, named watchlists, Cloud Function sync later · v0.7 currency display, daily/on-demand re-rating, duplicate rejection, rule scope, AI buy/sell signals · v0.8 individual BUY transactions (D30), Settings · v1.1 duplicate buys allowed with post-import heads-up and Undo import (D31, supersedes D27) · v1.2 App Check deferred to Play release (D32), scraped latest-close fallback and price-index benchmark (D33) · v1.3 AI market-sentiment paragraph on Watchlist (D34) · v1.4 App Check (debug provider) required for AI Logic in all builds (D35, supersedes D32).
 
 ## 1. Executive Summary & Core Intent
 An Android-first mobile app (Expo / React Native, TypeScript) for **personal** portfolio tracking across multiple brokers, covering Indian (NSE/BSE) and US markets. It consolidates holdings, shows P/L in INR and USD grouped **Sector → Stock → Lots**, runs a **deterministic technical + fundamental scoring** of each stock (pros/cons, R/G/Y), uses **Gemini Flash** to explain that analysis in plain language and to compile **natural-language rules** into safe JSON-Logic, and evaluates those rules on **daily closes**.
 
-Personal use first; Play Store release is a possible later step, so public-release safeguards (feature flags, disclaimers, App Check seam) are designed in from the start. App Check itself is switched on only for a Play release (D32).
+Personal use first; Play Store release is a possible later step, so public-release safeguards (feature flags, disclaimers, App Check seam) are designed in from the start. App Check protects Firebase AI Logic in every build (debug provider for personal builds, D35).
 
 ### Key capabilities
 - Bulk CSV import (simple fixed format, §7) and manual single-stock add/edit/delete.
@@ -44,7 +44,7 @@ flowchart LR
   subgraph Firebase["Firebase (Spark plan)"]
     AUTH["Auth"]
     FS[("Cloud Firestore<br/>users/{uid}/...")]
-    AC["App Check<br/>(Play release only, D32)"]
+    AC["App Check<br/>(debug provider, D35)"]
     AIL["Firebase AI Logic → Gemini Flash<br/>(Gemini Developer API)"]
   end
 
@@ -87,7 +87,7 @@ flowchart LR
 | **Firestore** | Source of truth for user data (holdings, watchlist, rules, settings). |
 | **MMKV** | Local cache of daily market snapshots, AI results and the instrument master list; enables offline viewing and search. |
 | **Instrument sync** | v1: a dev script builds the master list from the snapshot in `data/instruments/` and uploads it. Later: a scheduled Cloud Function downloads fresh lists weekly with the same `core` parsers (§15). |
-| **Firebase AI Logic** | Proxies Gemini calls so no API key lives in the app; enforced by App Check from the Play release (D32). |
+| **Firebase AI Logic** | Proxies Gemini calls so no API key lives in the app; App Check enforced (D35). |
 
 ## 4. Data Model (conceptual — field-level schema is LLD)
 
@@ -222,13 +222,13 @@ Two schedules are needed either way: after NSE close (~16:00 IST) and after US c
 | Offline | Last snapshot and holdings viewable offline; edits queued via Firestore offline persistence. |
 | Cost | ₹0 in v1: Firebase Spark, free market-data tiers, Gemini free tier. |
 | Reliability | Market-data provider failure falls back to secondary provider, then to the cached snapshot with a "stale as of" banner. |
-| Security / privacy | Data only under `users/{uid}`; App Check enforced on Firestore & AI from the Play release (D32); no PII sent to Gemini (only tickers and numbers). |
+| Security / privacy | Data only under `users/{uid}`; App Check enforced on AI Logic in all builds (D35; Firestore enforcement later); no PII sent to Gemini (only tickers and numbers). |
 | Retention | User data kept until the user deletes it; account deletion removes `users/{uid}` recursively. |
 | Search | Ticker/company search over ~20k instruments returns top 20 results in < 50 ms, fully offline after first sync. |
 | Master-list freshness | v1: static development snapshot, uploaded manually. Later: refreshed weekly by a Cloud Function. Device checks at most once per 24 h (1 Firestore read) and downloads only when the version changed (~5 reads). |
 
 ## 11. Security, Privacy & Compliance
-1. **App Check** (Play Integrity) protects Firestore and Firebase AI Logic from non-app clients **from the Play release on** (D32). Personal builds run without it: Firestore is still protected by Auth + security rules, and the project has no billing, so misuse of the AI endpoint can at worst exhaust the free quota.
+1. **App Check** protects Firebase AI Logic from non-app clients in **every build** (D35): Firebase requires App Check for AI Logic from 2026-11-02. Personal builds are sideloaded, so Play Integrity can't attest them; they use the **debug provider**, and each device's debug secret is registered once in the console (never committed). Firestore stays protected by Auth + security rules; enforcing App Check on Firestore (and Play Integrity) waits for a Play release, if any.
 2. **Firestore rules:** `match /users/{uid}/{document=**} { allow read, write: if request.auth != null && request.auth.uid == uid; }` plus per-collection field validation (LLD). `reference/**` is read-only for signed-in users and never writable from clients (the sync job uses the Admin SDK). Tested with the emulator.
 3. **No unsafe execution:** AI rules are JSON-Logic only, validated against a whitelist of variables and operators; never `eval`.
 4. **Prompt injection:** user-written rule text is passed as a delimited data field; output must match a strict schema.
@@ -273,6 +273,7 @@ Two schedules are needed either way: after NSE close (~16:00 IST) and after US c
 | D32 | App Check not used in personal builds; Play Integrity App Check enforced for Firestore + AI Logic from the Play release | Debug-provider App Check with enforcement in v1 | User decision. Personal sideloaded app; Firestore is protected by Auth + rules, and the Spark project has no billing, so the residual risk is free-quota abuse only. |
 | D33 | Last-resort price fallback: scrape the latest close from a public quote page when Yahoo and Twelve Data both fail; benchmark uses price indices (bonuses/dividends not considered) | Cached snapshot only; total-return indices | User decision. Scraping is fragile and against some sites' terms, so it is isolated in one adapter, used only after the market has closed, and updates price/P&L only (indicators stay on cached bars). |
 | D34 | Watchlist market card shows a Gemini-written headline + paragraph (daily, cached, grounded) above deterministic VIX/index/FX figures | Figures only | User decision: friendlier. One extra call per day; level colours stay deterministic; no advice wording. |
+| D35 | App Check with the **debug provider** in all personal builds (dev and release), passed to Firebase AI Logic; each device's debug secret registered in the console. Supersedes D32 | Un-enforce App Check (D32); Play Integrity | Firebase requires App Check for AI Logic from 2026-11-02 and blocks un-enforcing it; the project already had enforcement on. The app is not distributed through Google Play (user decision, 2026-10-17), so Play Integrity can't attest it. Free; no billing. |
 
 ## 13. Open Questions
 None blocking. Remaining details (field-level schemas, error codes, exact UI copy) are resolved in the LLD.

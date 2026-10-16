@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { LabelBadge, MarketBadge, SymbolTile } from '@/components/Badges';
 import { formatDate, formatMoney, formatPct, formatQuantity, formatSignedMoney } from '@/lib/format';
+import { useAi } from '@/stores';
 import { colors, radii, spacing, typography } from '@/theme/tokens';
 
 /** "Zerodha" or "Zerodha +1" (largest broker by invested first). */
@@ -17,7 +18,7 @@ const signColor = (n: number | null): string =>
 /**
  * Stock card (S02, LLD §4.4): symbol tile, name, market, broker, quantity, average, last close
  * with day change, invested, current value, total return and CAGR, plus the Performance (AI,
- * "Not rated" until M7) and Health badges.
+ * "Not rated" without a valid AI rating) and Health badges, plus the AI reason line.
  */
 export function HoldingCard({
   holding,
@@ -30,6 +31,8 @@ export function HoldingCard({
   readonly onPress: () => void;
 }): React.JSX.Element {
   const h = holding;
+  // Reason only alongside the label it explains (hidden when not rated, LLD §4.4).
+  const reason = useAi((s) => (h.performance ? (s.performance[h.key]?.value.reason ?? null) : null));
   const dayUp = (h.dayChangePct ?? 0) >= 0;
   return (
     <Pressable
@@ -72,6 +75,11 @@ export function HoldingCard({
         <LabelBadge kind="performance" label={h.performance} />
         <LabelBadge kind="health" label={h.health} />
       </View>
+      {reason ? (
+        <Text style={styles.reason} numberOfLines={2}>
+          {reason}
+        </Text>
+      ) : null}
       {stale && h.priceDate ? (
         <Text style={styles.stale}>{`as of ${formatDate(h.priceDate, { short: true })}`}</Text>
       ) : null}
@@ -124,6 +132,7 @@ const styles = StyleSheet.create({
   },
   stale: { ...typography.labelSm, color: colors.caution },
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  reason: { ...typography.bodyMd, color: colors.textSecondary },
   bottom: {
     flexDirection: 'row',
     justifyContent: 'space-between',

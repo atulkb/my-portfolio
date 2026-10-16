@@ -18,6 +18,7 @@ import type { NewRule, Rule, RulePatch, RuleResult } from './models/rule';
 import type { BuyTransaction, BuyTransactionPatch, NewBuyTransaction } from './models/transaction';
 import type { ProfileSeed, UserProfile, UserSettings } from './models/user';
 import type { NewWatchlistItem, Watchlist, WatchlistItem } from './models/watchlist';
+import type { BuiltPrompt, JsonSchemaSubset, ModelTier, PromptTaskId } from './prompts/types';
 
 /** Result of reading a collection: invalid documents are skipped and counted, never thrown (LLD §3.7). */
 export type ReadResult<T> = { readonly items: T[]; readonly skipped: number };
@@ -106,4 +107,33 @@ export interface MarketDataProvider {
   getLatestClose?(ref: InstrumentRef): Promise<LatestCloseResult>;
   getFundamentals?(ref: InstrumentRef): Promise<Fundamentals>;
   getProfile?(ref: InstrumentRef): Promise<InstrumentProfile>;
+}
+
+/** One Gemini request (LLD §3.5). */
+export type GenerateRequest = {
+  readonly taskId: PromptTaskId;
+  readonly model: ModelTier;
+  readonly prompt: BuiltPrompt;
+  readonly responseSchema: JsonSchemaSubset;
+  readonly timeoutMs: number;
+};
+
+/** Raw model reply; parsing and validation happen in the AI client. */
+export type GenerateResult = {
+  readonly text: string;
+  /** e.g. `STOP`, `MAX_TOKENS`; `null` when the SDK gives none. */
+  readonly finishReason: string | null;
+  readonly usage: {
+    readonly promptTokens: number;
+    readonly outputTokens: number;
+    readonly thoughtsTokens: number;
+  } | null;
+};
+
+/**
+ * The model behind the AI client (Firebase AI Logic in the app, a fake in tests). Throws
+ * `AppError` with an `AI_*` code; `retryable` marks timeouts and 5xx.
+ */
+export interface GenerativePort {
+  generate(req: GenerateRequest): Promise<GenerateResult>;
 }

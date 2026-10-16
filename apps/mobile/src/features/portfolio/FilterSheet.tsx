@@ -210,7 +210,7 @@ export function FilterSheet(): React.JSX.Element {
         ))}
       </View>
       <Text style={styles.hint}>
-        Ratings appear once analysis is added; until then every stock is “Not rated”.
+        Performance is rated by AI after each refresh; “Not rated” means no valid rating yet.
       </Text>
 
       <Text style={styles.section}>5. PLATFORM</Text>

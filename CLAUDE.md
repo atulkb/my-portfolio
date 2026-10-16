@@ -2,7 +2,7 @@
 
 - **Name:** Portfolio & Watchlist Analyzer
 - **Description:** Android-first personal app to consolidate stock holdings across brokers (NSE/BSE + US), show P/L in INR & USD grouped by sector, run deterministic technical/fundamental scoring with Gemini-written explanations, and evaluate natural-language watchlist rules on daily closes.
-- **Audience:** Personal use now; may ship to Play Store later — keep public-release concerns (feature flags, disclaimers) in place from day one; App Check is added for the Play release (HLD D32).
+- **Audience:** Personal use now; may ship to Play Store later — keep public-release concerns (feature flags, disclaimers) in place from day one; App Check (debug provider) protects AI Logic in every build (HLD D35).
 - **Current phase:** HLD v1.3 and LLD v1 approved (2026-10-16) → implementation, milestone by milestone (LLD §5.6, M0 first). No feature code outside an approved LLD section.
 - **Branches:** `main` = clean/stable; `release1/v1` = v1 integration branch; one branch per milestone (`feat/m0-foundations`, …) merged into `release1/v1` by PR after review.
 
@@ -11,7 +11,7 @@
 - **Language:** TypeScript (strict) everywhere. Node.js LTS (v22+). npm workspaces monorepo.
 - **Mobile:** Expo (managed workflow + development builds, Expo Router), React Native.
 - **State / cache:** Zustand; `react-native-mmkv` (encrypted) for local cache.
-- **Backend (BaaS):** Firebase — Auth, Cloud Firestore; App Check and Remote Config later (Play release). Spark (free) plan in v1.
+- **Backend (BaaS):** Firebase — Auth, Cloud Firestore, App Check (debug provider, AI Logic); Remote Config later. Spark (free) plan in v1.
 - **AI:** Gemini Flash via Firebase AI Logic (`@react-native-firebase/ai`, Gemini Developer API). Model name lives in `apps/mobile/src/config/ai.ts`, never at call sites.
 - **Market data:** Pluggable `MarketDataProvider` adapters (primary: Yahoo Finance chart/quote endpoints; fallbacks per `docs/HLD.md` §6). FX via Frankfurter (ECB).
 - **Domain logic:** `technicalindicators`, `json-logic-engine`, `zod`, `papaparse` — inside `packages/core` (pure TS, no RN/Firebase imports).

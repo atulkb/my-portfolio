@@ -15,21 +15,39 @@ export const AI_CONFIG = {
     // Stable, shutdown not earlier than 2027-07-21. Candidate for high-volume batch jobs (decided in LLD).
     flashLite: 'gemini-3.5-flash-lite',
   },
+  /** Per task (LLD §3.5). Thinking tokens count toward this cap (spike S2), hence the thinking levels below. */
   maxOutputTokens: {
-    analysis: 1024,
+    performanceRating: 2048,
+    signals: 2048,
+    deepAnalysis: 1024,
     ruleCompile: 512,
-    performanceRatingBatch: 2048,
-    signalBatch: 2048,
+    marketSentiment: 256,
   },
   temperature: {
-    analysis: 0.3,
-    ruleCompile: 0,
     performanceRating: 0,
-    signal: 0,
+    signals: 0,
+    deepAnalysis: 0.3,
+    ruleCompile: 0,
+    marketSentiment: 0.3,
   },
+  /** Thinking level per task (SDK `ThinkingLevel` values); the tasks explain supplied numbers only. */
+  thinkingLevel: {
+    performanceRating: 'MINIMAL',
+    signals: 'MINIMAL',
+    deepAnalysis: 'LOW',
+    ruleCompile: 'LOW',
+    marketSentiment: 'MINIMAL',
+  },
+  /** Retries after the first attempt (≤ 3 attempts in total). */
   maxRetries: 2,
-  performanceRatingBatchSize: 25,
+  retryBackoffMs: [1000, 3000],
+  /** Items per batch call (performance ratings, signals). */
+  batchSize: 25,
   requestTimeoutMs: 20_000,
+  /** Client-side budget (LLD §3.12 #4): requests per minute and per local day. */
+  rateLimit: { rpm: 5, dailyCap: 500 },
+  /** Longest wait for a free per-minute slot before giving up with `AI_BUDGET_EXCEEDED`. */
+  maxRpmWaitMs: 60_000,
 } as const;
 
 export type AiConfig = typeof AI_CONFIG;
