@@ -1,6 +1,6 @@
 # High-Level Design (HLD): Portfolio & Watchlist Analyzer
 
-> Status: **v1.0 — Signed off 2026-10-16.** Changes after sign-off go through the Decision Log (§12) and bump the version. History: v0.2 initial review · v0.3 CSV name column, filters, AI-rated Performance, package ID, news deferred · v0.4 instrument master list (§15) · v0.5 auth & holding actions (§16) · v0.6 labels-only badges, named watchlists, Cloud Function sync later · v0.7 currency display, daily/on-demand re-rating, duplicate rejection, rule scope, AI buy/sell signals · v0.8 individual BUY transactions (D30), Settings.
+> Status: **v1.1 — Signed off 2026-10-16** (v1.1: duplicate buys allowed, D31). Changes after sign-off go through the Decision Log (§12) and bump the version. History: v0.2 initial review · v0.3 CSV name column, filters, AI-rated Performance, package ID, news deferred · v0.4 instrument master list (§15) · v0.5 auth & holding actions (§16) · v0.6 labels-only badges, named watchlists, Cloud Function sync later · v0.7 currency display, daily/on-demand re-rating, duplicate rejection, rule scope, AI buy/sell signals · v0.8 individual BUY transactions (D30), Settings · v1.1 duplicate buys allowed with post-import heads-up and Undo import (D31, supersedes D27).
 
 ## 1. Executive Summary & Core Intent
 An Android-first mobile app (Expo / React Native, TypeScript) for **personal** portfolio tracking across multiple brokers, covering Indian (NSE/BSE) and US markets. It consolidates holdings, shows P/L in INR and USD grouped **Sector → Stock → Lots**, runs a **deterministic technical + fundamental scoring** of each stock (pros/cons, R/G/Y), uses **Gemini Flash** to explain that analysis in plain language and to compile **natural-language rules** into safe JSON-Logic, and evaluates those rules on **daily closes**.
@@ -170,11 +170,12 @@ One row = one individual buy. Header row required. UTF-8.
 1. Portfolio **+** button expands into **Add stock** and **Upload CSV**.
 2. **Upload CSV** opens the Android system file picker (`expo-document-picker`; Downloads, Drive, etc.), restricted to `.csv` / `text/*`, max 1 MB.
 3. The file is parsed and every row validated (schema, master list §15, dates, numbers).
-4. **All-or-nothing:** if every row is valid, all rows are imported in one batch and a toast confirms "45 holdings imported · 3 duplicates skipped". If any row has an error, **nothing is imported** and an error sheet lists every problem as *row · column · issue · suggested fix*. The user fixes the file and uploads again.
+4. **All-or-nothing:** if every row is valid, all rows are imported in one batch and a toast confirms "45 buys imported" (plus the duplicate heads-up and **Undo import**, see below). If any row has an error, **nothing is imported** and an error sheet lists every problem as *row · column · issue · suggested fix*. The user fixes the file and uploads again.
 
 Each row becomes one `BUY` transaction:
 - The same stock bought several times (different dates, prices or platforms) is simply several rows. That is normal, not an error.
-- A row that **exactly matches** an existing buy (same stock, exchange, platform, buy date and quantity) is an **error**: the whole upload is rejected (all-or-nothing) and the error sheet lists those rows with the fix "remove these rows, they are already in your portfolio". The same check applies to identical rows within one file.
+- Identical buys (same stock, exchange, platform, date, quantity, even price) are **allowed**, because they can genuinely happen; the user can edit or delete any buy later (D31).
+- After a successful import, rows that look like duplicates of existing buys (or of each other) produce a **non-blocking heads-up**: "45 imported · 3 look like duplicates of existing buys" with **Review** (shows them) and **Undo import** (deletes every buy from this upload, via its `importBatchId`).
 
 **Suggested fixes are deterministic** (computed by `core`, no AI call):
 
@@ -189,7 +190,6 @@ Each row becomes one `BUY` transaction:
 | Bad number | `1,680.00` with a stray char, `-5` | "Quantity must be a positive number" |
 | Future date / zero price | | Explicit message per field |
 
-| Already in portfolio / repeated in file | Same stock, exchange, platform, buy date, quantity | "Row 7 already exists in your portfolio. Remove it and upload again." |
 
 Warnings (e.g. name mismatch) never block an import; errors always do.
 
@@ -264,10 +264,11 @@ Two schedules are needed either way: after NSE close (~16:00 IST) and after US c
 | D24 | Exchange enum adds `NYSE_ARCA`, `NYSE_AMERICAN`, `CBOE` | NSE/BSE/NASDAQ/NYSE only | Nasdaq Trader data shows many US stocks/ETFs (e.g. SPY) list there. |
 | D25 | Holdings in native currency; INR/USD toggle only for the portfolio summary | Convert every row to one base currency | User decision; avoids FX noise on per-stock numbers. |
 | D26 | AI ratings/signals generated once per day, plus on-demand refresh | Only daily; only on demand | User decision. On-demand refresh bypasses the cache; still capped by `maxRetries` and token limits. |
-| D27 | CSV rows exactly matching an existing buy reject the whole upload | Skip silently | User decision; makes accidental double-imports visible. |
+| D27 | ~~CSV rows exactly matching an existing buy reject the whole upload~~ (superseded by D31) | Skip silently | User decision; makes accidental double-imports visible. |
 | D28 | Rules apply to the portfolio and/or **all** watchlists (no per-watchlist targeting) | Pick specific watchlists | User decision; simpler rule model. |
 | D29 | AI buy/sell signal labels with confidence %, behind `features.aiSuggestions` | No buy/sell language | User decision for personal use. Enum labels + schema validation + disclaimer; off for public release. |
 | D30 | Store every individual buy as a `BUY` transaction; derive holdings, average price and XIRR in `core`; SELL/dividends later in the same collection | One position per broker (D21) | User decision. Accurate money-weighted returns, simple portfolio view (average price only), and a direct path to full buy/sell history without migration. |
+| D31 | Duplicate buys allowed (CSV and manual); non-blocking duplicate heads-up after import + one-tap **Undo import** | Reject duplicates (D27) | User decision: identical buys can be real. Undo import (by `importBatchId`) covers accidental double uploads. |
 
 ## 13. Open Questions
 None blocking. Remaining details (field-level schemas, error codes, exact UI copy) are resolved in the LLD.
