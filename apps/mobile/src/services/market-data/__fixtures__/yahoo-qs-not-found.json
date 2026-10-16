@@ -1,0 +1,6 @@
+{
+  "quoteSummary": {
+    "result": null,
+    "error": { "code": "Not Found", "description": "Quote not found for symbol: NOPE123XYZ.NS" }
+  }
+}

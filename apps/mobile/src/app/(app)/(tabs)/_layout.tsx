@@ -1,21 +1,36 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
+import type { ColorValue } from 'react-native';
 
-import { colors } from '@/theme/tokens';
+import { colors, typography } from '@/theme/tokens';
 
-/**
- * Bottom tabs (LLD §4.1). Only Portfolio exists so far, so the bar stays hidden; Watchlist,
- * Rules and Research tabs are added with M6–M8.
- */
+type IconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+
+function tabIcon(name: IconName) {
+  function TabIcon({ color }: { color: ColorValue }): React.JSX.Element {
+    return <MaterialCommunityIcons name={name} size={24} color={color} />;
+  }
+  return TabIcon;
+}
+
+/** Bottom tabs (LLD §4.1): Portfolio · Research; Watchlist and Rules join with M8. */
 export default function TabsLayout(): React.JSX.Element {
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: { display: 'none' },
         sceneStyle: { backgroundColor: colors.canvas },
+        tabBarActiveTintColor: colors.gain,
+        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarLabelStyle: typography.labelSm,
+        tabBarStyle: { backgroundColor: colors.surface1, borderTopColor: colors.border },
       }}
     >
-      <Tabs.Screen name="portfolio" options={{ title: 'Portfolio' }} />
+      <Tabs.Screen name="portfolio" options={{ title: 'Portfolio', tabBarIcon: tabIcon('chart-donut') }} />
+      <Tabs.Screen
+        name="research"
+        options={{ title: 'Research', tabBarIcon: tabIcon('chart-timeline-variant') }}
+      />
     </Tabs>
   );
 }

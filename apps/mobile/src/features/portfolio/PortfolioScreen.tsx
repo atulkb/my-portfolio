@@ -38,7 +38,7 @@ const SORT_LABEL: Readonly<Record<PortfolioSort, string>> = {
   NAME_ASC: 'Name',
 };
 
-/** S02 Portfolio (LLD §4.4). Performance/Health badges and Research arrive with M6/M7. */
+/** S02 Portfolio (LLD §4.4). */
 export function PortfolioScreen(): React.JSX.Element {
   const view = usePortfolioView();
   const loadState = usePortfolio((s) => s.loadState);

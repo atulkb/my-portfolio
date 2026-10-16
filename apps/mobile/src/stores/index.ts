@@ -21,6 +21,7 @@ import { createHttpClient } from '@/services/http/httpClient';
 import { createMarketDataService } from '@/services/market-data/marketDataService';
 import { createYahooProvider } from '@/services/market-data/yahoo/yahooProvider';
 import { createRefreshService } from '@/services/refresh/refreshService';
+import { createAnalysisStore, type AnalysisState } from './analysisStore';
 import { createMarketStore, type MarketState } from './marketStore';
 import { createSessionStore, type SessionState } from './sessionStore';
 import { createToastStore, type ToastState } from './toastStore';
@@ -57,6 +58,7 @@ const http = createHttpClient(
   {
     'query1.finance.yahoo.com': { concurrency: 4, minIntervalMs: 200 },
     'query2.finance.yahoo.com': { concurrency: 4, minIntervalMs: 200 },
+    'fc.yahoo.com': { concurrency: 1, minIntervalMs: 1000 },
     'api.frankfurter.dev': { concurrency: 2, minIntervalMs: 500 },
   },
   __DEV__ ? (line) => console.log(`[http] ${line}`) : undefined,
@@ -72,6 +74,9 @@ export const marketStore = createMarketStore({
   }),
   now: () => Date.now(),
 });
+
+/** Indicators and Health per instrument, derived from market data (LLD §4.3). */
+export const analysisStore = createAnalysisStore();
 
 /** UI preferences (filters, collapsed sectors), persisted in MMKV. */
 export const uiStore = createUiStore(kv);
@@ -101,6 +106,7 @@ export const sessionStore = createSessionStore({
     instrumentStore.getState().reset();
     portfolioStore.getState().reset();
     marketStore.getState().reset();
+    analysisStore.getState().reset();
     uiStore.getState().reset();
   },
 });
@@ -128,6 +134,11 @@ export function useToast<T>(selector: (s: ToastState) => T): T {
 /** React hook selecting from the market store. */
 export function useMarket<T>(selector: (s: MarketState) => T): T {
   return useStore(marketStore, selector);
+}
+
+/** React hook selecting from the analysis store. */
+export function useAnalysis<T>(selector: (s: AnalysisState) => T): T {
+  return useStore(analysisStore, selector);
 }
 
 /** React hook selecting from the UI store. */

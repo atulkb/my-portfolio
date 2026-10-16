@@ -1,0 +1,28 @@
+{
+  "quoteSummary": {
+    "result": [
+      {
+        "assetProfile": { "sector": "Energy", "industry": "Oil & Gas Refining & Marketing" },
+        "summaryDetail": {
+          "trailingPE": { "raw": 21.93408, "fmt": "21.93" },
+          "dividendYield": { "raw": 0.0049, "fmt": "0.49%" }
+        },
+        "defaultKeyStatistics": {
+          "priceToBook": { "raw": 1.8130515, "fmt": "1.81" },
+          "pegRatio": { "raw": 0.82, "fmt": "0.82" }
+        },
+        "financialData": {
+          "returnOnEquity": {},
+          "debtToEquity": { "raw": 46.278, "fmt": "46.28%" },
+          "currentRatio": {},
+          "revenueGrowth": { "raw": 0.297, "fmt": "29.70%" },
+          "earningsGrowth": { "raw": -0.224, "fmt": "-22.40%" },
+          "profitMargins": { "raw": 0.066149995, "fmt": "6.61%" },
+          "freeCashflow": {},
+          "financialCurrency": "INR"
+        }
+      }
+    ],
+    "error": null
+  }
+}

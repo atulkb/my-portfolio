@@ -47,7 +47,9 @@ export function createInstrumentStore(deps: InstrumentStoreDeps): StoreApi<Instr
 
   return createStore<InstrumentState>()((set, get) => {
     function hydrate(): void {
-      if (deps.getIndex()) return;
+      // The parsed index is a module singleton and can outlive this store (e.g. a dev reload of
+      // the stores module), so the store's own meta decides whether to hydrate.
+      if (deps.getIndex() && get().meta) return;
       const local = deps.sync.loadLocal();
       if (!local) return;
       deps.setIndexFromTsv(local.tsv);

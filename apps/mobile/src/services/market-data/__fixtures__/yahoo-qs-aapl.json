@@ -1,0 +1,28 @@
+{
+  "quoteSummary": {
+    "result": [
+      {
+        "assetProfile": { "sector": "Technology", "industry": "Consumer Electronics" },
+        "summaryDetail": {
+          "trailingPE": { "raw": 39.29702, "fmt": "39.30" },
+          "dividendYield": { "raw": 0.0032, "fmt": "0.32%" }
+        },
+        "defaultKeyStatistics": {
+          "priceToBook": { "raw": 46.558426, "fmt": "46.56" },
+          "pegRatio": { "raw": 2.75, "fmt": "2.75" }
+        },
+        "financialData": {
+          "returnOnEquity": { "raw": 1.4875101, "fmt": "148.75%" },
+          "debtToEquity": { "raw": 78.445, "fmt": "78.44%" },
+          "currentRatio": { "raw": 1.003, "fmt": "1.00" },
+          "revenueGrowth": { "raw": 0.164, "fmt": "16.40%" },
+          "earningsGrowth": { "raw": 0.287, "fmt": "28.70%" },
+          "profitMargins": { "raw": 0.27618998, "fmt": "27.62%" },
+          "freeCashflow": { "raw": 107721875456, "fmt": "107.72B", "longFmt": "107,721,875,456" },
+          "financialCurrency": "USD"
+        }
+      }
+    ],
+    "error": null
+  }
+}

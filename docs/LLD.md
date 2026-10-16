@@ -1410,7 +1410,7 @@ Recomputation is cheap (≤ 500 transactions, ≤ 150 instruments) and memoised 
 
 ### 4.12 Implementation notes (M5, 2026-10-16)
 
-- **Spike S1 (from Node):** Yahoo's cookie + crumb flow works. `fc.yahoo.com` returns 404 but sets the cookie, `getcrumb` returns the crumb, and quoteSummary answers 200. The RN cookie-jar check happens with fundamentals in M6.
+- **Spike S1 (from Node):** Yahoo's cookie + crumb flow works. `fc.yahoo.com` returns 404 but sets the cookie, `getcrumb` returns the crumb, and quoteSummary answers 200. Confirmed on the device in M6 (§4.13).
 - **Spike S3:** moved to M9, because it needs a Twelve Data key.
 - **BSE symbol (corrects §3.3):** Yahoo resolves BSE listings by ticker (`RELIANCE.BO`, `TCS.BO`). Numeric scrip codes (`500325.BO`) return 404. `symbols.ts` uses the ticker. The numeric code stays for the quote-page fallback (M9).
 - **Scope:** M5 runs the deterministic refresh steps only: holdings bars and FX (latest + history) in parallel. Index history (benchmark) and fundamentals/profiles come with M6, rules with M8, AI with M7. Twelve Data and the scrape fallback come with M9.
@@ -1430,6 +1430,47 @@ Recomputation is cheap (≤ 500 transactions, ≤ 150 instruments) and memoised 
   - Unlisted hosts default to 2 concurrent requests with 500 ms pacing.
   - Only transport failures (network, timeout, 5xx) count towards the circuit breaker, so 404s don't trip it.
 - **Verified on the emulator (2026-10-16):** live Yahoo prices; totals match a hand calculation (3.5 × $342.00 → ₹1,13,667.12 at the ECB rate of 94.96, plus ₹82,497); the ₹/$ toggle; filters with the live count; the in-progress US session is excluded.
+
+### 4.13 Implementation notes (M6, 2026-10-16)
+
+- **Spike S1 confirmed on the device:** RN's cookie jar keeps the `fc.yahoo.com` cookie. `getcrumb` and quoteSummary answer 200 from the app.
+- **User-Agent (amends §3.3):** Yahoo answers 429 to a mobile browser UA on `getcrumb`, and at times on the chart endpoint; the desktop UA gets 200. Every Yahoo call uses one desktop UA (`YAHOO_DESKTOP_HEADERS`).
+- **Crumb:**
+  - Kept in memory for the app session, refreshed once on 401.
+  - A failed crumb fetch is remembered for 10 minutes, so one refresh doesn't retry it once per instrument.
+- **One quoteSummary call** serves both fundamentals and profile. Its result is reused for 10 minutes when both caches expire together.
+- **"1 year" bars (amends §3.3):** `range=1y` returns about 251 completed sessions, one short of the 252-session 52-week window. Bars are requested as `period1` = now − 380 days (~260 sessions).
+- **Fundamentals and profile caches:**
+  - TTL is 7 days for fundamentals and 30 days for profiles.
+  - "No data" is cached only for definitive answers (`NOT_FOUND`, `BAD_RESPONSE`). After a transient failure the old data is kept and the fetch is retried next refresh.
+  - ETFs get sector "ETF" and no fundamentals, with no network call.
+- **Macro (amends §1.9):** derived from the cached index bars (`market.bars.INDEX:*`, fetched with every refresh), so `market.macro` is not used.
+- **Benchmark history:**
+  - `market.index.<NIFTY50|SP500>` adds `fetchedAt`.
+  - It is fetched once from the earliest buy in that market minus 7 days, then extended from the daily index bars.
+  - It is refetched when an older buy appears, or when the daily bars no longer overlap the history.
+- **Refresh order:**
+  - Holdings prices, index bars and FX run in parallel. Prices are published to the store first (`onPrices`).
+  - Fundamentals, profiles and benchmark history follow.
+  - Research fetches an instrument outside the refresh when its screen opens (`loadInstrument`: cache first, then network).
+- **Analysis store:**
+  - Derived and memoised per instrument on the identity of its inputs, so indicators are recomputed only when bars change.
+  - Kept in sync by subscriptions to the market, session (sector overrides) and instrument stores.
+  - Until fundamentals arrive, Health is ⚪: technicals alone are under 50 % of the applicable parameters.
+- **Sector resolution:** user override → provider profile → master-list industry → Unclassified. The scoring category also uses the provider's industry.
+- **Scope:**
+  - Tabs are now **Portfolio · Research**; Watchlist and Rules join with M8.
+  - S04 tabs are **Verdict** (Health score, technical/fundamental sub-scores, strengths/weaknesses), **Fundamentals**, and **Technicals** (with market context).
+  - The AI text, signal chip and similar alternatives come with M7. The Rules tab and the ★ watchlist button come with M8.
+  - Cards show the Performance badge as "Not rated" until M7.
+- **Settings:** added the "Market data · Prices as of … · Refresh now" row (forced refresh, §4.4 S09).
+- **Fix:** the instrument store reported "Not downloaded yet" when its parsed index outlived the store, e.g. after a dev reload of the stores module. Hydration now checks the store's own `meta`.
+- **Verified on the emulator (2026-10-16):**
+  - Live quoteSummary for the holdings; sectors from profiles (AAPL → Technology).
+  - Health badges on cards.
+  - AAPL Research: chart, ranges, Health 66 · Good, position vs S&P 500 (+29.05 % vs +16.13 %, +12.91 pp).
+  - HDFCBANK (not held): fetched on open, FINANCIALS skips D/E and current ratio, ⚪ "No data" for FCF and promoter holding.
+  - Market context (India VIX, CBOE VIX, index vs 200-day); forced refresh from Settings.
 
 ### 4.11 Implementation notes (M4, 2026-10-16)
 
