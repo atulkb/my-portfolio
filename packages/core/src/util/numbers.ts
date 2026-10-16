@@ -1,7 +1,12 @@
-/** Rounds to `dp` decimal places (half away from zero). Used for prompts and display only, never storage. */
+/**
+ * Rounds to `dp` decimal places (half away from zero). Used for prompts and display only, never
+ * storage. The scaled value is first normalised to 15 significant digits so binary noise
+ * (1.005 × 100 = 100.49999999999999) still rounds the way a person expects (1.01).
+ */
 export function round(value: number, dp = 2): number {
   const f = 10 ** dp;
-  return (Math.sign(value) * Math.round(Math.abs(value) * f)) / f;
+  const scaled = Number((Math.abs(value) * f).toPrecision(15));
+  return (Math.sign(value) * Math.round(scaled)) / f;
 }
 
 /** Rounds a nullable number. */
