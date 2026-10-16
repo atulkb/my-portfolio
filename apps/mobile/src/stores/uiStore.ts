@@ -3,6 +3,8 @@ import {
   LABELS,
   MARKETS,
   NO_FILTERS,
+  InstrumentKeySchema,
+  type InstrumentKey,
   type KeyValueCache,
   type PortfolioFilters,
 } from '@portfolio/core';
@@ -10,6 +12,10 @@ import { z } from 'zod';
 import { createStore, type StoreApi } from 'zustand/vanilla';
 
 const UI_PORTFOLIO_KEY = 'ui.portfolio';
+const UI_RESEARCH_KEY = 'ui.research';
+/** Recently viewed instruments kept on the Research start screen. */
+export const MAX_RECENT_RESEARCH = 10;
+const UiResearchSchema = z.object({ recent: z.array(InstrumentKeySchema) });
 
 const LabelFilterSchema = z.enum([...LABELS, 'NONE']);
 const PortfolioFiltersSchema = z.object({
@@ -30,8 +36,12 @@ const UiPortfolioSchema = z.object({
 export type UiState = {
   readonly portfolioFilters: PortfolioFilters;
   readonly collapsedSectors: readonly string[];
+  /** Most recent first. */
+  readonly recentResearch: readonly InstrumentKey[];
   setPortfolioFilters(filters: PortfolioFilters): void;
   toggleSector(sector: string): void;
+  /** Moves `key` to the front of the recently viewed list. */
+  addRecentResearch(key: InstrumentKey): void;
   reset(): void;
 };
 
@@ -51,6 +61,7 @@ export function hasActiveFilters(f: PortfolioFilters): boolean {
 /** Creates the UI store, restoring saved preferences. */
 export function createUiStore(kv: KeyValueCache): StoreApi<UiState> {
   const saved = kv.get(UI_PORTFOLIO_KEY, UiPortfolioSchema);
+  const research = kv.get(UI_RESEARCH_KEY, UiResearchSchema);
   return createStore<UiState>()((set, get) => {
     const persist = (): void => {
       const s = get();
@@ -59,6 +70,7 @@ export function createUiStore(kv: KeyValueCache): StoreApi<UiState> {
     return {
       portfolioFilters: saved?.filters ?? NO_FILTERS,
       collapsedSectors: saved?.collapsedSectors ?? [],
+      recentResearch: research?.recent ?? [],
       setPortfolioFilters: (portfolioFilters) => {
         set({ portfolioFilters });
         persist();
@@ -68,7 +80,13 @@ export function createUiStore(kv: KeyValueCache): StoreApi<UiState> {
         set({ collapsedSectors: c.includes(sector) ? c.filter((x) => x !== sector) : [...c, sector] });
         persist();
       },
-      reset: () => set({ portfolioFilters: NO_FILTERS, collapsedSectors: [] }),
+      addRecentResearch: (key) => {
+        if (get().recentResearch[0] === key) return;
+        const recent = [key, ...get().recentResearch.filter((k) => k !== key)].slice(0, MAX_RECENT_RESEARCH);
+        set({ recentResearch: recent });
+        kv.set(UI_RESEARCH_KEY, { recent });
+      },
+      reset: () => set({ portfolioFilters: NO_FILTERS, collapsedSectors: [], recentResearch: [] }),
     };
   });
 }

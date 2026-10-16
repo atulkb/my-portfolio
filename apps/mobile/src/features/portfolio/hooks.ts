@@ -1,5 +1,6 @@
 import {
   aggregateHoldings,
+  EXCHANGE_META,
   groupBySector,
   NO_FILTERS,
   parseInstrumentKey,
@@ -11,6 +12,8 @@ import {
   type InstrumentKey,
   type InstrumentRef,
   type IsoDate,
+  type Label,
+  type Market,
   type PortfolioSummary,
   type PricingContext,
   type SectorGroup,
@@ -18,11 +21,13 @@ import {
 } from '@portfolio/core';
 import { useMemo } from 'react';
 
+import { resolveSector } from '@/features/analysis/sector';
 import { localIsoDate } from '@/lib/dates';
 import { getInstrumentIndex } from '@/services/instruments/instrumentIndex';
 import {
   marketStore,
   portfolioStore,
+  useAnalysis,
   useInstruments,
   useMarket,
   usePortfolio,
@@ -57,6 +62,16 @@ function earliestBuy(txs: readonly BuyTransaction[]): IsoDate | null {
   return min;
 }
 
+function earliestBuyByMarket(txs: readonly BuyTransaction[]): Partial<Record<Market, IsoDate>> {
+  const out: Partial<Record<Market, IsoDate>> = {};
+  for (const t of txs) {
+    const m = EXCHANGE_META[t.exchange].market;
+    const cur = out[m];
+    if (cur === undefined || t.tradeDate < cur) out[m] = t.tradeDate;
+  }
+  return out;
+}
+
 /** Refs for every held instrument. */
 export function currentRefs(): InstrumentRef[] {
   return holdingKeys(portfolioStore.getState().transactions)
@@ -72,7 +87,12 @@ export function hydrateMarket(): void {
 /** Runs the refresh pipeline for the current holdings (pull to refresh, app open). */
 export function refreshPortfolio(force: boolean): Promise<void> {
   const txs = portfolioStore.getState().transactions;
-  return marketStore.getState().runRefresh({ refs: currentRefs(), earliestBuy: earliestBuy(txs), force });
+  return marketStore.getState().runRefresh({
+    refs: currentRefs(),
+    earliestBuy: earliestBuy(txs),
+    earliestBuyByMarket: earliestBuyByMarket(txs),
+    force,
+  });
 }
 
 /** True when a held instrument has no snapshot yet (e.g. just added). */
@@ -81,19 +101,26 @@ export function hasUnpricedHoldings(): boolean {
   return holdingKeys(portfolioStore.getState().transactions).some((k) => !snaps.has(k));
 }
 
-/** Pricing context from the stores (LLD §4.3 `usePricingContext`). Labels join with M6/M7. */
+/**
+ * Pricing context from the stores (LLD §4.3 `usePricingContext`): Health labels from the
+ * analysis store; Performance labels join with M7 (AI) and stay `null` ("Not rated") until then.
+ */
 export function usePricingContext(): PricingContext {
   const snapshots = useMarket((s) => s.snapshots);
   const fx = useMarket((s) => s.fx);
+  const profiles = useMarket((s) => s.profiles);
+  const analysis = useAnalysis((s) => s.byKey);
   const overrides = useSession((s) => s.profile?.sectorOverrides);
   const listVersion = useInstruments((s) => s.meta?.version);
   const index = listVersion ? getInstrumentIndex() : null;
   return useMemo(() => {
-    // Sector: user override → master-list industry (BSE) → null; provider profiles join in M6.
-    const sectorOf = (key: InstrumentKey): string | null =>
-      overrides?.[key] ?? index?.byKey.get(key)?.instrument.industry ?? null;
-    return { valuationDate: localIsoDate(), snapshots, fx: fx ?? NO_FX, sectorOf, labels: new Map() };
-  }, [snapshots, fx, overrides, index]);
+    const src = { overrides, profiles, index };
+    const sectorOf = (key: InstrumentKey): string | null => resolveSector(key, src);
+    const labels = new Map<InstrumentKey, { performance: Label | null; health: Label | null }>();
+    for (const [key, entry] of analysis)
+      labels.set(key, { performance: null, health: entry.analysis.healthLabel });
+    return { valuationDate: localIsoDate(), snapshots, fx: fx ?? NO_FX, sectorOf, labels };
+  }, [snapshots, fx, profiles, analysis, overrides, index]);
 }
 
 /** Every holding, unfiltered (S02b / S02c / filter counts). */

@@ -1,7 +1,7 @@
 import type { StockHolding } from '@portfolio/core';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { MarketBadge, SymbolTile } from '@/components/Badges';
+import { LabelBadge, MarketBadge, SymbolTile } from '@/components/Badges';
 import { formatDate, formatMoney, formatPct, formatQuantity, formatSignedMoney } from '@/lib/format';
 import { colors, radii, spacing, typography } from '@/theme/tokens';
 
@@ -16,8 +16,8 @@ const signColor = (n: number | null): string =>
 
 /**
  * Stock card (S02, LLD §4.4): symbol tile, name, market, broker, quantity, average, last close
- * with day change, invested, current value, total return and CAGR. Performance/Health badges
- * join with M6/M7.
+ * with day change, invested, current value, total return and CAGR, plus the Performance (AI,
+ * "Not rated" until M7) and Health badges.
  */
 export function HoldingCard({
   holding,
@@ -67,6 +67,10 @@ export function HoldingCard({
             </Text>
           ) : null}
         </View>
+      </View>
+      <View style={styles.badges}>
+        <LabelBadge kind="performance" label={h.performance} />
+        <LabelBadge kind="health" label={h.health} />
       </View>
       {stale && h.priceDate ? (
         <Text style={styles.stale}>{`as of ${formatDate(h.priceDate, { short: true })}`}</Text>
@@ -119,6 +123,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   stale: { ...typography.labelSm, color: colors.caution },
+  badges: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   bottom: {
     flexDirection: 'row',
     justifyContent: 'space-between',

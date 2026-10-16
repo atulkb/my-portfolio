@@ -45,6 +45,27 @@ function setup(local: LocalMaster | null, outcome: SyncOutcome) {
 }
 
 describe('instrumentStore', () => {
+  it('a fresh store over an already-parsed index still reports ready (no download)', async () => {
+    const first = setup({ meta, tsv: TSV }, { kind: 'skipped' });
+    first.release();
+    await first.store.getState().ensureFresh();
+    // A second store sharing the same index singleton (e.g. after a dev reload of the stores).
+    let index: InstrumentIndex | null = null;
+    const second = createInstrumentStore({
+      sync: { loadLocal: () => ({ meta, tsv: TSV }), ensureFresh: async () => ({ kind: 'skipped' }) },
+      getIndex: () => index ?? buildInstrumentIndex(parseInstrumentTsv(TSV).instruments),
+      setIndexFromTsv: (tsv) => {
+        const { instruments, skipped } = parseInstrumentTsv(tsv);
+        index = buildInstrumentIndex(instruments);
+        return { count: instruments.length, skipped };
+      },
+      clearIndex: () => (index = null),
+    });
+    await second.getState().ensureFresh();
+    expect(second.getState().status).toBe('ready');
+    expect(second.getState().meta).toBe(meta);
+  });
+
   it('first launch: downloading → ready, then search and resolve work', async () => {
     const { store, release } = setup(null, { kind: 'updated', meta, tsv: TSV });
     const p = store.getState().ensureFresh();

@@ -1,7 +1,44 @@
-import type { Exchange, Market } from '@portfolio/core';
+import type { Exchange, Label, Market } from '@portfolio/core';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, radii, spacing, typography } from '@/theme/tokens';
+import { colors, labelColors, radii, spacing, typography } from '@/theme/tokens';
+
+const LABEL_TEXT: Readonly<Record<Label, string>> = { GOOD: 'Good', AVERAGE: 'Average', BAD: 'Bad' };
+
+/**
+ * Performance or Health badge (LLD §4.5). `null` shows "Not rated" (Performance) or
+ * "Insufficient data" (Health) in grey; text always accompanies the colour.
+ */
+export function LabelBadge({
+  kind,
+  label,
+  score,
+}: {
+  readonly kind: 'performance' | 'health';
+  readonly label: Label | null;
+  /** Health score 0–100, shown as "Health 72 · Good". */
+  readonly score?: number | null;
+}): React.JSX.Element {
+  const c = labelColors[label ?? 'NONE'];
+  const text =
+    label === null
+      ? kind === 'performance'
+        ? 'Not rated'
+        : 'Health: Insufficient data'
+      : kind === 'performance'
+        ? LABEL_TEXT[label]
+        : score === null || score === undefined
+          ? `Health: ${LABEL_TEXT[label]}`
+          : `Health ${Math.round(score)} · ${LABEL_TEXT[label]}`;
+  return (
+    <Text
+      style={[styles.label, { color: c.fg, backgroundColor: c.bg, borderColor: c.fg }]}
+      accessibilityLabel={`${kind === 'performance' ? 'Performance' : 'Health'}: ${label === null ? (kind === 'performance' ? 'not rated' : 'insufficient data') : LABEL_TEXT[label]}`}
+    >
+      {text}
+    </Text>
+  );
+}
 
 /** Square ticker tile on stock cards (first 4–5 characters of the symbol). */
 export function SymbolTile({ symbol }: { readonly symbol: string }): React.JSX.Element {
@@ -41,6 +78,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xs,
   },
   tileText: { ...typography.microBadge, color: colors.textPrimary },
+  label: {
+    ...typography.labelSm,
+    borderWidth: 1,
+    borderRadius: radii.base,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    overflow: 'hidden',
+    alignSelf: 'flex-start',
+  },
   market: { ...typography.microBadge, color: colors.textSecondary },
   exchange: {
     ...typography.microBadge,

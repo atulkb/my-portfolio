@@ -1,0 +1,28 @@
+{
+  "quoteSummary": {
+    "result": [
+      {
+        "assetProfile": { "sector": "Financial Services", "industry": "Banks - Regional" },
+        "summaryDetail": {
+          "trailingPE": { "raw": 15.931147, "fmt": "15.93" },
+          "dividendYield": { "raw": 0.0179, "fmt": "1.79%" }
+        },
+        "defaultKeyStatistics": {
+          "priceToBook": { "raw": 1.8507515, "fmt": "1.85" },
+          "pegRatio": { "raw": 0.89, "fmt": "0.89" }
+        },
+        "financialData": {
+          "returnOnEquity": { "raw": 0.13838, "fmt": "13.84%" },
+          "debtToEquity": {},
+          "currentRatio": {},
+          "revenueGrowth": { "raw": 0.166, "fmt": "16.60%" },
+          "earningsGrowth": { "raw": 0.181, "fmt": "18.10%" },
+          "profitMargins": { "raw": 0.26787, "fmt": "26.79%" },
+          "freeCashflow": {},
+          "financialCurrency": "INR"
+        }
+      }
+    ],
+    "error": null
+  }
+}

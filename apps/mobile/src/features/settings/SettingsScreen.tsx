@@ -7,6 +7,7 @@ import { Screen } from '@/components/Screen';
 import { undoImportWithToast } from '@/features/portfolio/csvImport';
 import { usePortfolio, useSession } from '@/stores';
 import { colors, radii, spacing, typography } from '@/theme/tokens';
+import { MarketDataCard } from './MarketDataCard';
 import { StockListCard } from './StockListCard';
 
 /**
@@ -49,6 +50,7 @@ export function SettingsScreen(): React.JSX.Element {
           <Button label="Undo last import" variant="secondary" onPress={() => void undoImportWithToast()} />
         </View>
       ) : null}
+      <MarketDataCard />
       <StockListCard />
       <Button label="Sign out" variant="secondary" loading={busy} onPress={() => void signOut()} />
     </Screen>

@@ -49,7 +49,7 @@ function ActionRow({
   );
 }
 
-/** S02b Holding actions sheet (LLD §4.4). Research arrives with M6. */
+/** S02b Holding actions sheet (LLD §4.4). */
 export function HoldingActions({ holdingKey }: { readonly holdingKey: InstrumentKey }): React.JSX.Element {
   const holding = useHolding(holdingKey);
   if (!holding) {
@@ -75,9 +75,11 @@ export function HoldingActions({ holdingKey }: { readonly holdingKey: Instrument
       <ActionRow
         icon="chart-timeline-variant"
         title="View deep research & rules"
-        subtitle="Coming with the research screen"
-        disabled
-        onPress={() => undefined}
+        subtitle="Health, fundamentals, technicals and your position"
+        onPress={() => {
+          router.back();
+          router.navigate({ pathname: '/research/[key]', params: { key: holding.key } });
+        }}
       />
       <ActionRow
         icon="pencil-outline"
