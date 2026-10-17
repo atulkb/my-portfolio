@@ -95,3 +95,6 @@ data/instruments/snapshot-*/
 
 # Instrument sync build output (generated, contains exchange data)
 tools/instrument-sync/out/
+
+# Broker exports (personal financial data) - never commit
+data/imports/
