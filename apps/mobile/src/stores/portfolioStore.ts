@@ -50,6 +50,8 @@ export type PortfolioState = {
   removeHolding(key: InstrumentKey): Promise<boolean>;
   /** Deletes a stock's buys on one platform (S02c). */
   removeFromBroker(key: InstrumentKey, platform: string): Promise<boolean>;
+  /** Renames a platform on every buy (case-insensitive match, S09 Platforms). */
+  renamePlatform(from: string, to: string): Promise<boolean>;
   /** Adds a validated CSV upload under a fresh import batch ID. */
   importCsv(txs: readonly NewBuyTransaction[]): Promise<boolean>;
   undoLastImport(): Promise<boolean>;
@@ -204,6 +206,23 @@ export function createPortfolioStore(deps: PortfolioDeps): StoreApi<PortfolioSta
       removeFromBroker: (key, platform) => {
         const p = normalisePlatform(platform);
         return deleteWhere((t) => keyOf(t) === key && normalisePlatform(t.platform) === p);
+      },
+
+      renamePlatform: (from, to) => {
+        const p = normalisePlatform(from);
+        const before = new Map(
+          get()
+            .transactions.filter((t) => normalisePlatform(t.platform) === p)
+            .map((t) => [t.id, t.platform]),
+        );
+        if (before.size === 0) return Promise.resolve(true);
+        const name = to.trim();
+        return optimistic(
+          (list) => list.map((t) => (before.has(t.id) ? { ...t, platform: name } : t)),
+          (list) =>
+            list.map((t) => (before.has(t.id) ? { ...t, platform: before.get(t.id) ?? t.platform } : t)),
+          (r) => r.renamePlatform(from, name),
+        );
       },
 
       importCsv: async (txs) => {

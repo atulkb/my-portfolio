@@ -40,6 +40,8 @@ function setup(overrides: Partial<AuthService> = {}, repo: Partial<ProfileReposi
     reloadUser: jest.fn(async () => ({ ...unverified, emailVerified: true })),
     sendPasswordReset: jest.fn(async () => undefined),
     signOut: jest.fn(async () => undefined),
+    reauthenticate: jest.fn(async () => undefined),
+    deleteUser: jest.fn(async () => undefined),
     ...overrides,
   };
   const store = createSessionStore({
@@ -148,6 +150,41 @@ describe('session actions', () => {
     const failing = setup({ signOut: jest.fn(async () => Promise.reject(new AppError('AUTH_NETWORK'))) });
     await failing.store.getState().signOut();
     expect(failing.onSignedOut).not.toHaveBeenCalled();
+  });
+
+  it('deletes the account: re-auth, data, Auth user, then local cleanup', async () => {
+    const order: string[] = [];
+    const deleteAccountData = jest.fn(async () => {
+      order.push('data');
+    });
+    const { store, emit, onSignedOut } = setup(
+      {
+        reauthenticate: jest.fn(async () => {
+          order.push('reauth');
+        }),
+        deleteUser: jest.fn(async () => {
+          order.push('user');
+        }),
+      },
+      { deleteAccountData },
+    );
+    await emit(googleUser);
+    expect(await store.getState().deleteAccount(null)).toBe(true);
+    expect(order).toEqual(['reauth', 'data', 'user']);
+    expect(onSignedOut).toHaveBeenCalled();
+  });
+
+  it('keeps everything when re-authentication fails', async () => {
+    const deleteAccountData = jest.fn(async () => undefined);
+    const { store, emit, onSignedOut } = setup(
+      { reauthenticate: jest.fn(async () => Promise.reject(new AppError('AUTH_WRONG_PASSWORD'))) },
+      { deleteAccountData },
+    );
+    await emit(googleUser);
+    expect(await store.getState().deleteAccount('wrong')).toBe(false);
+    expect(store.getState().error).toBe('AUTH_WRONG_PASSWORD');
+    expect(deleteAccountData).not.toHaveBeenCalled();
+    expect(onSignedOut).not.toHaveBeenCalled();
   });
 
   it('adds only new platforms (case-insensitive) and rolls back on failure', async () => {

@@ -11,6 +11,7 @@ import type {
 } from '@portfolio/core';
 import { createStore, type StoreApi } from 'zustand/vanilla';
 
+import { log } from '@/lib/log';
 import type { FxResult } from '@/services/fx/fxService';
 import type { PricedSnapshot } from '@/services/market-data/marketDataService';
 import type {
@@ -118,7 +119,18 @@ export function createMarketStore(deps: {
               ...(out.fx ? { fx: out.fx.context, fxSource: out.fx.source } : {}),
               refresh: { running: false, progress: null, report: out.report, lastAt: deps.now() },
             }));
-          } catch {
+            const r = out.report;
+            log.info('refresh.done', {
+              force: input.force,
+              fetched: r.fetched,
+              fromCache: r.fromCache,
+              stale: r.stale.length,
+              failed: r.failed.map((f) => `${f.key}:${f.code}`),
+              fxFromCache: r.fxFromCache,
+              ms: r.durationMs,
+            });
+          } catch (e) {
+            log.error('refresh.failed', { error: e instanceof Error ? e.name : 'unknown' });
             set((s) => ({ refresh: { ...s.refresh, running: false, progress: null } }));
           }
         })().finally(() => {

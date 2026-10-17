@@ -22,4 +22,11 @@ export interface AuthService {
   reloadUser(): Promise<AuthUser | null>;
   sendPasswordReset(email: string): Promise<void>;
   signOut(): Promise<void>;
+  /**
+   * Confirms the current user before a sensitive action (account deletion): Google accounts sign
+   * in with Google again, email accounts give their password.
+   */
+  reauthenticate(password: string | null): Promise<void>;
+  /** Deletes the signed-in Firebase Auth user (needs a recent sign-in). */
+  deleteUser(): Promise<void>;
 }

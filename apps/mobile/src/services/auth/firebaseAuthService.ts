@@ -1,9 +1,12 @@
 import { AppError } from '@portfolio/core';
 import {
   createUserWithEmailAndPassword,
+  deleteUser,
+  EmailAuthProvider,
   getAuth,
   GoogleAuthProvider,
   onAuthStateChanged,
+  reauthenticateWithCredential,
   reload,
   sendEmailVerification,
   sendPasswordResetEmail,
@@ -39,6 +42,17 @@ function configureGoogle(): void {
   googleConfigured = true;
 }
 
+/** Google sign-in → Firebase credential (sign-in and re-authentication). */
+async function googleCredential() {
+  configureGoogle();
+  await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+  const res = await GoogleSignin.signIn();
+  if (!isSuccessResponse(res)) throw new AppError('AUTH_GOOGLE_CANCELLED');
+  const idToken = res.data.idToken;
+  if (!idToken) throw new AppError('AUTH_GOOGLE_CONFIG');
+  return GoogleAuthProvider.credential(idToken);
+}
+
 async function guard<T>(fn: () => Promise<T>): Promise<T> {
   try {
     return await fn();
@@ -55,13 +69,7 @@ export const firebaseAuthService: AuthService = {
 
   signInWithGoogle: () =>
     guard(async () => {
-      configureGoogle();
-      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-      const res = await GoogleSignin.signIn();
-      if (!isSuccessResponse(res)) throw new AppError('AUTH_GOOGLE_CANCELLED');
-      const idToken = res.data.idToken;
-      if (!idToken) throw new AppError('AUTH_GOOGLE_CONFIG');
-      const cred = await signInWithCredential(getAuth(), GoogleAuthProvider.credential(idToken));
+      const cred = await signInWithCredential(getAuth(), await googleCredential());
       return toAuthUser(cred.user);
     }),
 
@@ -93,6 +101,25 @@ export const firebaseAuthService: AuthService = {
     }),
 
   sendPasswordReset: (email) => guard(() => sendPasswordResetEmail(getAuth(), email.trim())),
+
+  reauthenticate: (password) =>
+    guard(async () => {
+      const u = getAuth().currentUser;
+      if (!u) throw new AppError('AUTH_RECENT_LOGIN');
+      const google = u.providerData.some((p) => p.providerId === 'google.com');
+      const cred = google
+        ? await googleCredential()
+        : EmailAuthProvider.credential(u.email ?? '', password ?? '');
+      await reauthenticateWithCredential(u, cred);
+    }),
+
+  deleteUser: () =>
+    guard(async () => {
+      const u = getAuth().currentUser;
+      if (!u) return;
+      await deleteUser(u);
+      if (googleConfigured) await GoogleSignin.signOut().catch(() => undefined);
+    }),
 
   signOut: () =>
     guard(async () => {

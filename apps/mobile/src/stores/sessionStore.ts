@@ -10,6 +10,7 @@ import {
 import { createStore, type StoreApi } from 'zustand/vanilla';
 
 import { devErrorDetail } from '@/lib/devError';
+import { log } from '@/lib/log';
 import type { AuthService, AuthUser, Unsubscribe } from '@/services/auth/types';
 
 /**
@@ -42,9 +43,17 @@ export type SessionState = {
   sendPasswordReset(email: string): Promise<boolean>;
   retryProfile(): Promise<void>;
   signOut(): Promise<void>;
+  /**
+   * Deletes the account (LLD §1.12): re-authenticates (Google again, or the password), deletes
+   * every Firestore document, then the Auth user, then cleans up like sign-out. Returns false on
+   * failure (`error` set); safe to retry.
+   */
+  deleteAccount(password: string | null): Promise<boolean>;
   clearError(): void;
   /** Adds platforms missing from the managed list (case-insensitive, ≤ 30 total). Optimistic. */
   addPlatforms(names: readonly string[]): Promise<void>;
+  /** Replaces the managed platform list (rename / delete in S09 Platforms). Optimistic. */
+  setPlatforms(platforms: readonly string[]): Promise<boolean>;
   /** Updates profile settings (e.g. the summary currency toggle). Optimistic. */
   updateSettings(patch: Partial<UserSettings>): Promise<void>;
   /** Writes sector overrides (CSV `sector` column). Optimistic. */
@@ -97,6 +106,7 @@ export function createSessionStore(deps: SessionDeps): StoreApi<SessionState> {
         return true;
       } catch (e) {
         const code = toAppError(e).code;
+        log.warn('session.error', { code });
         set({ error: code === 'AUTH_GOOGLE_CANCELLED' ? null : code, errorDetail: devErrorDetail(e) });
         return false;
       } finally {
@@ -151,6 +161,15 @@ export function createSessionStore(deps: SessionDeps): StoreApi<SessionState> {
           deps.onSignedOut?.();
         });
       },
+      deleteAccount: (password) =>
+        act(async () => {
+          const { user } = get();
+          if (!user) return;
+          await deps.auth.reauthenticate(password);
+          await deps.profiles(user.uid).deleteAccountData();
+          await deps.auth.deleteUser();
+          deps.onSignedOut?.();
+        }),
       clearError: () => set({ error: null, errorDetail: null }),
 
       addPlatforms: async (names) => {
@@ -172,6 +191,21 @@ export function createSessionStore(deps: SessionDeps): StoreApi<SessionState> {
         } catch (e) {
           const now = get().profile;
           if (now) set({ profile: { ...now, platforms: profile.platforms }, error: toAppError(e).code });
+        }
+      },
+
+      setPlatforms: async (platforms) => {
+        const { user, profile } = get();
+        if (!user || !profile) return false;
+        const next = [...platforms];
+        set({ profile: { ...profile, platforms: next } });
+        try {
+          await deps.profiles(user.uid).setPlatforms(next);
+          return true;
+        } catch (e) {
+          const now = get().profile;
+          if (now) set({ profile: { ...now, platforms: profile.platforms }, error: toAppError(e).code });
+          return false;
         }
       },
 

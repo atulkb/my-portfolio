@@ -3,6 +3,7 @@ import { useStore } from 'zustand';
 
 import { AI_CONFIG } from '@/config/ai';
 import { localIsoDate } from '@/lib/dates';
+import { log } from '@/lib/log';
 import { devErrorDetail } from '@/lib/devError';
 import { userMessage } from '@/lib/messages';
 import { createAiClient } from '@/services/ai/aiClient';
@@ -11,7 +12,9 @@ import { firebaseGenerativePort } from '@/services/ai/firebaseAi';
 import { pushAiDevLog } from '@/services/ai/devLog';
 import { createAiUsage } from '@/services/ai/usage';
 import { firebaseAuthService } from '@/services/auth/firebaseAuthService';
+import { APP_CONFIG } from '@/config/app';
 import { createKeyValueCache } from '@/services/cache/kv';
+import { deviceBiometrics } from '@/services/device/biometrics';
 import { mmkvRawStore, wipeUserData } from '@/services/cache/storage';
 import { createInstrumentMasterRepository } from '@/services/firestore/instrumentMasterRepository';
 import { createProfileRepository } from '@/services/firestore/profileRepository';
@@ -33,6 +36,7 @@ import { createYahooProvider } from '@/services/market-data/yahoo/yahooProvider'
 import { createRefreshService } from '@/services/refresh/refreshService';
 import { createAiStore, type AiState } from './aiStore';
 import { createAnalysisStore, type AnalysisState } from './analysisStore';
+import { createLockStore, type LockState } from './lockStore';
 import { createMarketStore, type MarketState } from './marketStore';
 import { createRulesStore, type RulesState } from './rulesStore';
 import { createSessionStore, type SessionState } from './sessionStore';
@@ -106,12 +110,11 @@ export const aiService = createAiService({
     usage: aiUsage,
     config: AI_CONFIG,
     sleep,
-    log: __DEV__
-      ? (line) => {
-          console.log(`[ai] ${line}`);
-          pushAiDevLog(line);
-        }
-      : undefined,
+    // Task, attempts, token counts and error codes only (never prompts or replies), LLD §5.3.
+    log: (line) => {
+      log.info('ai', { line });
+      if (__DEV__) pushAiDevLog(line);
+    },
     describeError: devErrorDetail,
   }),
   usage: aiUsage,
@@ -127,6 +130,14 @@ export const aiStore = createAiStore({
     const message = userMessage(code);
     if (message) toastStore.getState().show(message);
   },
+});
+
+/** Biometric app lock (LLD §4.2); its setting is per device and survives sign-out. */
+export const lockStore = createLockStore({
+  kv,
+  biometrics: deviceBiometrics,
+  now: () => Date.now(),
+  lockAfterMs: APP_CONFIG.lockAfterBackgroundMs,
 });
 
 /** UI preferences (filters, collapsed sectors), persisted in MMKV. */
@@ -241,4 +252,9 @@ export function useWatchlists<T>(selector: (s: WatchlistState) => T): T {
 /** React hook selecting from the rules store. */
 export function useRules<T>(selector: (s: RulesState) => T): T {
   return useStore(rulesStore, selector);
+}
+
+/** React hook selecting from the lock store. */
+export function useLock<T>(selector: (s: LockState) => T): T {
+  return useStore(lockStore, selector);
 }
