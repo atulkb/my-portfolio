@@ -118,7 +118,13 @@ const aiUsage = createAiUsage({
   kv,
   clock,
   sleep,
-  limits: { ...AI_CONFIG.rateLimit, maxWaitMs: AI_CONFIG.maxRpmWaitMs },
+  models: AI_CONFIG.modelChain,
+  timeZone: AI_CONFIG.quotaTimeZone,
+  limits: {
+    ...AI_CONFIG.rateLimit,
+    maxWaitMs: AI_CONFIG.maxRpmWaitMs,
+    cooldownMs: AI_CONFIG.rateLimitCooldownMs,
+  },
 });
 
 /** Gemini tasks with caching and the daily budget (LLD §3.5); shared by the AI and rules stores. */

@@ -15,7 +15,7 @@ description: Project-specific Firebase, Firestore and Gemini (Firebase AI Logic)
 ## Gemini via Firebase AI Logic
 
 - Gemini is called only through `apps/mobile/src/services/ai/` using `@react-native-firebase/ai` (Gemini Developer API backend). App Check is enforced for AI calls in every build (HLD D35): `services/appCheck.ts` uses the debug provider; each device's debug secret is registered in the console and never committed or logged.
-- Model names are **never hardcoded** in call sites — read them from `src/config/ai.ts` (`AI_CONFIG.models.flash`), which can be overridden by Firebase Remote Config later.
+- Model names are **never hardcoded** in call sites — they live only in `src/config/ai.ts` (`AI_CONFIG.modelChain`, best first with each model's free-tier daily limit, HLD D36); the AI client picks the model per request. Can be overridden by Firebase Remote Config later.
 - Prompts live in `packages/core/src/prompts/` as typed builder functions; no inline prompt strings in services or components.
 - Use structured output (`responseMimeType: 'application/json'` + `responseSchema`) and re-validate the result with zod. On validation failure, retry at most `AI_CONFIG.maxRetries` (default 2) times, then surface an error.
 - Cap `maxOutputTokens` per call and cache AI analysis results per `{symbol, exchange, asOfDate}` so the same day's analysis is never regenerated unless the user forces a refresh.

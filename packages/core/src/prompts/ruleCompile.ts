@@ -85,7 +85,6 @@ Reply with JSON that matches the response schema exactly.`;
 export const ruleCompileTask: SinglePromptTask<RuleCompileInput, RuleCompileResult> = {
   id: 'ruleCompile',
   version: 'rule-compile@1',
-  model: 'flash',
   responseSchema: {
     type: 'object',
     properties: {

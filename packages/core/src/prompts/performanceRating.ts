@@ -65,7 +65,6 @@ Return exactly one rating per holding, with the same symbol and exchange.
 export const performanceRatingTask: BatchPromptTask<PerformanceInput, null, PerformanceRating> = {
   id: 'performanceRating',
   version: 'perf-rating@2',
-  model: 'flash',
   maxBatch: 25,
   responseSchema: {
     type: 'object',

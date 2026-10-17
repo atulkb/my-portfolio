@@ -38,9 +38,6 @@ export type JsonSchemaSubset =
 /** Prompt ready to send: system instruction + user content (data only). */
 export type BuiltPrompt = { readonly system: string; readonly user: string };
 
-/** Model tier from `AI_CONFIG.models`. */
-export type ModelTier = 'flash' | 'flashLite';
-
 /** Identifier of an AI task (keys of `AI_CONFIG.maxOutputTokens` / `temperature`). */
 export type PromptTaskId =
   'performanceRating' | 'signals' | 'deepAnalysis' | 'ruleCompile' | 'marketSentiment';
@@ -50,7 +47,6 @@ export type SinglePromptTask<I, O> = {
   readonly id: PromptTaskId;
   /** Bumped on any wording change; recorded with cached results. */
   readonly version: string;
-  readonly model: ModelTier;
   readonly responseSchema: JsonSchemaSubset;
   build(input: I): BuiltPrompt;
   /** zod + post-checks (grounding, set equality…). Errors are fed back on retry where useful. */
@@ -67,7 +63,6 @@ export type BatchOutcome<O> = {
 export type BatchPromptTask<Item, Shared, O> = {
   readonly id: PromptTaskId;
   readonly version: string;
-  readonly model: ModelTier;
   readonly maxBatch: number;
   readonly responseSchema: JsonSchemaSubset;
   keyOf(item: Item): string;

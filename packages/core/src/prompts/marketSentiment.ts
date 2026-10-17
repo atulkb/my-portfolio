@@ -36,7 +36,6 @@ Describe conditions only. Never tell the reader to buy, sell, allocate, or set s
 export const marketSentimentTask: SinglePromptTask<MarketSentimentInput, MarketSentiment> = {
   id: 'marketSentiment',
   version: 'market-sentiment@2',
-  model: 'flash',
   responseSchema: {
     type: 'object',
     properties: {

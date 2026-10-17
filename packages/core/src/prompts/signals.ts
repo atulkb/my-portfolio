@@ -85,7 +85,6 @@ Return exactly one signal per stock, with the same symbol and exchange. This is 
 export const signalsTask: BatchPromptTask<SignalInput, MacroAssessment, Signal> = {
   id: 'signals',
   version: 'signals@2',
-  model: 'flash',
   maxBatch: 25,
   responseSchema: {
     type: 'object',

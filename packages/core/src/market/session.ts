@@ -27,6 +27,14 @@ function formatterFor(timeZone: string): Intl.DateTimeFormat {
   return f;
 }
 
+/** Calendar date at `now` in any IANA time zone (e.g. Gemini quota days run on Pacific time). */
+export function dateInTimeZone(timeZone: string, now: EpochMs): IsoDate {
+  const parts = formatterFor(timeZone).formatToParts(new Date(now));
+  const get = (type: Intl.DateTimeFormatPartTypes): string =>
+    parts.find((p) => p.type === type)?.value ?? '00';
+  return `${get('year')}-${get('month')}-${get('day')}`;
+}
+
 /** Local calendar date and minutes after midnight at `now` in the market's time zone. */
 export function marketLocalTime(market: Market, now: EpochMs): { date: IsoDate; minutes: number } {
   const parts = formatterFor(MARKET_HOURS[market].timeZone).formatToParts(new Date(now));

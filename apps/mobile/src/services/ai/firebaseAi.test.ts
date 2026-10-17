@@ -19,7 +19,7 @@ jest.mock('@react-native-firebase/ai', () => {
 // eslint-disable-next-line import/first -- must load after the mocks above
 import { AIError } from '@react-native-firebase/ai';
 // eslint-disable-next-line import/first
-import { mapAiError, toSdkSchema } from './firebaseAi';
+import { mapAiError, rejectedThinkingLevel, toSdkSchema } from './firebaseAi';
 
 type MockAIError = new (code: string, message: string, data?: { status?: number }) => Error;
 const aiError = (code: string, status?: number) =>
@@ -50,5 +50,19 @@ describe('firebaseAi', () => {
     expect(mapAiError(aiError('api-not-enabled')).code).toBe('AI_NOT_AUTHORISED');
     const abort = Object.assign(new Error('aborted'), { name: 'AbortError' });
     expect(mapAiError(abort)).toMatchObject({ code: 'AI_TIMEOUT', retryable: true });
+  });
+});
+
+describe('thinking level rejection', () => {
+  it('reads the rejected level from the API message', () => {
+    expect(
+      rejectedThinkingLevel(
+        new Error(
+          '[400 ] Thinking level MINIMAL is not supported for this model. Please retry with other thinking level.',
+        ),
+      ),
+    ).toBe('MINIMAL');
+    expect(rejectedThinkingLevel(new Error('[400 ] Bad schema'))).toBeNull();
+    expect(rejectedThinkingLevel('nope')).toBeNull();
   });
 });

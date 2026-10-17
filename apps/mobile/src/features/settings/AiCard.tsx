@@ -1,7 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
-import { AI_CONFIG } from '@/config/ai';
 import { FEATURES } from '@/config/features';
 import { syncAi } from '@/features/analysis/ai';
 import { userMessage } from '@/lib/messages';
@@ -30,6 +29,8 @@ export function AiCard(): React.JSX.Element {
   const perf = useAi((s) => s.status.performance);
   const signals = useAi((s) => s.status.signals);
   const left = useAi((s) => s.budgetLeftToday);
+  const total = useAi((s) => s.budgetTotal);
+  const model = useAi((s) => s.currentModel);
   // After a restart the newest cached rating tells when holdings were last rated.
   const newestCached = useAi((s) =>
     Object.values(s.performance).reduce<number | null>(
@@ -65,7 +66,9 @@ export function AiCard(): React.JSX.Element {
       ) : null}
       <Text style={styles.sub}>{lastRated(perf.lastAt ?? newestCached)}</Text>
       {failure ? <Text style={styles.warn}>{userMessage(failure) ?? 'Some ratings failed.'}</Text> : null}
-      <Text style={styles.sub}>{`AI requests left today: ${left} of ${AI_CONFIG.rateLimit.dailyCap}`}</Text>
+      <Text style={styles.sub}>
+        {`AI requests left today: ${left} of ${total} · ${model ? `using ${model}` : 'all models used up until tomorrow'}`}
+      </Text>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Refresh AI ratings now"

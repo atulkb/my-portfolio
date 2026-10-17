@@ -81,9 +81,9 @@ export function wipeUserData(): void {
   SecureStore.setItem(KEY_NAME, key);
 }
 
-/** Prefixes removed by Settings → "Clear local cache" (LLD §4.4). `ai.usage.*` (budget) stays. */
+/** Prefixes removed by Settings → "Clear local cache" (LLD §4.4). The AI budget and cooldowns stay. */
 const CLEARABLE = ['market.', 'fx.', 'ai.'] as const;
-const KEEP = ['ai.usage.'] as const;
+const KEEP = ['ai.usage.', 'ai.cooldown'] as const;
 
 const clearable = (k: string): boolean =>
   CLEARABLE.some((p) => k.startsWith(p)) && !KEEP.some((p) => k.startsWith(p));

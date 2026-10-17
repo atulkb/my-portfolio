@@ -8,10 +8,10 @@ import {
   type MarketSentimentInput,
   type PerformanceInput,
   type SignalInput,
+  type SinglePromptTask,
 } from '@portfolio/core';
 
 import { createAiStore } from '@/stores/aiStore';
-import { AI_CONFIG } from '@/config/ai';
 import { createKeyValueCache, memoryRawStore } from '../cache/kv';
 import { createAiClient, parseModelJson, type AiClientConfig } from './aiClient';
 import { AI_KEYS, createAiService, type AiItem } from './aiService';
@@ -79,10 +79,15 @@ function fakePort(replies: (GenerateResult | Error | ((req: GenerateRequest) => 
   return { port, requests };
 }
 
-function setup(
-  replies: Parameters<typeof fakePort>[0],
-  limits = { rpm: 100, dailyCap: 500, maxWaitMs: 60_000 },
-) {
+type SetupOpts = {
+  rpm?: number;
+  maxWaitMs?: number;
+  models?: readonly { id: string; dailyLimit: number }[];
+};
+
+function setup(replies: Parameters<typeof fakePort>[0], opts: SetupOpts = {}) {
+  const limits = { rpm: opts.rpm ?? 100, maxWaitMs: opts.maxWaitMs ?? 60_000, cooldownMs: 3_600_000 };
+  const models = opts.models ?? [{ id: 'model-a', dailyLimit: 500 }];
   let now = Date.parse('2026-10-16T12:00:00Z');
   const clock = { now: () => now };
   const sleeps: number[] = [];
@@ -93,7 +98,7 @@ function setup(
   };
   const raw = memoryRawStore();
   const kv = createKeyValueCache(raw);
-  const usage = createAiUsage({ kv, clock, sleep, limits });
+  const usage = createAiUsage({ kv, clock, sleep, limits, models, timeZone: 'America/Los_Angeles' });
   const { port, requests } = fakePort(replies);
   const client = createAiClient({ port, usage, config: CONFIG, sleep });
   const service = createAiService({ client, usage, kv, clock });
@@ -120,7 +125,7 @@ describe('AI usage budget', () => {
   });
 
   it('waits for a free per-minute slot', async () => {
-    const t = setup([], { rpm: 2, dailyCap: 500, maxWaitMs: 60_000 });
+    const t = setup([], { rpm: 2 });
     await t.usage.acquire();
     await t.usage.acquire();
     await t.usage.acquire();
@@ -129,9 +134,70 @@ describe('AI usage budget', () => {
   });
 
   it('gives up when the per-minute wait is longer than allowed', async () => {
-    const t = setup([], { rpm: 1, dailyCap: 500, maxWaitMs: 1000 });
+    const t = setup([], { rpm: 1, maxWaitMs: 1000 });
     await t.usage.acquire();
     await expect(t.usage.acquire()).rejects.toMatchObject({ code: 'AI_BUDGET_EXCEEDED' });
+  });
+});
+
+/** Minimal task: any JSON reply is accepted. */
+const echoTask: SinglePromptTask<null, string> = {
+  id: 'marketSentiment',
+  version: 'echo@1',
+  responseSchema: { type: 'object', properties: {} },
+  build: () => ({ system: 's', user: 'u' }),
+  validate: () => ({ ok: true, value: 'x' }),
+};
+
+describe('model chain (HLD D36)', () => {
+  const chain = [
+    { id: 'best', dailyLimit: 2 },
+    { id: 'next', dailyLimit: 2 },
+    { id: 'lite', dailyLimit: 500 },
+  ];
+  const ok: GenerateResult = { text: '{}', finishReason: 'STOP', usage: null };
+
+  it('uses the best model until its daily quota is used, then steps down', async () => {
+    const t = setup([], { models: chain });
+    const used: string[] = [];
+    for (let i = 0; i < 5; i++) used.push(await t.usage.acquire());
+    expect(used).toEqual(['best', 'best', 'next', 'next', 'lite']);
+    expect(t.usage.currentModel()).toBe('lite');
+    expect(t.usage.dailyTotal()).toBe(504);
+    expect(t.usage.leftToday()).toBe(499);
+  });
+
+  it('starts again at the top on the next Pacific-time quota day', async () => {
+    const t = setup([], { models: chain });
+    for (let i = 0; i < 4; i++) await t.usage.acquire();
+    expect(t.usage.currentModel()).toBe('lite');
+    // 2026-10-16 12:00 UTC is 05:00 in California; 20 h later it is the next Pacific day.
+    t.advance(20 * 3_600_000);
+    expect(t.usage.currentModel()).toBe('best');
+  });
+
+  it('moves to the next model at once on a 429 and cools the limited one down for an hour', async () => {
+    const t = setup([new AppError('AI_RATE_LIMITED'), ok], { models: chain });
+    const r = await t.client.runSingle(echoTask, null);
+    expect(t.requests.map((q) => q.model)).toEqual(['best', 'next']);
+    expect(r).toMatchObject({ model: 'next', calls: 2 });
+    expect(t.usage.currentModel()).toBe('next');
+    t.advance(3_600_001);
+    expect(t.usage.currentModel()).toBe('best');
+  });
+
+  it('skips a model the project does not have (404)', async () => {
+    const t = setup([new AppError('AI_UNAVAILABLE', { context: { status: 404 } }), ok], { models: chain });
+    const r = await t.client.runSingle(echoTask, null);
+    expect(r.model).toBe('next');
+    expect(t.usage.currentModel()).toBe('next');
+  });
+
+  it('reports the budget as exceeded only when every model is used up', async () => {
+    const t = setup([], { models: [{ id: 'only', dailyLimit: 1 }] });
+    await t.usage.acquire();
+    await expect(t.usage.acquire()).rejects.toMatchObject({ code: 'AI_BUDGET_EXCEEDED' });
+    expect(t.usage.currentModel()).toBeNull();
   });
 });
 
@@ -167,8 +233,15 @@ describe('AI client batches', () => {
     expect(run.calls).toBe(3);
   });
 
-  it('does not retry 429 or blocked answers', async () => {
-    for (const code of ['AI_RATE_LIMITED', 'AI_BLOCKED', 'AI_NOT_AUTHORISED'] as const) {
+  it('does not retry a 429 on the same model: with no other model left the budget is spent', async () => {
+    const t = setup([new AppError('AI_RATE_LIMITED')]);
+    const run = await t.client.runBatch(performanceRatingTask, [perf('A')], null);
+    expect(run.error?.code).toBe('AI_BUDGET_EXCEEDED');
+    expect(run.calls).toBe(1);
+  });
+
+  it('does not retry blocked or unauthorised answers', async () => {
+    for (const code of ['AI_BLOCKED', 'AI_NOT_AUTHORISED'] as const) {
       const t = setup([new AppError(code)]);
       const run = await t.client.runBatch(performanceRatingTask, [perf('A')], null);
       expect(run.error?.code).toBe(code);
@@ -321,7 +394,7 @@ describe('AI service rule compile', () => {
     const first = await t.service.compileRule(input);
     expect(first.result).toMatchObject({ status: 'OK', readBack: expect.stringContaining('RSI') });
     expect(first.promptVersion).toBe('rule-compile@1');
-    expect(first.model).toBe(AI_CONFIG.models.flash);
+    expect(first.model).toBe('model-a');
     await t.service.compileRule(input);
     expect(t.requests).toHaveLength(2);
     expect(t.usage.usedToday()).toBe(2);
@@ -370,7 +443,7 @@ describe('AI store', () => {
   });
 
   it('shows a budget notice once per session', async () => {
-    const t = setup([], { rpm: 100, dailyCap: 0, maxWaitMs: 0 });
+    const t = setup([], { models: [{ id: 'model-a', dailyLimit: 0 }], maxWaitMs: 0 });
     const notices: string[] = [];
     const store = createAiStore({ service: t.service, now: () => 0, onNotice: (c) => notices.push(c) });
     await store

@@ -107,7 +107,6 @@ Do not give buy or sell instructions. Use the macro context to frame the market 
 export const deepAnalysisTask: SinglePromptTask<DeepAnalysisInput, DeepAnalysis> = {
   id: 'deepAnalysis',
   version: 'deep-analysis@2',
-  model: 'flash',
   responseSchema: {
     type: 'object',
     properties: {
