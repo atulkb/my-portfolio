@@ -58,6 +58,7 @@ docs/                     HLD, LLD, analysis framework, ui/ (Stitch screen desig
 - **Build, install & run on the emulator/phone (dev client; needs Android Studio + JDK 17):** `npm run android` (first build ≈ 30 min, then incremental). Expo Go no longer works (native Firebase modules).
 - **Regenerate the native project after app.json/plugin changes or a new google-services.json:** `npx expo prebuild --platform android --clean` (in `apps/mobile`)
 - **Emulator:** AVD `Medium_Phone_API_37.0` (Google Play image, needed for Google sign-in)
+- **Signed release APK for the phone (arm64, minified, ~29 MB; key in `D:\learning\keys`, HLD D39):** `npm run build:apk` → `apps/mobile/android/app/build/outputs/apk/release/app-release.apk`. A debug-signed install must be uninstalled first.
 - **Cloud dev build (no local Android SDK needed):** `npx eas-cli build --profile development --platform android` (run inside `apps/mobile`)
 - **Run all tests:** `npm test`
 - **Type-check:** `npm run typecheck`
