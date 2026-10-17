@@ -1664,6 +1664,15 @@ Recomputation is cheap (≤ 500 transactions, ≤ 150 instruments) and memoised 
 - The provider also sets the root window colour (`expo-system-ui`) to the canvas, so screen transitions and the keyboard don't flash the other scheme.
 - Tests: `themeStore` (default, persist/restore, invalid → system, reset), `resolveScheme`, palette roles and WCAG contrast. RNTL render tests are not included: the testing library isn't installed and no app test renders components yet; the theme switch is checked manually on the emulator instead.
 
+### 4.18 Hide the Net portfolio worth figures (post-M9, 2026-10-17)
+
+User request: an eye button so the S02 summary isn't readable when the app is opened in public.
+- **Scope:** the Net portfolio worth card only (`SummaryCard`). Holding cards, sector headers and other screens are unchanged.
+- **Hidden:** every figure in the card shows `••••••` in neutral grey (no gain/loss colour that would hint at direction): net worth, per-market value, weight and CAGR, 1-day and unrealised P/L with their %, overall CAGR. The US/India allocation bar is not drawn. The ECB rate line stays (public data); the currency toggle still works.
+- **Button:** `eye-outline` / `eye-off-outline` next to "NET PORTFOLIO WORTH", 44 dp touch target, label "Hide/Show portfolio totals".
+- **State:** `uiStore.summaryHidden`, persisted in MMKV `ui.summaryHidden`, so a hidden summary stays hidden on the next launch until the eye is tapped again. Default shown; back to shown after sign-out (`ui.*` is wiped). Assumption — the alternative "always hidden on every launch" was not chosen; change if wanted.
+- **Tests:** `uiStore` default, persistence across store instances, reset on sign-out. Verified on the emulator (mask, restart, unhide).
+
 ## 5. Error Taxonomy, Test Plan & Delivery Order
 
 Traceability: HLD §10 (NFRs), §11; all previous LLD sections; `.claude/rules/generic/workflow.md`.
