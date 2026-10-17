@@ -1673,6 +1673,16 @@ User request: an eye button so the S02 summary isn't readable when the app is op
 - **State:** `uiStore.summaryHidden`, persisted in MMKV `ui.summaryHidden`, so a hidden summary stays hidden on the next launch until the eye is tapped again. Default shown; back to shown after sign-out (`ui.*` is wiped). Assumption — the alternative "always hidden on every launch" was not chosen; change if wanted.
 - **Tests:** `uiStore` default, persistence across store instances, reset on sign-out. Verified on the emulator (mask, restart, unhide).
 
+### 4.19 Release build & signing (post-M9, 2026-10-17)
+
+HLD D39.
+- **Key:** `D:\learning\keys\my-portfolio-release.jks` (alias `my-portfolio`), created by the user with `keytool`; never in the repo; the user keeps a backup of the file and password.
+- **Passwords:** `D:\learning\keys\my-portfolio-release.properties` (`storeFile`, `storePassword`, `keyAlias`, `keyPassword`); another location can be given in `PORTFOLIO_SIGNING_PROPERTIES`. Read only by Gradle; never read, printed or logged by tooling.
+- **Gradle wiring:** config plugin `apps/mobile/plugins/withReleaseSigning.js` (listed in `app.json`) adds a `release` signing config and points the release build type at it; idempotent; fails prebuild loudly if the template's `build.gradle` layout changes. Missing properties file → warning + debug key (so the project still builds elsewhere).
+- **Firebase:** the key's SHA-1 and SHA-256 are added to the Android app next to the debug fingerprints (Google sign-in), and the refreshed `google-services.json` replaces the local copy. App Check keeps using the static debug token (D37), which is bundled into release builds too.
+- **Build:** `npx expo prebuild --platform android` then `android\gradlew.bat -p android assembleRelease` → `android/app/build/outputs/apk/release/app-release.apk`; verify the signer with `apksigner verify --print-certs`.
+- **Install:** a debug-signed install must be uninstalled once before the release APK can be installed (signature mismatch); data is in Firestore and the cache rebuilds.
+
 ## 5. Error Taxonomy, Test Plan & Delivery Order
 
 Traceability: HLD §10 (NFRs), §11; all previous LLD sections; `.claude/rules/generic/workflow.md`.

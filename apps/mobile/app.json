@@ -39,7 +39,8 @@
       "expo-build-properties",
       "expo-secure-store",
       "@react-native-community/datetimepicker",
-      "@react-native-firebase/app-check"
+      "@react-native-firebase/app-check",
+      "./plugins/withReleaseSigning"
     ],
     "experiments": {
       "typedRoutes": true,
