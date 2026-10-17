@@ -1,7 +1,8 @@
 import type { Exchange, Label, Market, SignalLabel } from '@portfolio/core';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, labelColors, radii, spacing, typography } from '@/theme/tokens';
+import { radii, spacing, typography, type LabelColors } from '@/theme/tokens';
+import { makeStyles, useTheme } from '@/theme/theme';
 
 const LABEL_TEXT: Readonly<Record<Label, string>> = { GOOD: 'Good', AVERAGE: 'Average', BAD: 'Bad' };
 
@@ -14,7 +15,7 @@ export const SIGNAL_TEXT: Readonly<Record<SignalLabel, string>> = {
   SELL: 'Sell',
 };
 
-const SIGNAL_TONE: Readonly<Record<SignalLabel, keyof typeof labelColors>> = {
+const SIGNAL_TONE: Readonly<Record<SignalLabel, keyof LabelColors>> = {
   STRONG_BUY: 'GOOD',
   BUY: 'GOOD',
   HOLD: 'AVERAGE',
@@ -33,6 +34,8 @@ export function SignalBadge({
   /** "Buy · AI conf. 84%" for list rows (S07). */
   readonly compact?: boolean;
 }): React.JSX.Element {
+  const { labelColors } = useTheme();
+  const styles = useStyles();
   const c = labelColors[SIGNAL_TONE[label]];
   const text = `${SIGNAL_TEXT[label]} · AI ${compact ? 'conf.' : 'confidence'} ${Math.round(confidencePct)}%`;
   return (
@@ -59,6 +62,8 @@ export function LabelBadge({
   /** Health score 0–100, shown as "Health 72 · Good". */
   readonly score?: number | null;
 }): React.JSX.Element {
+  const { labelColors } = useTheme();
+  const styles = useStyles();
   const c = labelColors[label ?? 'NONE'];
   const text =
     label === null
@@ -82,6 +87,7 @@ export function LabelBadge({
 
 /** Square ticker tile on stock cards (first 4–5 characters of the symbol). */
 export function SymbolTile({ symbol }: { readonly symbol: string }): React.JSX.Element {
+  const styles = useStyles();
   return (
     <View style={styles.tile} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
       <Text style={styles.tileText} numberOfLines={1} adjustsFontSizeToFit>
@@ -93,6 +99,7 @@ export function SymbolTile({ symbol }: { readonly symbol: string }): React.JSX.E
 
 /** "IN" / "US" market badge. */
 export function MarketBadge({ market }: { readonly market: Market }): React.JSX.Element {
+  const styles = useStyles();
   return (
     <Text style={styles.market} accessibilityLabel={market === 'IN' ? 'India' : 'United States'}>
       {market}
@@ -102,39 +109,42 @@ export function MarketBadge({ market }: { readonly market: Market }): React.JSX.
 
 /** Exchange label ("NSE", "NYSE ARCA"). */
 export function ExchangeBadge({ exchange }: { readonly exchange: Exchange }): React.JSX.Element {
+  const styles = useStyles();
   return <Text style={styles.exchange}>{exchange.replace('_', ' ')}</Text>;
 }
 
-const styles = StyleSheet.create({
-  tile: {
-    width: 44,
-    height: 44,
-    borderRadius: radii.md,
-    backgroundColor: colors.surface2,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.xs,
-  },
-  tileText: { ...typography.microBadge, color: colors.textPrimary },
-  label: {
-    ...typography.labelSm,
-    borderWidth: 1,
-    borderRadius: radii.base,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
-    overflow: 'hidden',
-    alignSelf: 'flex-start',
-  },
-  market: { ...typography.microBadge, color: colors.textSecondary },
-  exchange: {
-    ...typography.microBadge,
-    color: colors.textSecondary,
-    backgroundColor: colors.surface2,
-    borderRadius: radii.base,
-    paddingHorizontal: spacing.xs,
-    paddingVertical: 2,
-    overflow: 'hidden',
-  },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    tile: {
+      width: 44,
+      height: 44,
+      borderRadius: radii.md,
+      backgroundColor: colors.surface2,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: spacing.xs,
+    },
+    tileText: { ...typography.microBadge, color: colors.textPrimary },
+    label: {
+      ...typography.labelSm,
+      borderWidth: 1,
+      borderRadius: radii.base,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 3,
+      overflow: 'hidden',
+      alignSelf: 'flex-start',
+    },
+    market: { ...typography.microBadge, color: colors.textSecondary },
+    exchange: {
+      ...typography.microBadge,
+      color: colors.textSecondary,
+      backgroundColor: colors.surface2,
+      borderRadius: radii.base,
+      paddingHorizontal: spacing.xs,
+      paddingVertical: 2,
+      overflow: 'hidden',
+    },
+  }),
+);

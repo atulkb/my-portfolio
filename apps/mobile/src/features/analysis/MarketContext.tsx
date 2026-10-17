@@ -3,7 +3,8 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { formatDate, formatPct } from '@/lib/format';
 import { useMarket } from '@/stores';
-import { colors, radii, spacing, typography } from '@/theme/tokens';
+import { radii, spacing, typography } from '@/theme/tokens';
+import { makeStyles } from '@/theme/theme';
 import { usdInrMove, useMarketSentiment } from './ai';
 import { MarketNote } from './AiVerdict';
 
@@ -11,6 +12,7 @@ const VIX_TEXT = { CALM: 'Calm', ELEVATED: 'Elevated', FEAR: 'Fear' } as const;
 const REGIME_TEXT = { ABOVE: 'above', NEAR: 'near', BELOW: 'below' } as const;
 
 function Stat({ label, value }: { readonly label: string; readonly value: string }) {
+  const styles = useStyles();
   return (
     <View style={styles.stat}>
       <Text style={styles.caption}>{label}</Text>
@@ -30,6 +32,7 @@ export function MarketContextCard({
   readonly macro: MacroAssessment;
   readonly withNote: boolean;
 }): React.JSX.Element {
+  const styles = useStyles();
   const sentiment = useMarketSentiment(macro, withNote);
   const fx = useMarket((s) => s.fx);
   const usdInr = usdInrMove(fx);
@@ -64,19 +67,21 @@ export function MarketContextCard({
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface1,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.xl,
-    padding: spacing.lg,
-    gap: spacing.md,
-  },
-  title: { ...typography.headlineSm, color: colors.textPrimary },
-  muted: { ...typography.labelSm, color: colors.textMuted },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: spacing.md },
-  stat: { width: '50%', gap: 2, paddingRight: spacing.sm },
-  caption: { ...typography.microBadge, color: colors.textMuted },
-  statValue: { ...typography.metricMd, color: colors.textPrimary },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: colors.surface1,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.xl,
+      padding: spacing.lg,
+      gap: spacing.md,
+    },
+    title: { ...typography.headlineSm, color: colors.textPrimary },
+    muted: { ...typography.labelSm, color: colors.textMuted },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: spacing.md },
+    stat: { width: '50%', gap: 2, paddingRight: spacing.sm },
+    caption: { ...typography.microBadge, color: colors.textMuted },
+    statValue: { ...typography.metricMd, color: colors.textPrimary },
+  }),
+);

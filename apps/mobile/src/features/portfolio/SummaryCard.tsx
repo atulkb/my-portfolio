@@ -2,12 +2,13 @@ import type { Currency, MarketSummary, PortfolioSummary } from '@portfolio/core'
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { formatDate, formatFxRate, formatMoney, formatPct, formatSignedMoney } from '@/lib/format';
-import { colors, radii, spacing, typography } from '@/theme/tokens';
+import { radii, spacing, typography, type Palette } from '@/theme/tokens';
+import { makeStyles, useTheme } from '@/theme/theme';
 
 const MARKET_LABEL = { IN: 'INDIA STOCKS', US: 'US STOCKS' } as const;
-const MARKET_COLOR = { IN: colors.caution, US: colors.gain } as const;
+const MARKET_TONE = { IN: 'caution', US: 'gain' } as const satisfies Record<string, keyof Palette>;
 
-const signColor = (n: number | null): string =>
+const signColor = (colors: Palette, n: number | null): string =>
   n === null || !Number.isFinite(n) || n === 0 ? colors.textSecondary : n > 0 ? colors.gain : colors.loss;
 
 /** "+24.8% p.a." or "—" with the < 1 yr hint (CAGR = money-weighted XIRR, LLD §4.9). */
@@ -22,6 +23,7 @@ function CurrencyToggle({
   readonly value: Currency;
   readonly onChange: (c: Currency) => void;
 }): React.JSX.Element {
+  const styles = useStyles();
   return (
     <View style={styles.toggle} accessibilityRole="radiogroup">
       {(['USD', 'INR'] as const).map((c) => (
@@ -43,18 +45,22 @@ function CurrencyToggle({
 }
 
 function MarketCard({ m }: { readonly m: MarketSummary }): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   return (
     <View style={styles.marketCard}>
       <View style={styles.rowBetween}>
         <Text style={styles.caption}>{MARKET_LABEL[m.market]}</Text>
-        <Text style={[styles.weight, { color: MARKET_COLOR[m.market] }]}>{formatPct(m.weightPct)}</Text>
+        <Text style={[styles.weight, { color: colors[MARKET_TONE[m.market]] }]}>
+          {formatPct(m.weightPct)}
+        </Text>
       </View>
       <Text style={styles.marketValue} numberOfLines={1} adjustsFontSizeToFit>
         {formatMoney(m.value, m.currency)}
       </Text>
       <View style={styles.rowBetween}>
         <Text style={styles.small}>CAGR</Text>
-        <Text style={[styles.small, { color: signColor(m.xirrPct) }]}>{cagrText(m.xirrPct)}</Text>
+        <Text style={[styles.small, { color: signColor(colors, m.xirrPct) }]}>{cagrText(m.xirrPct)}</Text>
       </View>
     </View>
   );
@@ -71,6 +77,8 @@ function Row({
   readonly value: string;
   readonly pct: number | null;
 }): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   return (
     <View style={styles.statRow}>
       <View style={styles.statLabel}>
@@ -78,9 +86,11 @@ function Row({
         <Text style={styles.tag}>{tag}</Text>
       </View>
       <View style={styles.statValue}>
-        <Text style={[styles.metric, { color: signColor(pct) }]}>{value}</Text>
+        <Text style={[styles.metric, { color: signColor(colors, pct) }]}>{value}</Text>
         {pct !== null ? (
-          <Text style={[styles.pctChip, { color: signColor(pct) }]}>{formatPct(pct, { signed: true })}</Text>
+          <Text style={[styles.pctChip, { color: signColor(colors, pct) }]}>
+            {formatPct(pct, { signed: true })}
+          </Text>
         ) : null}
       </View>
     </View>
@@ -95,6 +105,8 @@ export function SummaryCard({
   readonly summary: PortfolioSummary;
   readonly onCurrencyChange: (c: Currency) => void;
 }): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const c = summary.currency;
   const fxKnown = Number.isFinite(summary.fx.usdInr);
   const inMarket = summary.markets.find((m) => m.market === 'IN');
@@ -139,7 +151,7 @@ export function SummaryCard({
             <Text style={styles.body}>Overall CAGR</Text>
             <Text style={styles.tag}>Annualised</Text>
           </View>
-          <Text style={[styles.metric, { color: signColor(summary.xirrPct) }]}>
+          <Text style={[styles.metric, { color: signColor(colors, summary.xirrPct) }]}>
             {cagrText(summary.xirrPct)}
           </Text>
         </View>
@@ -171,83 +183,91 @@ export function SummaryCard({
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface1,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    padding: spacing.lg,
-    gap: spacing.md,
-  },
-  rowBetween: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  caption: { ...typography.labelSm, color: colors.textSecondary },
-  hero: { ...typography.displayHero, color: colors.textPrimary },
-  small: { ...typography.labelSm, color: colors.textSecondary },
-  body: { ...typography.bodyMd, color: colors.textPrimary },
-  metric: { ...typography.metricMd },
-  toggle: {
-    flexDirection: 'row',
-    borderRadius: radii.full,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 2,
-  },
-  toggleItem: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: radii.full,
-    minHeight: 28,
-    justifyContent: 'center',
-  },
-  toggleOn: { backgroundColor: colors.surface2 },
-  toggleText: { ...typography.labelMd, color: colors.textSecondary },
-  toggleTextOn: { color: colors.textPrimary },
-  marketRow: { flexDirection: 'row', gap: spacing.md },
-  marketCard: {
-    flex: 1,
-    gap: spacing.xs,
-    padding: spacing.md,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.canvas,
-  },
-  weight: { ...typography.microBadge },
-  marketValue: { ...typography.metricLg, color: colors.textPrimary },
-  stats: {
-    gap: spacing.md,
-    padding: spacing.md,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.canvas,
-  },
-  statRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.md },
-  statLabel: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexShrink: 1, flexWrap: 'wrap' },
-  statValue: { alignItems: 'flex-end' },
-  tag: {
-    ...typography.microBadge,
-    color: colors.textSecondary,
-    backgroundColor: colors.surface2,
-    paddingHorizontal: spacing.xs,
-    paddingVertical: 2,
-    borderRadius: radii.base,
-    overflow: 'hidden',
-  },
-  pctChip: { ...typography.labelSm },
-  allocation: { gap: spacing.xs },
-  bar: {
-    flexDirection: 'row',
-    height: 6,
-    borderRadius: radii.full,
-    overflow: 'hidden',
-    backgroundColor: colors.surface2,
-  },
-  barPart: { height: 6 },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: colors.surface1,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.lg,
+      padding: spacing.lg,
+      gap: spacing.md,
+    },
+    rowBetween: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    caption: { ...typography.labelSm, color: colors.textSecondary },
+    hero: { ...typography.displayHero, color: colors.textPrimary },
+    small: { ...typography.labelSm, color: colors.textSecondary },
+    body: { ...typography.bodyMd, color: colors.textPrimary },
+    metric: { ...typography.metricMd },
+    toggle: {
+      flexDirection: 'row',
+      borderRadius: radii.full,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 2,
+    },
+    toggleItem: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+      borderRadius: radii.full,
+      minHeight: 28,
+      justifyContent: 'center',
+    },
+    toggleOn: { backgroundColor: colors.surface2 },
+    toggleText: { ...typography.labelMd, color: colors.textSecondary },
+    toggleTextOn: { color: colors.textPrimary },
+    marketRow: { flexDirection: 'row', gap: spacing.md },
+    marketCard: {
+      flex: 1,
+      gap: spacing.xs,
+      padding: spacing.md,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.canvas,
+    },
+    weight: { ...typography.microBadge },
+    marketValue: { ...typography.metricLg, color: colors.textPrimary },
+    stats: {
+      gap: spacing.md,
+      padding: spacing.md,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.canvas,
+    },
+    statRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.md },
+    statLabel: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      flexShrink: 1,
+      flexWrap: 'wrap',
+    },
+    statValue: { alignItems: 'flex-end' },
+    tag: {
+      ...typography.microBadge,
+      color: colors.textSecondary,
+      backgroundColor: colors.surface2,
+      paddingHorizontal: spacing.xs,
+      paddingVertical: 2,
+      borderRadius: radii.base,
+      overflow: 'hidden',
+    },
+    pctChip: { ...typography.labelSm },
+    allocation: { gap: spacing.xs },
+    bar: {
+      flexDirection: 'row',
+      height: 6,
+      borderRadius: radii.full,
+      overflow: 'hidden',
+      backgroundColor: colors.surface2,
+    },
+    barPart: { height: 6 },
+  }),
+);

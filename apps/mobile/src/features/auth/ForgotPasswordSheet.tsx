@@ -4,7 +4,8 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
 import { useSession } from '@/stores';
-import { colors, radii, spacing, typography } from '@/theme/tokens';
+import { radii, spacing, typography } from '@/theme/tokens';
+import { makeStyles } from '@/theme/theme';
 import { ErrorText } from './ErrorText';
 import { looksLikeEmail } from './validation';
 
@@ -18,6 +19,7 @@ export function ForgotPasswordSheet({
   readonly initialEmail: string;
   readonly onClose: () => void;
 }): React.JSX.Element {
+  const styles = useStyles();
   const [email, setEmail] = useState(initialEmail);
   const [sent, setSent] = useState(false);
   const busy = useSession((s) => s.busy);
@@ -66,17 +68,19 @@ export function ForgotPasswordSheet({
   );
 }
 
-const styles = StyleSheet.create({
-  scrim: { flex: 1, backgroundColor: colors.scrim },
-  sheet: {
-    backgroundColor: colors.surface2,
-    borderTopLeftRadius: radii.xl,
-    borderTopRightRadius: radii.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.margin,
-    gap: spacing.md,
-  },
-  title: { ...typography.headlineSm, color: colors.textPrimary },
-  body: { ...typography.bodyLg, color: colors.textSecondary },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    scrim: { flex: 1, backgroundColor: colors.scrim },
+    sheet: {
+      backgroundColor: colors.surface2,
+      borderTopLeftRadius: radii.xl,
+      borderTopRightRadius: radii.xl,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing.margin,
+      gap: spacing.md,
+    },
+    title: { ...typography.headlineSm, color: colors.textPrimary },
+    body: { ...typography.bodyLg, color: colors.textSecondary },
+  }),
+);

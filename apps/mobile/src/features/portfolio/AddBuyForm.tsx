@@ -31,7 +31,8 @@ import {
   usePortfolio,
   useSession,
 } from '@/stores';
-import { colors, MIN_TOUCH, radii, spacing, typography } from '@/theme/tokens';
+import { MIN_TOUCH, radii, spacing, typography } from '@/theme/tokens';
+import { makeStyles, useTheme } from '@/theme/theme';
 
 type Selected = { readonly instrument: Instrument; readonly listing: Listing };
 
@@ -57,6 +58,8 @@ function resolveKey(key: string | undefined): Selected | null {
 
 /** S06 Add / edit buy (LLD §4.4). Last close and "Use close" arrive with market data (M5). */
 export function AddBuyForm({ params }: { readonly params: AddBuyParams }): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const transactions = usePortfolio((s) => s.transactions);
   const platforms = useSession((s) => s.profile?.platforms ?? []);
   const editing = params.txId ? (transactions.find((t) => t.id === params.txId) ?? null) : null;
@@ -367,65 +370,67 @@ export function AddBuyForm({ params }: { readonly params: AddBuyParams }): React
   );
 }
 
-const styles = StyleSheet.create({
-  form: { gap: spacing.lg },
-  flex: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
-  title: { ...typography.headlineMd, color: colors.textPrimary },
-  subtitle: { ...typography.bodyMd, color: colors.textSecondary },
-  chips: { flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' },
-  chipsWrap: { flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' },
-  searchBlock: { gap: spacing.sm },
-  hit: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    minHeight: MIN_TOUCH,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.md,
-    backgroundColor: colors.surface1,
-  },
-  selected: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.surface1,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    padding: spacing.gutter,
-  },
-  selectedRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  symbol: { ...typography.metricMd, color: colors.textPrimary },
-  name: { ...typography.bodyMd, color: colors.textPrimary },
-  muted: { ...typography.labelMd, color: colors.textSecondary },
-  link: { ...typography.labelMd, color: colors.info },
-  field: { gap: spacing.sm },
-  label: { ...typography.labelMd, color: colors.textPrimary },
-  dateBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    minHeight: 48,
-    paddingHorizontal: spacing.md,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface1,
-  },
-  errorBox: { borderColor: colors.loss },
-  dateText: { ...typography.bodyLg, color: colors.textPrimary },
-  error: { ...typography.labelMd, color: colors.loss },
-  summary: {
-    backgroundColor: colors.surface1,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    padding: spacing.lg,
-    gap: spacing.xs,
-  },
-  caption: { ...typography.labelSm, color: colors.textSecondary },
-  metric: { ...typography.metricLg, color: colors.textPrimary },
-  warning: { ...typography.bodyMd, color: colors.caution },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    form: { gap: spacing.lg },
+    flex: { flex: 1 },
+    header: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
+    title: { ...typography.headlineMd, color: colors.textPrimary },
+    subtitle: { ...typography.bodyMd, color: colors.textSecondary },
+    chips: { flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' },
+    chipsWrap: { flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' },
+    searchBlock: { gap: spacing.sm },
+    hit: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      minHeight: MIN_TOUCH,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: radii.md,
+      backgroundColor: colors.surface1,
+    },
+    selected: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      backgroundColor: colors.surface1,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.lg,
+      padding: spacing.gutter,
+    },
+    selectedRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    symbol: { ...typography.metricMd, color: colors.textPrimary },
+    name: { ...typography.bodyMd, color: colors.textPrimary },
+    muted: { ...typography.labelMd, color: colors.textSecondary },
+    link: { ...typography.labelMd, color: colors.info },
+    field: { gap: spacing.sm },
+    label: { ...typography.labelMd, color: colors.textPrimary },
+    dateBox: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      minHeight: 48,
+      paddingHorizontal: spacing.md,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface1,
+    },
+    errorBox: { borderColor: colors.loss },
+    dateText: { ...typography.bodyLg, color: colors.textPrimary },
+    error: { ...typography.labelMd, color: colors.loss },
+    summary: {
+      backgroundColor: colors.surface1,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.lg,
+      padding: spacing.lg,
+      gap: spacing.xs,
+    },
+    caption: { ...typography.labelSm, color: colors.textSecondary },
+    metric: { ...typography.metricLg, color: colors.textPrimary },
+    warning: { ...typography.bodyMd, color: colors.caution },
+  }),
+);

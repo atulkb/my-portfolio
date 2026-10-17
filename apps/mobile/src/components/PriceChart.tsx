@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 
-import { colors } from '@/theme/tokens';
+import { useTheme } from '@/theme/theme';
 
 /**
  * Line chart with a soft fill (S04 3-month chart, LLD §4.4). Green when the last value is at or
@@ -15,6 +15,7 @@ export function PriceChart({
   readonly values: readonly number[];
   readonly height?: number;
 }): React.JSX.Element {
+  const { colors } = useTheme();
   const [width, setWidth] = useState(0);
   const onLayout = (e: LayoutChangeEvent): void => setWidth(Math.round(e.nativeEvent.layout.width));
 

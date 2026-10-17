@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
 
-import { colors, MIN_TOUCH, radii, spacing, typography } from '@/theme/tokens';
+import { MIN_TOUCH, radii, spacing, typography } from '@/theme/tokens';
+import { makeStyles } from '@/theme/theme';
 
 /** Selectable pill (market toggle, filters, platform picker). */
 export function Chip({
@@ -14,6 +15,7 @@ export function Chip({
   readonly onPress: () => void;
   readonly disabled?: boolean;
 }): React.JSX.Element {
+  const styles = useStyles();
   return (
     <Pressable
       accessibilityRole="button"
@@ -29,18 +31,20 @@ export function Chip({
   );
 }
 
-const styles = StyleSheet.create({
-  chip: {
-    minHeight: 32,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-    borderRadius: radii.full,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface1,
-  },
-  on: { backgroundColor: colors.gainTint, borderColor: colors.gain },
-  disabled: { opacity: 0.4 },
-  text: { ...typography.labelMd, color: colors.textSecondary },
-  textOn: { color: colors.gain },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    chip: {
+      minHeight: 32,
+      justifyContent: 'center',
+      paddingHorizontal: spacing.md,
+      borderRadius: radii.full,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface1,
+    },
+    on: { backgroundColor: colors.gainTint, borderColor: colors.gain },
+    disabled: { opacity: 0.4 },
+    text: { ...typography.labelMd, color: colors.textSecondary },
+    textOn: { color: colors.gain },
+  }),
+);

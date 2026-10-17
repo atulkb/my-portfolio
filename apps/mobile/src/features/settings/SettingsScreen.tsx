@@ -18,13 +18,17 @@ import {
   lockStore,
   probeAiModels,
   sessionStore,
+  themeStore,
   toastStore,
   uiStore,
   useLock,
   usePortfolio,
   useSession,
+  useThemePreference,
 } from '@/stores';
-import { colors, MIN_TOUCH, radii, spacing, typography } from '@/theme/tokens';
+import { THEME_PREFERENCES, type ThemePreference } from '@/stores/themeStore';
+import { MIN_TOUCH, radii, spacing, typography } from '@/theme/tokens';
+import { makeStyles, useTheme } from '@/theme/theme';
 import { AiCard } from './AiCard';
 import { MarketDataCard } from './MarketDataCard';
 import { StockListCard } from './StockListCard';
@@ -50,7 +54,14 @@ function formatBytes(n: number): string {
   return `${(n / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+const THEME_LABEL: Readonly<Record<ThemePreference, string>> = {
+  system: 'System',
+  light: 'Light',
+  dark: 'Dark',
+};
+
 function Section({ title, children }: { readonly title: string; readonly children: React.ReactNode }) {
+  const styles = useStyles();
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{title}</Text>
@@ -70,6 +81,8 @@ function LinkRow({
   readonly subtitle?: string;
   readonly onPress: () => void;
 }): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   return (
     <Pressable
       accessibilityRole="button"
@@ -93,6 +106,8 @@ function LinkRow({
 
 /** S09 Settings (LLD §4.4): account, display, security, AI, data, about, sign out, delete. */
 export function SettingsScreen(): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const profile = useSession((s) => s.profile);
   const busy = useSession((s) => s.busy);
   const lastImport = usePortfolio((s) => s.lastImport);
@@ -100,6 +115,7 @@ export function SettingsScreen(): React.JSX.Element {
   const lockError = useLock((s) => s.error);
   const [cacheBytes, setCacheBytes] = useState(() => clearableCacheBytes());
   const currency = profile?.settings.summaryCurrency ?? 'INR';
+  const themePreference = useThemePreference();
   const sort = profile?.settings.defaultSort ?? 'VALUE_DESC';
   const email = profile?.authProvider === 'password';
   const initials = (profile?.displayName ?? '?')
@@ -131,7 +147,7 @@ export function SettingsScreen(): React.JSX.Element {
   const clearCache = (): void =>
     Alert.alert(
       'Clear local cache?',
-      'Cached prices, exchange rates and AI answers are removed and fetched again on the next refresh. Your portfolio, watchlists and rules are not affected.',
+      'Cached prices, exchange rates and AI answers are removed and fetched again on the next refresh. Appearance goes back to System. Your portfolio, watchlists and rules are not affected.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -140,6 +156,7 @@ export function SettingsScreen(): React.JSX.Element {
           onPress: () => {
             clearMarketAndAiCache();
             aiStore.getState().reset();
+            themeStore.getState().reset();
             setCacheBytes(clearableCacheBytes());
             toastStore.getState().show('Local cache cleared.');
           },
@@ -215,6 +232,22 @@ export function SettingsScreen(): React.JSX.Element {
       </Section>
 
       <Section title="DISPLAY">
+        <View style={styles.block}>
+          <Text style={styles.rowTitle}>Appearance</Text>
+          <View style={styles.chips}>
+            {THEME_PREFERENCES.map((t) => (
+              <Chip
+                key={t}
+                label={THEME_LABEL[t]}
+                selected={themePreference === t}
+                onPress={() => themeStore.getState().setPreference(t)}
+              />
+            ))}
+          </View>
+          {themePreference === 'system' ? (
+            <Text style={styles.sub}>{"Follows your phone's setting."}</Text>
+          ) : null}
+        </View>
         <View style={styles.block}>
           <Text style={styles.rowTitle}>Portfolio summary currency</Text>
           <View style={styles.chips}>
@@ -343,47 +376,54 @@ export function SettingsScreen(): React.JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  appBar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  title: { ...typography.headlineMd, color: colors.textPrimary },
-  section: { gap: spacing.sm },
-  sectionTitle: { ...typography.microBadge, color: colors.textSecondary },
-  card: {
-    backgroundColor: colors.surface1,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    padding: spacing.gutter,
-    gap: spacing.md,
-  },
-  account: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: radii.lg,
-    backgroundColor: colors.surface2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: { ...typography.headlineSm, color: colors.gain },
-  name: { ...typography.headlineSm, color: colors.textPrimary },
-  badge: {
-    ...typography.labelSm,
-    color: colors.textPrimary,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.base,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-  },
-  block: { gap: spacing.sm },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  switchRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: MIN_TOUCH },
-  linkRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: MIN_TOUCH },
-  pressed: { opacity: 0.7 },
-  rowTitle: { ...typography.bodyLg, color: colors.textPrimary },
-  sub: { ...typography.labelMd, color: colors.textSecondary },
-  warn: { ...typography.labelMd, color: colors.caution },
-  footnote: { ...typography.labelSm, color: colors.textMuted, textAlign: 'center', marginBottom: spacing.lg },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    flex: { flex: 1 },
+    appBar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+    title: { ...typography.headlineMd, color: colors.textPrimary },
+    section: { gap: spacing.sm },
+    sectionTitle: { ...typography.microBadge, color: colors.textSecondary },
+    card: {
+      backgroundColor: colors.surface1,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.lg,
+      padding: spacing.gutter,
+      gap: spacing.md,
+    },
+    account: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+    avatar: {
+      width: 48,
+      height: 48,
+      borderRadius: radii.lg,
+      backgroundColor: colors.surface2,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    avatarText: { ...typography.headlineSm, color: colors.gain },
+    name: { ...typography.headlineSm, color: colors.textPrimary },
+    badge: {
+      ...typography.labelSm,
+      color: colors.textPrimary,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.base,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 2,
+    },
+    block: { gap: spacing.sm },
+    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+    switchRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: MIN_TOUCH },
+    linkRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: MIN_TOUCH },
+    pressed: { opacity: 0.7 },
+    rowTitle: { ...typography.bodyLg, color: colors.textPrimary },
+    sub: { ...typography.labelMd, color: colors.textSecondary },
+    warn: { ...typography.labelMd, color: colors.caution },
+    footnote: {
+      ...typography.labelSm,
+      color: colors.textMuted,
+      textAlign: 'center',
+      marginBottom: spacing.lg,
+    },
+  }),
+);

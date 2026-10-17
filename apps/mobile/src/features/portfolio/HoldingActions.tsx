@@ -4,7 +4,8 @@ import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { SymbolTile } from '@/components/Badges';
-import { colors, MIN_TOUCH, radii, spacing, typography } from '@/theme/tokens';
+import { MIN_TOUCH, radii, spacing, typography } from '@/theme/tokens';
+import { makeStyles, useTheme } from '@/theme/theme';
 import { useHolding } from './hooks';
 
 type IconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
@@ -24,6 +25,8 @@ function ActionRow({
   readonly destructive?: boolean;
   readonly disabled?: boolean;
 }): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const fg = destructive ? colors.loss : colors.textPrimary;
   return (
     <Pressable
@@ -51,6 +54,8 @@ function ActionRow({
 
 /** S02b Holding actions sheet (LLD §4.4). */
 export function HoldingActions({ holdingKey }: { readonly holdingKey: InstrumentKey }): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const holding = useHolding(holdingKey);
   if (!holding) {
     return <Text style={styles.rowSub}>This stock is no longer in your portfolio.</Text>;
@@ -98,25 +103,27 @@ export function HoldingActions({ holdingKey }: { readonly holdingKey: Instrument
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: { gap: spacing.md },
-  flex: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.sm },
-  title: { ...typography.headlineSm, color: colors.textPrimary },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    minHeight: MIN_TOUCH + 12,
-    padding: spacing.gutter,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface1,
-  },
-  destructive: { borderColor: colors.destructiveBorder, backgroundColor: colors.lossTint },
-  pressed: { backgroundColor: colors.surface2 },
-  disabled: { opacity: 0.5 },
-  rowTitle: { ...typography.metricMd },
-  rowSub: { ...typography.labelMd, color: colors.textSecondary },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    wrap: { gap: spacing.md },
+    flex: { flex: 1 },
+    header: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.sm },
+    title: { ...typography.headlineSm, color: colors.textPrimary },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      minHeight: MIN_TOUCH + 12,
+      padding: spacing.gutter,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface1,
+    },
+    destructive: { borderColor: colors.destructiveBorder, backgroundColor: colors.lossTint },
+    pressed: { backgroundColor: colors.surface2 },
+    disabled: { opacity: 0.5 },
+    rowTitle: { ...typography.metricMd },
+    rowSub: { ...typography.labelMd, color: colors.textSecondary },
+  }),
+);

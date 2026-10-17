@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, MIN_TOUCH, radii, spacing, typography } from '@/theme/tokens';
+import { MIN_TOUCH, radii, spacing, typography } from '@/theme/tokens';
+import { makeStyles, useTheme } from '@/theme/theme';
 
 /** Button props. */
 export type ButtonProps = {
@@ -24,6 +25,9 @@ export function Button({
   loading = false,
   accessibilityLabel,
 }: ButtonProps): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
+  const labelStyles = useLabelStyles();
   const inactive = disabled || loading;
   return (
     <Pressable
@@ -52,30 +56,39 @@ export function Button({
   );
 }
 
-const styles = StyleSheet.create({
-  base: {
-    minHeight: MIN_TOUCH,
-    borderRadius: radii.md,
-    paddingHorizontal: spacing.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  primary: { backgroundColor: colors.gain, minHeight: 48 },
-  primaryPressed: { backgroundColor: colors.gainPressed },
-  secondary: { backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.border, minHeight: 48 },
-  destructive: { borderWidth: 1, borderColor: colors.destructiveBorder },
-  link: { paddingHorizontal: spacing.xs },
-  destructiveLink: { paddingHorizontal: spacing.xs },
-  pressed: { opacity: 0.8 },
-  disabled: { opacity: 0.5 },
-  label: { ...typography.bodyLg, fontFamily: typography.metricMd.fontFamily },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    base: {
+      minHeight: MIN_TOUCH,
+      borderRadius: radii.md,
+      paddingHorizontal: spacing.lg,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    primary: { backgroundColor: colors.gain, minHeight: 48 },
+    primaryPressed: { backgroundColor: colors.gainPressed },
+    secondary: {
+      backgroundColor: colors.surface2,
+      borderWidth: 1,
+      borderColor: colors.border,
+      minHeight: 48,
+    },
+    destructive: { borderWidth: 1, borderColor: colors.destructiveBorder },
+    link: { paddingHorizontal: spacing.xs },
+    destructiveLink: { paddingHorizontal: spacing.xs },
+    pressed: { opacity: 0.8 },
+    disabled: { opacity: 0.5 },
+    label: { ...typography.bodyLg, fontFamily: typography.metricMd.fontFamily },
+  }),
+);
 
-const labelStyles = StyleSheet.create({
-  primary: { color: colors.onGain, fontSize: 16 },
-  secondary: { color: colors.textPrimary },
-  destructive: { color: colors.loss },
-  link: { color: colors.gain },
-  destructiveLink: { color: colors.loss },
-});
+const useLabelStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    primary: { color: colors.onGain, fontSize: 16 },
+    secondary: { color: colors.textPrimary },
+    destructive: { color: colors.loss },
+    link: { color: colors.gain },
+    destructiveLink: { color: colors.loss },
+  }),
+);

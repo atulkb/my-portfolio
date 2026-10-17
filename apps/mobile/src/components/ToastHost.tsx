@@ -3,13 +3,15 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { toastStore, useToast } from '@/stores';
-import { colors, radii, spacing, typography } from '@/theme/tokens';
+import { radii, spacing, typography } from '@/theme/tokens';
+import { makeStyles } from '@/theme/theme';
 
 /** Clears the floating + button (56 dp + margins) so toast actions stay tappable. */
 const TOAST_OFFSET = 96;
 
 /** Renders the current toast above the bottom edge; auto-dismisses after its duration. */
 export function ToastHost(): React.JSX.Element | null {
+  const styles = useStyles();
   const toast = useToast((s) => s.current);
   const insets = useSafeAreaInsets();
 
@@ -47,19 +49,21 @@ export function ToastHost(): React.JSX.Element | null {
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: { position: 'absolute', left: spacing.margin, right: spacing.margin },
-  toast: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.surface2,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  text: { ...typography.bodyMd, color: colors.textPrimary, flex: 1 },
-  action: { ...typography.labelMd, color: colors.gain },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    wrap: { position: 'absolute', left: spacing.margin, right: spacing.margin },
+    toast: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      backgroundColor: colors.surface2,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.lg,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+    },
+    text: { ...typography.bodyMd, color: colors.textPrimary, flex: 1 },
+    action: { ...typography.labelMd, color: colors.gain },
+  }),
+);

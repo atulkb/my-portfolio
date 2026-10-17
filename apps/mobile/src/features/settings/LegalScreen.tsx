@@ -3,11 +3,14 @@ import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
-import { colors, spacing, typography } from '@/theme/tokens';
+import { spacing, typography } from '@/theme/tokens';
+import { makeStyles, useTheme } from '@/theme/theme';
 import { LEGAL_DOCS, type LegalDoc } from './legal';
 
 /** S09 → Privacy policy / Disclaimer (static text). */
 export function LegalScreen({ doc }: { readonly doc: LegalDoc }): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const { title, paragraphs } = LEGAL_DOCS[doc];
   return (
     <Screen>
@@ -31,8 +34,10 @@ export function LegalScreen({ doc }: { readonly doc: LegalDoc }): React.JSX.Elem
   );
 }
 
-const styles = StyleSheet.create({
-  appBar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  title: { ...typography.headlineMd, color: colors.textPrimary },
-  body: { ...typography.bodyLg, color: colors.textSecondary },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    appBar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+    title: { ...typography.headlineMd, color: colors.textPrimary },
+    body: { ...typography.bodyLg, color: colors.textSecondary },
+  }),
+);

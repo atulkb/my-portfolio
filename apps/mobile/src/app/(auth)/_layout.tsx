@@ -1,10 +1,11 @@
 import { Stack } from 'expo-router';
 
 import { useSession } from '@/stores';
-import { colors } from '@/theme/tokens';
+import { useTheme } from '@/theme/theme';
 
 /** Sign-in group: login/sign-up when signed out, verify-email for unverified email accounts. */
 export default function AuthLayout(): React.JSX.Element {
+  const { colors } = useTheme();
   const gate = useSession((s) => s.gate);
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.canvas } }}>

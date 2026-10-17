@@ -1,40 +1,91 @@
 /**
  * Design tokens for the "Obsidian Capital" design system
- * (docs/ui/screens/obsidian_capital/DESIGN.md). Dark theme only in v1 (LLD §4.5).
- * Components use these tokens; no colour or spacing literals elsewhere.
+ * (docs/ui/screens/obsidian_capital/DESIGN.md), with dark and light palettes (LLD §4.17).
+ * Components read colours through `useTheme()` / `makeStyles()` (theme/theme.tsx); no colour or
+ * spacing literals elsewhere.
  */
 import type { TextStyle } from 'react-native';
 import { INTER } from './fonts';
 
-/** Colour palette. Status colours are never the only cue: text labels always accompany them. */
-export const colors = {
-  canvas: '#0D0F12',
-  surface1: '#14171D',
-  surface2: '#1A1E26',
-  border: '#262B35',
-  scrim: 'rgba(13, 15, 18, 0.85)',
-
-  textPrimary: '#F3F4F6',
-  textSecondary: '#9CA3AF',
-  textMuted: '#4B5563',
-
+/** Colour roles. Status colours are never the only cue: text labels always accompany them. */
+export type Palette = {
+  readonly canvas: string;
+  readonly surface1: string;
+  readonly surface2: string;
+  readonly border: string;
+  readonly scrim: string;
+  readonly textPrimary: string;
+  readonly textSecondary: string;
+  readonly textMuted: string;
   /** Gain / bullish, primary actions. */
-  gain: '#05DF72',
-  gainPressed: '#10B981',
-  gainTint: 'rgba(5, 223, 114, 0.12)',
-  onGain: '#0D0F12',
+  readonly gain: string;
+  readonly gainPressed: string;
+  readonly gainTint: string;
+  readonly onGain: string;
   /** Loss / bearish. */
-  loss: '#F87171',
-  lossTint: 'rgba(248, 113, 113, 0.12)',
-  destructiveBorder: '#EF4444',
+  readonly loss: string;
+  readonly lossTint: string;
+  readonly destructiveBorder: string;
   /** Average / hold / warnings. */
-  caution: '#FFB178',
-  cautionTint: 'rgba(255, 177, 120, 0.12)',
+  readonly caution: string;
+  readonly cautionTint: string;
   /** Neutral accent: focus rings, info. */
-  info: '#60A5FA',
+  readonly info: string;
   /** Not rated / insufficient data. */
-  unrated: '#859585',
-} as const;
+  readonly unrated: string;
+};
+
+/** Resolved colour scheme. */
+export type ColorScheme = 'light' | 'dark';
+
+/**
+ * Palettes per scheme (LLD §4.17). Dark is the Obsidian design; light is derived from it with
+ * status colours darkened to WCAG AA (≥ 4.5 : 1) on canvas and both surfaces.
+ */
+export const palettes: Readonly<Record<ColorScheme, Palette>> = {
+  dark: {
+    canvas: '#0D0F12',
+    surface1: '#14171D',
+    surface2: '#1A1E26',
+    border: '#262B35',
+    scrim: 'rgba(13, 15, 18, 0.85)',
+    textPrimary: '#F3F4F6',
+    textSecondary: '#9CA3AF',
+    textMuted: '#4B5563',
+    gain: '#05DF72',
+    gainPressed: '#10B981',
+    gainTint: 'rgba(5, 223, 114, 0.12)',
+    onGain: '#0D0F12',
+    loss: '#F87171',
+    lossTint: 'rgba(248, 113, 113, 0.12)',
+    destructiveBorder: '#EF4444',
+    caution: '#FFB178',
+    cautionTint: 'rgba(255, 177, 120, 0.12)',
+    info: '#60A5FA',
+    unrated: '#859585',
+  },
+  light: {
+    canvas: '#F4F5F7',
+    surface1: '#FFFFFF',
+    surface2: '#ECEEF2',
+    border: '#D8DCE3',
+    scrim: 'rgba(13, 15, 18, 0.45)',
+    textPrimary: '#111418',
+    textSecondary: '#4B5563',
+    textMuted: '#5B6270',
+    gain: '#047857',
+    gainPressed: '#065F46',
+    gainTint: 'rgba(4, 120, 87, 0.10)',
+    onGain: '#FFFFFF',
+    loss: '#B91C1C',
+    lossTint: 'rgba(185, 28, 28, 0.10)',
+    destructiveBorder: '#DC2626',
+    caution: '#9A4A07',
+    cautionTint: 'rgba(154, 74, 7, 0.12)',
+    info: '#1D4ED8',
+    unrated: '#5B6270',
+  },
+};
 
 /** 4 px base spacing scale. */
 export const spacing = {
@@ -98,10 +149,15 @@ export const typography = {
   microBadge: type(10, 12, 600, 0.04),
 } as const satisfies Record<string, TextStyle>;
 
-/** Badge colours for GOOD / AVERAGE / BAD labels; `null` = not rated. */
-export const labelColors = {
-  GOOD: { fg: colors.gain, bg: colors.gainTint },
-  AVERAGE: { fg: colors.caution, bg: colors.cautionTint },
-  BAD: { fg: colors.loss, bg: colors.lossTint },
-  NONE: { fg: colors.unrated, bg: colors.surface2 },
-} as const;
+/** Badge colours for GOOD / AVERAGE / BAD labels; `NONE` = not rated. */
+export type LabelColors = Readonly<Record<'GOOD' | 'AVERAGE' | 'BAD' | 'NONE', { fg: string; bg: string }>>;
+
+/** Badge colours for one palette. */
+export function labelColorsFor(c: Palette): LabelColors {
+  return {
+    GOOD: { fg: c.gain, bg: c.gainTint },
+    AVERAGE: { fg: c.caution, bg: c.cautionTint },
+    BAD: { fg: c.loss, bg: c.lossTint },
+    NONE: { fg: c.unrated, bg: c.surface2 },
+  };
+}

@@ -7,13 +7,15 @@ import { TextField } from '@/components/TextField';
 import { userMessage } from '@/lib/messages';
 import { useWatchlists, watchlistStore } from '@/stores';
 import { MAX_WATCHLIST_NAME, watchlistNameIssue } from '@/stores/watchlistStore';
-import { colors, spacing, typography } from '@/theme/tokens';
+import { spacing, typography } from '@/theme/tokens';
+import { makeStyles } from '@/theme/theme';
 
 /**
  * Create, rename or delete a watchlist (LLD §4.1 `watchlist-edit`, `?id=` to edit). Names are
  * unique per user (case-insensitive); the last list can't be deleted.
  */
 export function WatchlistEdit({ listId }: { readonly listId: string | null }): React.JSX.Element {
+  const styles = useStyles();
   const watchlists = useWatchlists((s) => s.watchlists);
   const count = useWatchlists((s) => (listId ? (s.itemsByList[listId]?.length ?? 0) : 0));
   const list = listId ? (watchlists.find((l) => l.id === listId) ?? null) : null;
@@ -102,9 +104,11 @@ export function WatchlistEdit({ listId }: { readonly listId: string | null }): R
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: { gap: spacing.lg },
-  title: { ...typography.headlineSm, color: colors.textPrimary },
-  muted: { ...typography.bodyMd, color: colors.textSecondary },
-  error: { ...typography.labelMd, color: colors.loss },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    wrap: { gap: spacing.lg },
+    title: { ...typography.headlineSm, color: colors.textPrimary },
+    muted: { ...typography.bodyMd, color: colors.textSecondary },
+    error: { ...typography.labelMd, color: colors.loss },
+  }),
+);

@@ -18,7 +18,8 @@ import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
 import { formatPct } from '@/lib/format';
 import { uiStore, usePortfolio, useSession, useUi } from '@/stores';
-import { colors, MIN_TOUCH, radii, spacing, typography } from '@/theme/tokens';
+import { MIN_TOUCH, radii, spacing, typography } from '@/theme/tokens';
+import { makeStyles, useTheme } from '@/theme/theme';
 import { useHoldings, usePricingContext } from './hooks';
 
 const LABEL_CHIPS: readonly { value: LabelFilter; label: string }[] = [
@@ -51,6 +52,8 @@ function CheckRow({
   readonly checked: boolean;
   readonly onPress: () => void;
 }): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   return (
     <Pressable
       accessibilityRole="checkbox"
@@ -79,6 +82,8 @@ function CheckRow({
 
 /** S02a Filter sheet (LLD §4.4): draft filters with a live match count; Apply writes `uiStore`. */
 export function FilterSheet(): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const applied = useUi((s) => s.portfolioFilters);
   const [draft, setDraft] = useState<PortfolioFilters>(applied);
   const all = useHoldings();
@@ -262,47 +267,49 @@ export function FilterSheet(): React.JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: { gap: spacing.md },
-  flex: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  title: { ...typography.headlineMd, color: colors.textPrimary },
-  sub: { ...typography.labelMd, color: colors.textSecondary },
-  hint: { ...typography.labelSm, color: colors.textMuted },
-  section: { ...typography.labelSm, color: colors.textSecondary, marginTop: spacing.sm },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  matchCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: spacing.lg,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface1,
-  },
-  matchCount: { ...typography.metricLg, color: colors.gain },
-  box: {
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface1,
-    paddingHorizontal: spacing.md,
-  },
-  checkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    minHeight: MIN_TOUCH + 8,
-    paddingVertical: spacing.sm,
-  },
-  rowTitle: { ...typography.bodyMd, color: colors.textPrimary },
-  rowRight: { ...typography.labelMd, color: colors.textSecondary },
-  footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-    marginTop: spacing.md,
-  },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    wrap: { gap: spacing.md },
+    flex: { flex: 1 },
+    header: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    title: { ...typography.headlineMd, color: colors.textPrimary },
+    sub: { ...typography.labelMd, color: colors.textSecondary },
+    hint: { ...typography.labelSm, color: colors.textMuted },
+    section: { ...typography.labelSm, color: colors.textSecondary, marginTop: spacing.sm },
+    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+    matchCard: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: spacing.lg,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface1,
+    },
+    matchCount: { ...typography.metricLg, color: colors.gain },
+    box: {
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface1,
+      paddingHorizontal: spacing.md,
+    },
+    checkRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      minHeight: MIN_TOUCH + 8,
+      paddingVertical: spacing.sm,
+    },
+    rowTitle: { ...typography.bodyMd, color: colors.textPrimary },
+    rowRight: { ...typography.labelMd, color: colors.textSecondary },
+    footer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.md,
+      marginTop: spacing.md,
+    },
+  }),
+);

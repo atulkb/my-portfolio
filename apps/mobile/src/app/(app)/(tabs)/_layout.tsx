@@ -2,7 +2,8 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import type { ColorValue } from 'react-native';
 
-import { colors, typography } from '@/theme/tokens';
+import { typography } from '@/theme/tokens';
+import { useTheme } from '@/theme/theme';
 
 type IconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
@@ -15,6 +16,7 @@ function tabIcon(name: IconName) {
 
 /** Bottom tabs (LLD §4.1): Portfolio · Watchlist · Rules · Research. */
 export default function TabsLayout(): React.JSX.Element {
+  const { colors } = useTheme();
   return (
     <Tabs
       // Back returns to the tab the user came from (e.g. Watchlist → Research → back = Watchlist),

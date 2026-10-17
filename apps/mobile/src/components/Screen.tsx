@@ -2,10 +2,12 @@ import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { colors, spacing } from '@/theme/tokens';
+import { spacing } from '@/theme/tokens';
+import { makeStyles } from '@/theme/theme';
 
 /** Scrollable, keyboard-aware screen container on the canvas background. */
 export function Screen({ children }: { readonly children: ReactNode }): React.JSX.Element {
+  const styles = useStyles();
   return (
     <SafeAreaView style={styles.safe}>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -17,8 +19,10 @@ export function Screen({ children }: { readonly children: ReactNode }): React.JS
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.canvas },
-  flex: { flex: 1 },
-  content: { flexGrow: 1, padding: spacing.margin, paddingTop: spacing.xl, gap: spacing.lg },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: colors.canvas },
+    flex: { flex: 1 },
+    content: { flexGrow: 1, padding: spacing.margin, paddingTop: spacing.xl, gap: spacing.lg },
+  }),
+);

@@ -18,7 +18,8 @@ import { priceSourceNote } from '@/lib/format';
 import { userMessage } from '@/lib/messages';
 import { portfolioStore, sessionStore, toastStore, uiStore, useMarket, usePortfolio, useUi } from '@/stores';
 import { hasActiveFilters } from '@/stores/uiStore';
-import { colors, radii, spacing, typography } from '@/theme/tokens';
+import { radii, spacing, typography } from '@/theme/tokens';
+import { makeStyles, useTheme } from '@/theme/theme';
 import { importCsvFromPicker } from './csvImport';
 import { HoldingCard } from './HoldingCard';
 import { refreshPortfolio, usePortfolioView } from './hooks';
@@ -41,6 +42,8 @@ const SORT_LABEL: Readonly<Record<PortfolioSort, string>> = {
 
 /** S02 Portfolio (LLD §4.4). */
 export function PortfolioScreen(): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const view = usePortfolioView();
   const loadState = usePortfolio((s) => s.loadState);
   const pending = usePortfolio((s) => s.pendingWrites);
@@ -249,58 +252,60 @@ export function PortfolioScreen(): React.JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.canvas },
-  appBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.margin,
-    paddingVertical: spacing.md,
-  },
-  brand: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  logo: {
-    width: 36,
-    height: 36,
-    borderRadius: radii.md,
-    backgroundColor: colors.surface1,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  appTitle: { ...typography.headlineSm, color: colors.textPrimary },
-  list: { padding: spacing.margin, paddingBottom: 120 },
-  headerBlock: { gap: spacing.lg },
-  banner: {
-    ...typography.labelMd,
-    color: colors.caution,
-    backgroundColor: colors.cautionTint,
-    padding: spacing.md,
-    borderRadius: radii.lg,
-    overflow: 'hidden',
-  },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.md },
-  section: { ...typography.labelSm, color: colors.textSecondary },
-  pending: { color: colors.caution },
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    minHeight: 36,
-    paddingHorizontal: spacing.md,
-    borderRadius: radii.full,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface1,
-  },
-  pillText: { ...typography.labelMd, color: colors.textPrimary },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.gain },
-  title: { ...typography.headlineMd, color: colors.textPrimary },
-  count: { ...typography.labelMd, color: colors.textSecondary },
-  progress: { ...typography.labelSm, color: colors.info },
-  item: { marginTop: spacing.md },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg, padding: spacing.xl },
-  emptyTitle: { ...typography.headlineSm, color: colors.textPrimary },
-  body: { ...typography.bodyLg, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.lg },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: colors.canvas },
+    appBar: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: spacing.margin,
+      paddingVertical: spacing.md,
+    },
+    brand: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+    logo: {
+      width: 36,
+      height: 36,
+      borderRadius: radii.md,
+      backgroundColor: colors.surface1,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    appTitle: { ...typography.headlineSm, color: colors.textPrimary },
+    list: { padding: spacing.margin, paddingBottom: 120 },
+    headerBlock: { gap: spacing.lg },
+    banner: {
+      ...typography.labelMd,
+      color: colors.caution,
+      backgroundColor: colors.cautionTint,
+      padding: spacing.md,
+      borderRadius: radii.lg,
+      overflow: 'hidden',
+    },
+    row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.md },
+    section: { ...typography.labelSm, color: colors.textSecondary },
+    pending: { color: colors.caution },
+    pill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      minHeight: 36,
+      paddingHorizontal: spacing.md,
+      borderRadius: radii.full,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface1,
+    },
+    pillText: { ...typography.labelMd, color: colors.textPrimary },
+    dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.gain },
+    title: { ...typography.headlineMd, color: colors.textPrimary },
+    count: { ...typography.labelMd, color: colors.textSecondary },
+    progress: { ...typography.labelSm, color: colors.info },
+    item: { marginTop: spacing.md },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg, padding: spacing.xl },
+    emptyTitle: { ...typography.headlineSm, color: colors.textPrimary },
+    body: { ...typography.bodyLg, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.lg },
+  }),
+);

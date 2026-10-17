@@ -7,7 +7,8 @@ import { userMessage } from '@/lib/messages';
 import { getInstrumentIndex } from '@/services/instruments/instrumentIndex';
 import type { AiEntry } from '@/services/ai/aiService';
 import type { AiLoad } from '@/stores/aiStore';
-import { colors, radii, spacing, typography } from '@/theme/tokens';
+import { radii, spacing, typography } from '@/theme/tokens';
+import { makeStyles, useTheme } from '@/theme/theme';
 import { PARAM_LABEL } from './params';
 import { openResearch } from './ResearchHomeScreen';
 
@@ -47,6 +48,8 @@ export function AiVerdictCard({
   readonly canRefresh: boolean;
   readonly onRefresh: () => void;
 }): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const loading = load?.state === 'loading';
   const a = entry?.value ?? null;
   return (
@@ -123,6 +126,8 @@ export function AlternativesCard({
 }: {
   readonly analysis: DeepAnalysis;
 }): React.JSX.Element | null {
+  const { colors } = useTheme();
+  const styles = useStyles();
   if (analysis.alternatives.length === 0) return null;
   const index = getInstrumentIndex();
   return (
@@ -161,6 +166,7 @@ export function MarketNote({
 }: {
   readonly entry: AiEntry<MarketSentiment> | null;
 }): React.JSX.Element | null {
+  const styles = useStyles();
   if (!entry) return null;
   return (
     <View style={styles.note}>
@@ -171,45 +177,47 @@ export function MarketNote({
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  rowBetween: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  card: {
-    backgroundColor: colors.surface1,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.xl,
-    padding: spacing.lg,
-    gap: spacing.md,
-  },
-  cardTitle: { ...typography.headlineSm, color: colors.textPrimary },
-  body: { ...typography.bodyMd, color: colors.textPrimary },
-  bullet: { ...typography.bodyMd, color: colors.textPrimary },
-  muted: { ...typography.bodyMd, color: colors.textSecondary },
-  caption: { ...typography.microBadge, color: colors.textMuted },
-  meta: { ...typography.labelSm, color: colors.textMuted },
-  warn: { ...typography.labelSm, color: colors.caution },
-  alt: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  altSymbol: { ...typography.labelMd, color: colors.textPrimary },
-  pressed: { opacity: 0.7 },
-  note: {
-    gap: spacing.xs,
-    paddingBottom: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  noteHeadline: { ...typography.labelMd, color: colors.textPrimary },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    flex: { flex: 1 },
+    row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    rowBetween: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.sm,
+    },
+    card: {
+      backgroundColor: colors.surface1,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.xl,
+      padding: spacing.lg,
+      gap: spacing.md,
+    },
+    cardTitle: { ...typography.headlineSm, color: colors.textPrimary },
+    body: { ...typography.bodyMd, color: colors.textPrimary },
+    bullet: { ...typography.bodyMd, color: colors.textPrimary },
+    muted: { ...typography.bodyMd, color: colors.textSecondary },
+    caption: { ...typography.microBadge, color: colors.textMuted },
+    meta: { ...typography.labelSm, color: colors.textMuted },
+    warn: { ...typography.labelSm, color: colors.caution },
+    alt: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingVertical: spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    altSymbol: { ...typography.labelMd, color: colors.textPrimary },
+    pressed: { opacity: 0.7 },
+    note: {
+      gap: spacing.xs,
+      paddingBottom: spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    noteHeadline: { ...typography.labelMd, color: colors.textPrimary },
+  }),
+);

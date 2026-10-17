@@ -20,16 +20,17 @@ import {
   useWatchlists,
   watchlistStore,
 } from '@/stores';
-import { colors, radii } from '@/theme/tokens';
+import { radii } from '@/theme/tokens';
+import { useTheme } from '@/theme/theme';
 
 /** Native sheet presentation for `sheets/*` routes (LLD §4.1). */
-function sheet(detents: number[] | 'fitToContents' = [0.92]) {
+function sheet(canvas: string, detents: number[] | 'fitToContents' = [0.92]) {
   return {
     presentation: 'formSheet' as const,
     sheetAllowedDetents: detents,
     sheetGrabberVisible: true,
     sheetCornerRadius: radii.xl,
-    contentStyle: { backgroundColor: colors.canvas },
+    contentStyle: { backgroundColor: canvas },
   };
 }
 
@@ -38,6 +39,7 @@ function sheet(detents: number[] | 'fitToContents' = [0.92]) {
  * (or failed) it shows the matching gate screen instead.
  */
 export default function AppLayout(): React.JSX.Element {
+  const { colors } = useTheme();
   const gate = useSession((s) => s.gate);
   const loadState = usePortfolio((s) => s.loadState);
   const transactions = usePortfolio((s) => s.transactions);
@@ -93,16 +95,16 @@ export default function AppLayout(): React.JSX.Element {
         <Stack.Screen name="settings/platforms" />
         <Stack.Screen name="settings/legal/[doc]" />
         <Stack.Screen name="holding/[key]/edit" />
-        <Stack.Screen name="sheets/add-buy" options={sheet()} />
-        <Stack.Screen name="sheets/csv-result" options={sheet()} />
-        <Stack.Screen name="sheets/filter" options={sheet()} />
-        <Stack.Screen name="sheets/holding-actions" options={sheet('fitToContents')} />
-        <Stack.Screen name="sheets/remove-holding" options={sheet('fitToContents')} />
-        <Stack.Screen name="sheets/watchlist-pick" options={sheet()} />
-        <Stack.Screen name="sheets/watchlist-edit" options={sheet('fitToContents')} />
-        <Stack.Screen name="sheets/watchlist-item" options={sheet()} />
-        <Stack.Screen name="sheets/create-rule" options={sheet()} />
-        <Stack.Screen name="sheets/delete-account" options={sheet()} />
+        <Stack.Screen name="sheets/add-buy" options={sheet(colors.canvas)} />
+        <Stack.Screen name="sheets/csv-result" options={sheet(colors.canvas)} />
+        <Stack.Screen name="sheets/filter" options={sheet(colors.canvas)} />
+        <Stack.Screen name="sheets/holding-actions" options={sheet(colors.canvas, 'fitToContents')} />
+        <Stack.Screen name="sheets/remove-holding" options={sheet(colors.canvas, 'fitToContents')} />
+        <Stack.Screen name="sheets/watchlist-pick" options={sheet(colors.canvas)} />
+        <Stack.Screen name="sheets/watchlist-edit" options={sheet(colors.canvas, 'fitToContents')} />
+        <Stack.Screen name="sheets/watchlist-item" options={sheet(colors.canvas)} />
+        <Stack.Screen name="sheets/create-rule" options={sheet(colors.canvas)} />
+        <Stack.Screen name="sheets/delete-account" options={sheet(colors.canvas)} />
       </Stack>
       <OfflineBanner />
       <ToastHost />

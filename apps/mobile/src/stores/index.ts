@@ -45,6 +45,7 @@ import { createLockStore, type LockState } from './lockStore';
 import { createMarketStore, type MarketState } from './marketStore';
 import { createRulesStore, type RulesState } from './rulesStore';
 import { createSessionStore, type SessionState } from './sessionStore';
+import { createThemeStore, type ThemePreference } from './themeStore';
 import { createToastStore, type ToastState } from './toastStore';
 import { createUiStore, type UiState } from './uiStore';
 import { createWatchlistStore, type WatchlistState } from './watchlistStore';
@@ -187,6 +188,9 @@ export const lockStore = createLockStore({
 /** UI preferences (filters, collapsed sectors), persisted in MMKV. */
 export const uiStore = createUiStore(kv);
 
+/** Appearance preference (LLD §4.17), kept on this device in `device.theme`. */
+export const themeStore = createThemeStore(kv);
+
 /** Toasts (import results, write failures). */
 export const toastStore = createToastStore();
 
@@ -286,6 +290,11 @@ export function useAi<T>(selector: (s: AiState) => T): T {
 /** React hook selecting from the UI store. */
 export function useUi<T>(selector: (s: UiState) => T): T {
   return useStore(uiStore, selector);
+}
+
+/** React hook for the appearance preference (System / Light / Dark). */
+export function useThemePreference(): ThemePreference {
+  return useStore(themeStore, (s) => s.preference);
 }
 
 /** React hook selecting from the watchlist store. */

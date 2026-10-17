@@ -2,7 +2,8 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
 
-import { colors, MIN_TOUCH, radii, spacing, typography } from '@/theme/tokens';
+import { MIN_TOUCH, radii, spacing, typography } from '@/theme/tokens';
+import { makeStyles, useTheme } from '@/theme/theme';
 
 type IconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
@@ -23,6 +24,8 @@ export function TextField({
   error,
   ...input
 }: TextFieldProps): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const [focused, setFocused] = useState(false);
   const [hidden, setHidden] = useState(secret);
   return (
@@ -65,22 +68,24 @@ export function TextField({
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: { gap: spacing.xs + 2 },
-  label: { ...typography.labelMd, color: colors.textPrimary },
-  box: {
-    minHeight: MIN_TOUCH + 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.md,
-    backgroundColor: colors.surface1,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-  },
-  focused: { borderColor: colors.info },
-  errorBox: { borderColor: colors.destructiveBorder },
-  input: { flex: 1, ...typography.bodyLg, color: colors.textPrimary, paddingVertical: spacing.sm },
-  error: { ...typography.labelSm, color: colors.loss },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    wrap: { gap: spacing.xs + 2 },
+    label: { ...typography.labelMd, color: colors.textPrimary },
+    box: {
+      minHeight: MIN_TOUCH + 8,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      paddingHorizontal: spacing.md,
+      backgroundColor: colors.surface1,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.lg,
+    },
+    focused: { borderColor: colors.info },
+    errorBox: { borderColor: colors.destructiveBorder },
+    input: { flex: 1, ...typography.bodyLg, color: colors.textPrimary, paddingVertical: spacing.sm },
+    error: { ...typography.labelSm, color: colors.loss },
+  }),
+);

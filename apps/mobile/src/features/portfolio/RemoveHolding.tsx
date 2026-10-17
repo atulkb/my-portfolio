@@ -7,7 +7,8 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Button } from '@/components/Button';
 import { formatMoney, formatQuantity } from '@/lib/format';
 import { portfolioStore, toastStore } from '@/stores';
-import { colors, radii, spacing, typography } from '@/theme/tokens';
+import { radii, spacing, typography } from '@/theme/tokens';
+import { makeStyles, useTheme } from '@/theme/theme';
 import { useHolding } from './hooks';
 
 function Option({
@@ -21,6 +22,8 @@ function Option({
   readonly selected: boolean;
   readonly disabled?: boolean;
 }): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   return (
     <View
       accessible
@@ -47,6 +50,7 @@ function Option({
  * ("Keep history" needs SELL transactions and is shown disabled, D20).
  */
 export function RemoveHolding({ holdingKey }: { readonly holdingKey: InstrumentKey }): React.JSX.Element {
+  const styles = useStyles();
   const holding = useHolding(holdingKey);
   const [busy, setBusy] = useState(false);
   if (!holding) return <Text style={styles.sub}>This stock is no longer in your portfolio.</Text>;
@@ -94,32 +98,34 @@ export function RemoveHolding({ holdingKey }: { readonly holdingKey: InstrumentK
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: { gap: spacing.md },
-  flex: { flex: 1 },
-  title: { ...typography.headlineMd, color: colors.textPrimary },
-  sub: { ...typography.labelMd, color: colors.textSecondary },
-  card: {
-    backgroundColor: colors.surface1,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    padding: spacing.gutter,
-    gap: spacing.sm,
-  },
-  brokerRow: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.md },
-  broker: { ...typography.bodyMd, color: colors.textPrimary },
-  option: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.gutter,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface1,
-  },
-  optionOn: { borderColor: colors.destructiveBorder },
-  optionTitle: { ...typography.bodyLg, color: colors.textPrimary },
-  disabled: { opacity: 0.5 },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    wrap: { gap: spacing.md },
+    flex: { flex: 1 },
+    title: { ...typography.headlineMd, color: colors.textPrimary },
+    sub: { ...typography.labelMd, color: colors.textSecondary },
+    card: {
+      backgroundColor: colors.surface1,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.lg,
+      padding: spacing.gutter,
+      gap: spacing.sm,
+    },
+    brokerRow: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.md },
+    broker: { ...typography.bodyMd, color: colors.textPrimary },
+    option: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      padding: spacing.gutter,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface1,
+    },
+    optionOn: { borderColor: colors.destructiveBorder },
+    optionTitle: { ...typography.bodyLg, color: colors.textPrimary },
+    disabled: { opacity: 0.5 },
+  }),
+);

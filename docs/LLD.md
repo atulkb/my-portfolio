@@ -1659,6 +1659,11 @@ Recomputation is cheap (≤ 500 transactions, ≤ 150 instruments) and memoised 
 4. Splash **follows the phone's mode** (light / dark variants).
 5. Picker = three chips **System · Light · Dark** in Settings → DISPLAY.
 
+**Implementation notes (2026-10-17)**
+- `stores/themeStore.ts` (preference + `device.theme`), `theme/theme.tsx` (`AppThemeProvider`, `useTheme`, `makeStyles`, `resolveScheme`), palettes in `theme/tokens.ts`. The 53 token consumers were converted with a one-off TypeScript-AST codemod; module-level helpers that used colours (`signColor`, rule status lines, outcome/market colours) now take the palette or a palette key.
+- The provider also sets the root window colour (`expo-system-ui`) to the canvas, so screen transitions and the keyboard don't flash the other scheme.
+- Tests: `themeStore` (default, persist/restore, invalid → system, reset), `resolveScheme`, palette roles and WCAG contrast. RNTL render tests are not included: the testing library isn't installed and no app test renders components yet; the theme switch is checked manually on the emulator instead.
+
 ## 5. Error Taxonomy, Test Plan & Delivery Order
 
 Traceability: HLD §10 (NFRs), §11; all previous LLD sections; `.claude/rules/generic/workflow.md`.

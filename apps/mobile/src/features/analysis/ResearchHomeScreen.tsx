@@ -10,7 +10,8 @@ import { TextField } from '@/components/TextField';
 import { useHoldings } from '@/features/portfolio/hooks';
 import { getInstrumentIndex } from '@/services/instruments/instrumentIndex';
 import { instrumentStore, useInstruments, useUi } from '@/stores';
-import { colors, MIN_TOUCH, radii, spacing, typography } from '@/theme/tokens';
+import { MIN_TOUCH, radii, spacing, typography } from '@/theme/tokens';
+import { makeStyles } from '@/theme/theme';
 
 const SEARCH_DEBOUNCE_MS = 150;
 const MARKETS: readonly { label: string; value: Market | null }[] = [
@@ -31,6 +32,7 @@ function Row({
   readonly instrumentKey: InstrumentKey;
   readonly name: string;
 }): React.JSX.Element | null {
+  const styles = useStyles();
   const parsed = parseInstrumentKey(instrumentKey);
   if (!parsed) return null;
   const { exchange, symbol } = parsed;
@@ -54,6 +56,7 @@ function Row({
 
 /** S04 start screen (LLD §4.1): instrument search, recently viewed and your holdings. */
 export function ResearchHomeScreen(): React.JSX.Element {
+  const styles = useStyles();
   const [query, setQuery] = useState('');
   const [debounced, setDebounced] = useState('');
   const [market, setMarket] = useState<Market | null>(null);
@@ -138,25 +141,27 @@ export function ResearchHomeScreen(): React.JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({
-  title: { ...typography.headlineMd, color: colors.textPrimary },
-  chips: { flexDirection: 'row', gap: spacing.sm },
-  list: { gap: spacing.sm },
-  section: { ...typography.microBadge, color: colors.textMuted, marginTop: spacing.sm },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    minHeight: MIN_TOUCH + 8,
-    paddingHorizontal: spacing.gutter,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface1,
-  },
-  pressed: { backgroundColor: colors.surface2 },
-  flex: { flex: 1 },
-  symbol: { ...typography.metricMd, color: colors.textPrimary },
-  muted: { ...typography.bodyMd, color: colors.textSecondary },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    title: { ...typography.headlineMd, color: colors.textPrimary },
+    chips: { flexDirection: 'row', gap: spacing.sm },
+    list: { gap: spacing.sm },
+    section: { ...typography.microBadge, color: colors.textMuted, marginTop: spacing.sm },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      minHeight: MIN_TOUCH + 8,
+      paddingHorizontal: spacing.gutter,
+      paddingVertical: spacing.sm,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface1,
+    },
+    pressed: { backgroundColor: colors.surface2 },
+    flex: { flex: 1 },
+    symbol: { ...typography.metricMd, color: colors.textPrimary },
+    muted: { ...typography.bodyMd, color: colors.textSecondary },
+  }),
+);

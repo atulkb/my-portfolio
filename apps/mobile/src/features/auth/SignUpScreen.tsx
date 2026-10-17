@@ -7,12 +7,15 @@ import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
 import { useSession } from '@/stores';
-import { colors, radii, spacing, typography } from '@/theme/tokens';
+import { radii, spacing, typography } from '@/theme/tokens';
+import { makeStyles, useTheme } from '@/theme/theme';
 import { AuthHeader, OrDivider } from './AuthHeader';
 import { ErrorText } from './ErrorText';
 import { isStrongPassword, looksLikeEmail, passwordChecks } from './validation';
 
 function Check({ ok, label }: { readonly ok: boolean; readonly label: string }): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   return (
     <View style={styles.check} accessibilityLabel={`${label}: ${ok ? 'met' : 'not met'}`}>
       <MaterialCommunityIcons
@@ -31,6 +34,8 @@ function Check({ ok, label }: { readonly ok: boolean; readonly label: string }):
  * created only after the email is verified (S01b).
  */
 export function SignUpScreen(): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -110,23 +115,25 @@ export function SignUpScreen(): React.JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({
-  rules: {
-    backgroundColor: colors.surface1,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    gap: spacing.sm,
-    marginTop: -spacing.sm,
-  },
-  track: { height: 4, borderRadius: radii.full, backgroundColor: colors.surface2, overflow: 'hidden' },
-  fill: { height: 4, backgroundColor: colors.gain },
-  checks: { flexDirection: 'row', justifyContent: 'space-between' },
-  check: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  checkText: { ...typography.labelSm, color: colors.textSecondary },
-  checkOk: { color: colors.gain },
-  footer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: spacing.sm },
-  muted: { ...typography.bodyMd, color: colors.textSecondary },
-  link: { ...typography.labelMd, color: colors.gain },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    rules: {
+      backgroundColor: colors.surface1,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing.md,
+      gap: spacing.sm,
+      marginTop: -spacing.sm,
+    },
+    track: { height: 4, borderRadius: radii.full, backgroundColor: colors.surface2, overflow: 'hidden' },
+    fill: { height: 4, backgroundColor: colors.gain },
+    checks: { flexDirection: 'row', justifyContent: 'space-between' },
+    check: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+    checkText: { ...typography.labelSm, color: colors.textSecondary },
+    checkOk: { color: colors.gain },
+    footer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: spacing.sm },
+    muted: { ...typography.bodyMd, color: colors.textSecondary },
+    link: { ...typography.labelMd, color: colors.gain },
+  }),
+);

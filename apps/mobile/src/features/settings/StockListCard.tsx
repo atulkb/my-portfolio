@@ -5,7 +5,8 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { TextField } from '@/components/TextField';
 import { userMessage } from '@/lib/messages';
 import { instrumentStore, useInstruments } from '@/stores';
-import { colors, radii, spacing, typography } from '@/theme/tokens';
+import { radii, spacing, typography } from '@/theme/tokens';
+import { makeStyles, useTheme } from '@/theme/theme';
 
 const MARKETS: readonly (Market | null)[] = [null, 'IN', 'US'];
 
@@ -18,6 +19,8 @@ function formatDate(epochMs: number): string {
  * box over the local list (interim Settings; the full S09 row comes in M9).
  */
 export function StockListCard(): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const status = useInstruments((s) => s.status);
   const meta = useInstruments((s) => s.meta);
   const error = useInstruments((s) => s.error);
@@ -109,34 +112,36 @@ export function StockListCard(): React.JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface1,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    padding: spacing.gutter,
-    gap: spacing.md,
-  },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  title: { ...typography.headlineSm, color: colors.textPrimary },
-  sub: { ...typography.bodyMd, color: colors.textSecondary },
-  error: { ...typography.bodyMd, color: colors.caution },
-  link: { ...typography.labelMd, color: colors.info },
-  chips: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
-  chip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: radii.full,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipOn: { backgroundColor: colors.surface2, borderColor: colors.gain },
-  chipText: { ...typography.labelMd, color: colors.textSecondary },
-  chipTextOn: { color: colors.textPrimary },
-  hit: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.md },
-  hitMain: { flex: 1 },
-  symbol: { ...typography.bodyLg, color: colors.textPrimary },
-  name: { ...typography.labelMd, color: colors.textSecondary },
-  exchange: { ...typography.labelSm, color: colors.textMuted },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: colors.surface1,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.lg,
+      padding: spacing.gutter,
+      gap: spacing.md,
+    },
+    row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    title: { ...typography.headlineSm, color: colors.textPrimary },
+    sub: { ...typography.bodyMd, color: colors.textSecondary },
+    error: { ...typography.bodyMd, color: colors.caution },
+    link: { ...typography.labelMd, color: colors.info },
+    chips: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
+    chip: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+      borderRadius: radii.full,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    chipOn: { backgroundColor: colors.surface2, borderColor: colors.gain },
+    chipText: { ...typography.labelMd, color: colors.textSecondary },
+    chipTextOn: { color: colors.textPrimary },
+    hit: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.md },
+    hitMain: { flex: 1 },
+    symbol: { ...typography.bodyLg, color: colors.textPrimary },
+    name: { ...typography.labelMd, color: colors.textSecondary },
+    exchange: { ...typography.labelSm, color: colors.textMuted },
+  }),
+);

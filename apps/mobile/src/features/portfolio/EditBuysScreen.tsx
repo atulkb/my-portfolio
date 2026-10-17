@@ -7,7 +7,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { formatDate, formatMoney, formatQuantity } from '@/lib/format';
 import { portfolioStore, toastStore } from '@/stores';
-import { colors, MIN_TOUCH, radii, spacing, typography } from '@/theme/tokens';
+import { MIN_TOUCH, radii, spacing, typography } from '@/theme/tokens';
+import { makeStyles, useTheme } from '@/theme/theme';
 import { useHolding } from './hooks';
 
 function confirmDeleteBuy(tx: BuyTransaction, currency: Currency): void {
@@ -57,6 +58,8 @@ function confirmRemoveBroker(
 
 /** S02c Edit buys grouped by broker (LLD §4.4; not in Stitch, Obsidian style). */
 export function EditBuysScreen({ holdingKey }: { readonly holdingKey: InstrumentKey }): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const holding = useHolding(holdingKey);
 
   return (
@@ -151,33 +154,35 @@ export function EditBuysScreen({ holdingKey }: { readonly holdingKey: Instrument
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.canvas },
-  flex: { flex: 1 },
-  appBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.margin,
-    paddingVertical: spacing.md,
-  },
-  title: { ...typography.headlineSm, color: colors.textPrimary },
-  sub: { ...typography.labelMd, color: colors.textSecondary },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg },
-  content: { padding: spacing.margin, gap: spacing.lg, paddingBottom: spacing.xl * 2 },
-  card: {
-    backgroundColor: colors.surface1,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    padding: spacing.gutter,
-    gap: spacing.sm,
-  },
-  brokerHead: { gap: 2, paddingBottom: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
-  broker: { ...typography.metricMd, color: colors.textPrimary },
-  buy: { flexDirection: 'row', alignItems: 'center', minHeight: MIN_TOUCH },
-  buyMain: { flex: 1, paddingVertical: spacing.xs },
-  buyDate: { ...typography.bodyLg, color: colors.textPrimary },
-  iconBtn: { width: MIN_TOUCH, height: MIN_TOUCH, alignItems: 'center', justifyContent: 'center' },
-  brokerActions: { flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap' },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: colors.canvas },
+    flex: { flex: 1 },
+    appBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      paddingHorizontal: spacing.margin,
+      paddingVertical: spacing.md,
+    },
+    title: { ...typography.headlineSm, color: colors.textPrimary },
+    sub: { ...typography.labelMd, color: colors.textSecondary },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg },
+    content: { padding: spacing.margin, gap: spacing.lg, paddingBottom: spacing.xl * 2 },
+    card: {
+      backgroundColor: colors.surface1,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.lg,
+      padding: spacing.gutter,
+      gap: spacing.sm,
+    },
+    brokerHead: { gap: 2, paddingBottom: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
+    broker: { ...typography.metricMd, color: colors.textPrimary },
+    buy: { flexDirection: 'row', alignItems: 'center', minHeight: MIN_TOUCH },
+    buyMain: { flex: 1, paddingVertical: spacing.xs },
+    buyDate: { ...typography.bodyLg, color: colors.textPrimary },
+    iconBtn: { width: MIN_TOUCH, height: MIN_TOUCH, alignItems: 'center', justifyContent: 'center' },
+    brokerActions: { flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap' },
+  }),
+);

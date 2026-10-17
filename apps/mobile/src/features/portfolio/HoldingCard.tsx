@@ -4,7 +4,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { LabelBadge, MarketBadge, SymbolTile } from '@/components/Badges';
 import { formatDate, formatMoney, formatPct, formatQuantity, formatSignedMoney } from '@/lib/format';
 import { useAi } from '@/stores';
-import { colors, radii, spacing, typography } from '@/theme/tokens';
+import { radii, spacing, typography, type Palette } from '@/theme/tokens';
+import { makeStyles, useTheme } from '@/theme/theme';
 
 /** "Zerodha" or "Zerodha +1" (largest broker by invested first). */
 export function brokerLabel(h: StockHolding): string {
@@ -12,7 +13,7 @@ export function brokerLabel(h: StockHolding): string {
   return h.brokers.length > 1 ? `${first} +${h.brokers.length - 1}` : first;
 }
 
-const signColor = (n: number | null): string =>
+const signColor = (colors: Palette, n: number | null): string =>
   n === null || n === 0 ? colors.textSecondary : n > 0 ? colors.gain : colors.loss;
 
 /**
@@ -33,6 +34,8 @@ export function HoldingCard({
   readonly note?: string | null;
   readonly onPress: () => void;
 }): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const h = holding;
   // Reason only alongside the label it explains (hidden when not rated, LLD §4.4).
   const reason = useAi((s) => (h.performance ? (s.performance[h.key]?.value.reason ?? null) : null));
@@ -98,10 +101,10 @@ export function HoldingCard({
         </View>
         <View style={styles.right}>
           <Text style={styles.caption}>TOTAL RETURN</Text>
-          <Text style={[styles.value, { color: signColor(h.pnl) }]}>
+          <Text style={[styles.value, { color: signColor(colors, h.pnl) }]}>
             {formatSignedMoney(h.pnl, h.currency)}
           </Text>
-          <Text style={[styles.small, { color: signColor(h.pnl) }]}>
+          <Text style={[styles.small, { color: signColor(colors, h.pnl) }]}>
             {`(${formatPct(h.pnlPct, { signed: true })})${h.xirrPct !== null ? ` · CAGR ${formatPct(h.xirrPct, { signed: true })}` : ''}`}
           </Text>
         </View>
@@ -110,43 +113,45 @@ export function HoldingCard({
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface1,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    padding: spacing.gutter,
-    gap: spacing.md,
-  },
-  pressed: { backgroundColor: colors.surface2 },
-  top: { flexDirection: 'row', gap: spacing.md },
-  main: { flex: 1, gap: 2 },
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  name: { ...typography.metricMd, color: colors.textPrimary, flexShrink: 1 },
-  meta: { ...typography.labelMd, color: colors.textSecondary },
-  price: { alignItems: 'flex-end', gap: 4 },
-  close: { ...typography.metricMd, color: colors.textPrimary },
-  dayChip: {
-    ...typography.labelSm,
-    paddingHorizontal: spacing.xs,
-    paddingVertical: 2,
-    borderRadius: radii.base,
-    overflow: 'hidden',
-  },
-  stale: { ...typography.labelSm, color: colors.caution },
-  badges: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  reason: { ...typography.bodyMd, color: colors.textSecondary },
-  bottom: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: spacing.md,
-    gap: spacing.sm,
-  },
-  right: { alignItems: 'flex-end', flexShrink: 1 },
-  caption: { ...typography.microBadge, color: colors.textMuted },
-  value: { ...typography.metricMd, color: colors.textPrimary },
-  small: { ...typography.labelSm },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: colors.surface1,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.lg,
+      padding: spacing.gutter,
+      gap: spacing.md,
+    },
+    pressed: { backgroundColor: colors.surface2 },
+    top: { flexDirection: 'row', gap: spacing.md },
+    main: { flex: 1, gap: 2 },
+    nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    name: { ...typography.metricMd, color: colors.textPrimary, flexShrink: 1 },
+    meta: { ...typography.labelMd, color: colors.textSecondary },
+    price: { alignItems: 'flex-end', gap: 4 },
+    close: { ...typography.metricMd, color: colors.textPrimary },
+    dayChip: {
+      ...typography.labelSm,
+      paddingHorizontal: spacing.xs,
+      paddingVertical: 2,
+      borderRadius: radii.base,
+      overflow: 'hidden',
+    },
+    stale: { ...typography.labelSm, color: colors.caution },
+    badges: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+    reason: { ...typography.bodyMd, color: colors.textSecondary },
+    bottom: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      paddingTop: spacing.md,
+      gap: spacing.sm,
+    },
+    right: { alignItems: 'flex-end', flexShrink: 1 },
+    caption: { ...typography.microBadge, color: colors.textMuted },
+    value: { ...typography.metricMd, color: colors.textPrimary },
+    small: { ...typography.labelSm },
+  }),
+);

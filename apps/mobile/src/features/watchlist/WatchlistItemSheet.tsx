@@ -17,7 +17,8 @@ import { openResearch } from '@/features/analysis/ResearchHomeScreen';
 import { userMessage } from '@/lib/messages';
 import { getInstrumentIndex } from '@/services/instruments/instrumentIndex';
 import { useWatchlists, watchlistStore } from '@/stores';
-import { colors, spacing, typography } from '@/theme/tokens';
+import { spacing, typography } from '@/theme/tokens';
+import { makeStyles } from '@/theme/theme';
 import { useListsContaining } from './hooks';
 
 /** Notes limit (LLD §1.6). */
@@ -42,6 +43,7 @@ export function WatchlistItemSheet({
   readonly listId: string;
   readonly instrumentKey: InstrumentKey;
 }): React.JSX.Element {
+  const styles = useStyles();
   const watchlists = useWatchlists((s) => s.watchlists);
   const item = useWatchlists((s) =>
     (s.itemsByList[listId] ?? []).find((i) => toInstrumentKey(i.exchange, i.symbol) === instrumentKey),
@@ -201,14 +203,16 @@ export function WatchlistItemSheet({
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: { gap: spacing.md },
-  flex: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  inline: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  symbol: { ...typography.metricMd, color: colors.textPrimary },
-  muted: { ...typography.bodyMd, color: colors.textSecondary },
-  section: { ...typography.microBadge, color: colors.textMuted, marginTop: spacing.sm },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  error: { ...typography.labelMd, color: colors.loss },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    wrap: { gap: spacing.md },
+    flex: { flex: 1 },
+    header: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+    inline: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    symbol: { ...typography.metricMd, color: colors.textPrimary },
+    muted: { ...typography.bodyMd, color: colors.textSecondary },
+    section: { ...typography.microBadge, color: colors.textMuted, marginTop: spacing.sm },
+    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+    error: { ...typography.labelMd, color: colors.loss },
+  }),
+);

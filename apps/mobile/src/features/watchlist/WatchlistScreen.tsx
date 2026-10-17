@@ -33,7 +33,8 @@ import {
   useWatchlists,
   watchlistStore,
 } from '@/stores';
-import { colors, radii, spacing, typography } from '@/theme/tokens';
+import { radii, spacing, typography } from '@/theme/tokens';
+import { makeStyles, useTheme } from '@/theme/theme';
 import { useWatchlistView } from './hooks';
 import { WatchlistRowCard } from './WatchlistRowCard';
 
@@ -57,6 +58,8 @@ function asOf(ms: number): string {
 
 /** S07 Watchlist (LLD §4.4): lists, market and signal chips, market context, AI signal rows. */
 export function WatchlistScreen(): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const watchlists = useWatchlists((s) => s.watchlists);
   const itemsByList = useWatchlists((s) => s.itemsByList);
   const activeId = useWatchlists((s) => s.activeListId);
@@ -271,88 +274,90 @@ export function WatchlistScreen(): React.JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.canvas },
-  appBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.margin,
-    paddingVertical: spacing.md,
-  },
-  brand: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  logo: {
-    width: 36,
-    height: 36,
-    borderRadius: radii.md,
-    backgroundColor: colors.surface1,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  appTitle: { ...typography.headlineSm, color: colors.textPrimary },
-  list: { padding: spacing.margin, paddingBottom: 120 },
-  headerBlock: { gap: spacing.lg },
-  titleRow: { gap: spacing.sm },
-  title: { ...typography.headlineMd, color: colors.textPrimary },
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: spacing.xs,
-    minHeight: 36,
-    paddingHorizontal: spacing.md,
-    borderRadius: radii.full,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface1,
-  },
-  pillText: { ...typography.labelMd, color: colors.textPrimary },
-  warn: { ...typography.labelMd, color: colors.caution },
-  search: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    minHeight: 48,
-    paddingHorizontal: spacing.md,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface1,
-  },
-  searchText: { ...typography.bodyMd, color: colors.textSecondary },
-  chips: { gap: spacing.sm, paddingRight: spacing.margin },
-  chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  listChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    minHeight: 40,
-    paddingHorizontal: spacing.md,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface1,
-  },
-  listChipOn: { borderColor: colors.gain, backgroundColor: colors.gainTint },
-  listName: { ...typography.labelMd, color: colors.textSecondary },
-  listNameOn: { color: colors.gain },
-  listCount: {
-    ...typography.labelSm,
-    color: colors.textPrimary,
-    backgroundColor: colors.surface2,
-    paddingHorizontal: spacing.xs,
-    borderRadius: radii.base,
-    overflow: 'hidden',
-  },
-  item: { marginTop: spacing.md },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg, padding: spacing.xl },
-  body: { ...typography.bodyLg, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.lg },
-  disclaimer: {
-    ...typography.labelSm,
-    color: colors.textMuted,
-    textAlign: 'center',
-    marginTop: spacing.xl,
-  },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: colors.canvas },
+    appBar: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: spacing.margin,
+      paddingVertical: spacing.md,
+    },
+    brand: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+    logo: {
+      width: 36,
+      height: 36,
+      borderRadius: radii.md,
+      backgroundColor: colors.surface1,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    appTitle: { ...typography.headlineSm, color: colors.textPrimary },
+    list: { padding: spacing.margin, paddingBottom: 120 },
+    headerBlock: { gap: spacing.lg },
+    titleRow: { gap: spacing.sm },
+    title: { ...typography.headlineMd, color: colors.textPrimary },
+    pill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      gap: spacing.xs,
+      minHeight: 36,
+      paddingHorizontal: spacing.md,
+      borderRadius: radii.full,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface1,
+    },
+    pillText: { ...typography.labelMd, color: colors.textPrimary },
+    warn: { ...typography.labelMd, color: colors.caution },
+    search: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      minHeight: 48,
+      paddingHorizontal: spacing.md,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface1,
+    },
+    searchText: { ...typography.bodyMd, color: colors.textSecondary },
+    chips: { gap: spacing.sm, paddingRight: spacing.margin },
+    chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+    listChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      minHeight: 40,
+      paddingHorizontal: spacing.md,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface1,
+    },
+    listChipOn: { borderColor: colors.gain, backgroundColor: colors.gainTint },
+    listName: { ...typography.labelMd, color: colors.textSecondary },
+    listNameOn: { color: colors.gain },
+    listCount: {
+      ...typography.labelSm,
+      color: colors.textPrimary,
+      backgroundColor: colors.surface2,
+      paddingHorizontal: spacing.xs,
+      borderRadius: radii.base,
+      overflow: 'hidden',
+    },
+    item: { marginTop: spacing.md },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg, padding: spacing.xl },
+    body: { ...typography.bodyLg, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.lg },
+    disclaimer: {
+      ...typography.labelSm,
+      color: colors.textMuted,
+      textAlign: 'center',
+      marginTop: spacing.xl,
+    },
+  }),
+);
