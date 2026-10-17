@@ -11,17 +11,24 @@ import {
 } from '@portfolio/core';
 import {
   collection,
+  deleteDoc,
   deleteField,
   doc,
   getDoc,
+  getDocs,
   getFirestore,
   runTransaction,
   serverTimestamp,
   updateDoc,
+  writeBatch,
+  type CollectionReference,
 } from '@react-native-firebase/firestore';
 
 import { timestampsToMillis } from './convert';
 import { mapFirestoreError } from './errors';
+
+/** Firestore allows 500 operations per batch (LLD §3.7). */
+const BATCH_LIMIT = 500;
 
 function parseProfile(data: unknown): UserProfile {
   const parsed = UserProfileSchema.safeParse(timestampsToMillis(data));
@@ -29,10 +36,7 @@ function parseProfile(data: unknown): UserProfile {
   return parsed.data;
 }
 
-/**
- * `users/{uid}` repository (LLD §1.10). Account deletion is implemented with the other
- * repositories in M9 (it needs every collection).
- */
+/** `users/{uid}` repository (LLD §1.10), including account data deletion (§1.12). */
 export function createProfileRepository(uid: string): ProfileRepository {
   const db = getFirestore();
   const ref = doc(db, 'users', uid);
@@ -103,7 +107,28 @@ export function createProfileRepository(uid: string): ProfileRepository {
     },
 
     async deleteAccountData() {
-      throw new AppError('APP_UNEXPECTED', { context: { reason: 'Account deletion arrives in M9' } });
+      // LLD §1.12 order: results, rules, watchlist items, watchlists, transactions, then the
+      // profile. Each step is idempotent, so a retry after a partial failure finishes the job.
+      const deleteAll = async (col: CollectionReference): Promise<void> => {
+        const snap = await getDocs(col);
+        for (let i = 0; i < snap.docs.length; i += BATCH_LIMIT) {
+          const batch = writeBatch(db);
+          for (const d of snap.docs.slice(i, i + BATCH_LIMIT)) batch.delete(d.ref);
+          await batch.commit();
+        }
+      };
+      try {
+        await deleteAll(collection(db, 'users', uid, 'ruleResults'));
+        await deleteAll(collection(db, 'users', uid, 'rules'));
+        const lists = await getDocs(collection(db, 'users', uid, 'watchlists'));
+        for (const l of lists.docs)
+          await deleteAll(collection(db, 'users', uid, 'watchlists', l.id, 'items'));
+        await deleteAll(collection(db, 'users', uid, 'watchlists'));
+        await deleteAll(collection(db, 'users', uid, 'transactions'));
+        await deleteDoc(ref);
+      } catch (e) {
+        throw mapFirestoreError(e);
+      }
     },
   };
 }

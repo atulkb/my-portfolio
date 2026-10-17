@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { LabelSchema, type Label } from '../market/types';
 import { ExchangeSchema, type Exchange } from '../models/primitives';
 import { COMMON_RULES, dataBlock, itemKey, r2 } from './common';
-import { checkProse, collectNumbers } from './grounding';
+import { checkProse, collectFieldNames, collectNumbers } from './grounding';
 import type { BatchOutcome, BatchPromptTask } from './types';
 
 /** Deterministic inputs for one holding (ANALYSIS_FRAMEWORK §4.1). */
@@ -64,8 +64,7 @@ Return exactly one rating per holding, with the same symbol and exchange.
 /** Performance rating task (HLD D11, ANALYSIS_FRAMEWORK §7.1): batched, temperature 0. */
 export const performanceRatingTask: BatchPromptTask<PerformanceInput, null, PerformanceRating> = {
   id: 'performanceRating',
-  version: 'perf-rating@1',
-  model: 'flash',
+  version: 'perf-rating@2',
   maxBatch: 25,
   responseSchema: {
     type: 'object',
@@ -107,7 +106,8 @@ export const performanceRatingTask: BatchPromptTask<PerformanceInput, null, Perf
       const input = wanted.get(key);
       if (!input || seen.has(key)) continue; // extra or duplicate entries are ignored
       seen.add(key);
-      const problem = checkProse('Reason', r.reason, 20, collectNumbers(payloadOf(input)));
+      const payload = payloadOf(input);
+      const problem = checkProse('Reason', r.reason, 20, collectNumbers(payload), collectFieldNames(payload));
       if (problem) rejected.push({ key, reason: problem });
       else accepted.set(key, { rating: r.rating, reason: r.reason.trim() });
     }

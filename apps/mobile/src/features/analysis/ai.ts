@@ -20,6 +20,7 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { FEATURES } from '@/config/features';
 import { currentHoldings } from '@/features/portfolio/hooks';
 import { latestSessionDate } from '@/lib/dates';
+import { isOnline, subscribeOnline, useOnline } from '@/services/device/network';
 import { getInstrumentIndex } from '@/services/instruments/instrumentIndex';
 import type { AiItem } from '@/services/ai/aiService';
 import {
@@ -191,7 +192,8 @@ export function currentMacro(): MacroAssessment {
  * every item (Settings).
  */
 export async function syncAi(force: boolean): Promise<void> {
-  if (portfolioStore.getState().loadState !== 'ready') return;
+  // Offline: every call would fail and still use up the daily budget (LLD §4.6).
+  if (portfolioStore.getState().loadState !== 'ready' || !isOnline()) return;
   const { perf, signals } = holdingItems();
   if (watchlistStore.getState().loadState === 'ready') signals.push(...watchSignalItems());
   const ai = aiStore.getState();
@@ -235,6 +237,9 @@ export function startAiSync(): () => void {
     sessionStore.subscribe((s, p) => {
       if (aiSuggestionsOn(s.profile) !== aiSuggestionsOn(p.profile)) schedule();
     }),
+    subscribeOnline(() => {
+      if (isOnline()) schedule();
+    }),
   ];
   schedule();
   return () => {
@@ -266,6 +271,7 @@ export function useDeepAnalysis(src: DeepAnalysisSources) {
   const sessionDate = useMarket((s) => s.snapshots.get(src.key)?.sessionDate ?? null);
   const entry = useAi((s) => s.analysis.get(src.key) ?? null);
   const load = useAi((s) => s.analysisLoads.get(src.key) ?? null);
+  const online = useOnline();
 
   const item = useMemo((): AiItem<DeepAnalysisInput> | null => {
     const parsed = parseInstrumentKey(src.key);
@@ -299,15 +305,15 @@ export function useDeepAnalysis(src: DeepAnalysisSources) {
   }, [src.entry, src.key, src.name, src.sector, src.holding, src.bench, sessionDate, suggestions]);
 
   useEffect(() => {
-    if (!item || !src.ready || !src.visible) return;
+    if (!item || !src.ready || !src.visible || !online) return;
     void aiStore.getState().deepAnalysis(item, { force: false, exists: listingExists });
-  }, [item, src.ready, src.visible]);
+  }, [item, src.ready, src.visible, online]);
 
   const refresh = useCallback(() => {
     if (item) void aiStore.getState().deepAnalysis(item, { force: true, exists: listingExists });
   }, [item]);
 
-  return { entry, load, refresh, canRefresh: item !== null && src.ready };
+  return { entry, load, refresh, canRefresh: item !== null && src.ready && online };
 }
 
 /** Market-context note for the macro block (HLD D34); generated once per session while shown. */
@@ -316,6 +322,7 @@ export function useMarketSentiment(macro: MacroAssessment | null, visible: boole
   const running = useMarket((s) => s.refresh.running);
   const entry = useAi((s) => s.marketSentiment);
   const load = useAi((s) => s.sentimentLoad);
+  const online = useOnline();
   const input = useMemo(
     (): MarketSentimentInput | null => (macro ? { macro, usdInr: usdInrMove(fx) } : null),
     [macro, fx],
@@ -323,9 +330,9 @@ export function useMarketSentiment(macro: MacroAssessment | null, visible: boole
   const hasData = !!macro && (macro.nifty.pctVsSma200 !== null || macro.sp500.pctVsSma200 !== null);
 
   useEffect(() => {
-    if (!input || !hasData || !visible || running) return;
+    if (!input || !hasData || !visible || running || !online) return;
     void aiStore.getState().loadMarketSentiment(latestSessionDate(Date.now()), input, { force: false });
-  }, [input, hasData, visible, running]);
+  }, [input, hasData, visible, running, online]);
 
   return { entry, load };
 }

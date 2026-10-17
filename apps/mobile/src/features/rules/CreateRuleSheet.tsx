@@ -18,6 +18,7 @@ import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
 import { userMessage } from '@/lib/messages';
 import type { CompiledRule } from '@/services/ai/aiService';
+import { useOnline } from '@/services/device/network';
 import { rulesStore, useRules } from '@/stores';
 import { colors, radii, spacing, typography } from '@/theme/tokens';
 import { splitReadBack } from './hooks';
@@ -95,6 +96,7 @@ export function CreateRuleSheet({ ruleId }: { readonly ruleId: string | null }):
   const existing = useRules((s) => (ruleId ? (s.rules.find((r) => r.id === ruleId) ?? null) : null));
   const existingValid = useRules((s) => (ruleId ? (s.valid.get(ruleId) ?? null) : null));
   const ruleCount = useRules((s) => s.rules.length);
+  const online = useOnline();
   const [text, setText] = useState(existing?.naturalPrompt ?? '');
   const [name, setName] = useState(existing?.name ?? '');
   const [scopes, setScopes] = useState<Scopes>({
@@ -134,6 +136,8 @@ export function CreateRuleSheet({ ruleId }: { readonly ruleId: string | null }):
     tested.scopes.appliesToPortfolio === scopes.appliesToPortfolio &&
     tested.scopes.appliesToWatchlists === scopes.appliesToWatchlists;
   const nameOk = name.trim().length > 0 && name.trim().length <= MAX_NAME;
+  // A sentence compiled earlier can be re-tested offline; a new one needs Gemini.
+  const needsNetwork = !online && !compiled.has(trimmed);
   const canSave = testCurrent && nameOk && !atLimit && !saving;
 
   const readBackParts = useMemo(
@@ -289,8 +293,12 @@ export function CreateRuleSheet({ ruleId }: { readonly ruleId: string | null }):
         }
         onPress={() => void runDryTest()}
         loading={running}
-        disabled={atLimit}
+        disabled={atLimit || needsNetwork}
       />
+
+      {needsNetwork ? (
+        <Text style={styles.warn}>You’re offline: the dry test needs a connection to read the rule.</Text>
+      ) : null}
 
       {problem ? (
         <View style={styles.problem}>

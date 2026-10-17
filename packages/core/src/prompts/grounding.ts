@@ -58,15 +58,41 @@ export function strayNumbers(text: string, allowed: readonly number[]): number[]
   return stray;
 }
 
-/** Validation error text for a prose field, or `null` when it passes length and grounding. */
+/** Identifier-like names (camelCase or letters+digits, e.g. `pnlPct`, `trend200`), never prose words. */
+const IDENTIFIER_RE = /^[a-z]+(?:[A-Z][A-Za-z0-9]*|\d+[A-Za-z0-9]*)+$/;
+
+/**
+ * Field names of a payload that must not appear in prose: object keys and `key` values (parameter
+ * keys such as `trend200`), limited to identifier-like names.
+ */
+export function collectFieldNames(value: unknown, out: Set<string> = new Set()): Set<string> {
+  if (Array.isArray(value)) for (const v of value) collectFieldNames(v, out);
+  else if (value !== null && typeof value === 'object') {
+    for (const [k, v] of Object.entries(value)) {
+      if (IDENTIFIER_RE.test(k)) out.add(k);
+      if (k === 'key' && typeof v === 'string' && IDENTIFIER_RE.test(v)) out.add(v);
+      collectFieldNames(v, out);
+    }
+  }
+  return out;
+}
+
+/**
+ * Validation error text for a prose field, or `null` when it passes length, grounding and (with
+ * `fieldNames`) the no-field-names check.
+ */
 export function checkProse(
   field: string,
   text: string,
   maxWords: number,
   allowed: readonly number[],
+  fieldNames: ReadonlySet<string> = new Set(),
 ): string | null {
   if (wordCount(text) > maxWords) return `${field} is longer than ${maxWords} words.`;
   const stray = strayNumbers(text, allowed);
   if (stray.length > 0) return `${field} mentions numbers not in the data: ${stray.join(', ')}.`;
+  const named = text.match(/[A-Za-z][A-Za-z0-9]*/g)?.filter((w) => fieldNames.has(w)) ?? [];
+  if (named.length > 0)
+    return `${field} uses data field names (${[...new Set(named)].join(', ')}); describe them in plain words.`;
   return null;
 }

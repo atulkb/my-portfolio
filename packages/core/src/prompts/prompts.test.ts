@@ -1,6 +1,6 @@
 import type { MacroAssessment, ParamResult } from '../analysis/types';
 import { deepAnalysisTask, filterAlternatives, type DeepAnalysisInput } from './deepAnalysis';
-import { extractNumbers, strayNumbers } from './grounding';
+import { checkProse, collectFieldNames, extractNumbers, strayNumbers } from './grounding';
 import { marketSentimentTask } from './marketSentiment';
 import { performanceRatingTask, type PerformanceInput } from './performanceRating';
 import { ruleCompileTask } from './ruleCompile';
@@ -287,5 +287,27 @@ describe('marketSentimentTask', () => {
         paragraph: 'ok',
       }).ok,
     ).toBe(false);
+  });
+});
+
+describe('plain-language prose check', () => {
+  it('collects identifier-like field names and parameter keys only', () => {
+    const names = collectFieldNames({
+      symbol: 'X',
+      pnlPct: 1,
+      params: [
+        { key: 'trend200', value: 1 },
+        { key: 'pe', value: 2 },
+      ],
+    });
+    expect([...names].sort()).toEqual(['pnlPct', 'trend200']);
+  });
+
+  it('rejects prose that quotes a field name and passes plain words', () => {
+    const names = new Set(['pnlPct', 'excessReturnPp']);
+    expect(
+      checkProse('Reason', 'Trails the index with excessReturnPp of -18.88', 20, [-18.88], names),
+    ).toMatch(/field names \(excessReturnPp\)/);
+    expect(checkProse('Reason', 'Trails the index by 18.88 points', 20, [-18.88], names)).toBeNull();
   });
 });

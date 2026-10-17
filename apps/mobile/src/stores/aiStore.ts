@@ -40,6 +40,10 @@ export type AiState = {
   readonly sentimentLoad: AiLoad | null;
   readonly status: { readonly performance: AiTaskStatus; readonly signals: AiTaskStatus };
   readonly budgetLeftToday: number;
+  /** Sum of all models' daily limits (HLD D36). */
+  readonly budgetTotal: number;
+  /** Model the next request would use; `null` when every model is used up today. */
+  readonly currentModel: string | null;
   /** Prunes old entries and loads the caches (app start, after sign-in). */
   hydrate(today: IsoDate): void;
   /** Rates stale holdings (all with `force`); a call while one runs is queued, not dropped. */
@@ -121,6 +125,12 @@ export function createAiStore(deps: AiStoreDeps): StoreApi<AiState> {
     };
   }
 
+  const budget = () => ({
+    budgetLeftToday: service.leftToday(),
+    budgetTotal: service.dailyTotal(),
+    currentModel: service.currentModel(),
+  });
+
   return createStore<AiState>()((set, get) => {
     const setStatus = (task: 'performance' | 'signals', patch: Partial<AiTaskStatus>): void =>
       set((s) => ({ status: { ...s.status, [task]: { ...s.status[task], ...patch } } }));
@@ -138,7 +148,7 @@ export function createAiStore(deps: AiStoreDeps): StoreApi<AiState> {
         }
         for (const k of Object.keys(res.entries)) failedPerf.delete(k as InstrumentKey);
         notice(res.error?.code);
-        set({ performance: res.entries, budgetLeftToday: service.leftToday() });
+        set({ performance: res.entries, ...budget() });
         setStatus('performance', { running: false, failure: res.error?.code ?? null, lastAt: deps.now() });
       } catch (e) {
         const code = toAppError(e).code;
@@ -162,7 +172,7 @@ export function createAiStore(deps: AiStoreDeps): StoreApi<AiState> {
             if (it) failedSignals.set(k, hashInput({ i: it.input, macro }));
           }
           notice(res.error?.code);
-          set({ signals: res.entries, budgetLeftToday: service.leftToday() });
+          set({ signals: res.entries, ...budget() });
           setStatus('signals', { running: false, failure: res.error?.code ?? null, lastAt: deps.now() });
         } catch (e) {
           const code = toAppError(e).code;
@@ -189,6 +199,8 @@ export function createAiStore(deps: AiStoreDeps): StoreApi<AiState> {
       sentimentLoad: null,
       status: { performance: IDLE, signals: IDLE },
       budgetLeftToday: 0,
+      budgetTotal: 0,
+      currentModel: null,
 
       hydrate: (today) => {
         service.prune(today);
@@ -196,7 +208,7 @@ export function createAiStore(deps: AiStoreDeps): StoreApi<AiState> {
           performance: service.cachedPerformance(),
           signals: service.cachedSignals(),
           marketSentiment: service.cachedSentiment(),
-          budgetLeftToday: service.leftToday(),
+          ...budget(),
         });
       },
 
@@ -218,7 +230,7 @@ export function createAiStore(deps: AiStoreDeps): StoreApi<AiState> {
             const e = await service.deepAnalysis(item, opts);
             set((s) => ({
               analysis: new Map(s.analysis).set(item.key, e),
-              budgetLeftToday: service.leftToday(),
+              ...budget(),
             }));
             setLoad(item.key, null);
           } catch (err) {
@@ -241,7 +253,7 @@ export function createAiStore(deps: AiStoreDeps): StoreApi<AiState> {
           set({ sentimentLoad: { state: 'loading', failure: null } });
           try {
             const e = await service.marketSentiment(sessionDate, input, { force });
-            set({ marketSentiment: e, sentimentLoad: null, budgetLeftToday: service.leftToday() });
+            set({ marketSentiment: e, sentimentLoad: null, ...budget() });
           } catch (err) {
             const code = toAppError(err).code;
             notice(code);
@@ -253,7 +265,7 @@ export function createAiStore(deps: AiStoreDeps): StoreApi<AiState> {
         return inflightSentiment;
       },
 
-      refreshBudget: () => set({ budgetLeftToday: service.leftToday() }),
+      refreshBudget: () => set(budget()),
 
       reset: () => {
         noticed.clear();
@@ -268,6 +280,8 @@ export function createAiStore(deps: AiStoreDeps): StoreApi<AiState> {
           sentimentLoad: null,
           status: { performance: IDLE, signals: IDLE },
           budgetLeftToday: 0,
+          budgetTotal: 0,
+          currentModel: null,
         });
       },
     };

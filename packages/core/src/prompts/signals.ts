@@ -3,7 +3,7 @@ import type { MacroAssessment, ParamKey, ParamLevel } from '../analysis/types';
 import type { Label } from '../market/types';
 import { ExchangeSchema, type Exchange } from '../models/primitives';
 import { COMMON_RULES, dataBlock, itemKey, r2 } from './common';
-import { checkProse, collectNumbers } from './grounding';
+import { checkProse, collectFieldNames, collectNumbers } from './grounding';
 import type { BatchOutcome, BatchPromptTask } from './types';
 
 /** Signal labels (ANALYSIS_FRAMEWORK §7.2). */
@@ -84,8 +84,7 @@ Return exactly one signal per stock, with the same symbol and exchange. This is 
 /** Buy/sell signal task (HLD D29, ANALYSIS_FRAMEWORK §7.2). Only used when aiSuggestions is on. */
 export const signalsTask: BatchPromptTask<SignalInput, MacroAssessment, Signal> = {
   id: 'signals',
-  version: 'signals@1',
-  model: 'flash',
+  version: 'signals@2',
   maxBatch: 25,
   responseSchema: {
     type: 'object',
@@ -134,10 +133,14 @@ export const signalsTask: BatchPromptTask<SignalInput, MacroAssessment, Signal> 
         rejected.push({ key, reason: 'Insufficient data must be labelled HOLD.' });
         continue;
       }
-      const problem = checkProse('Reason', s.reason, 25, [
-        ...collectNumbers(payloadOf(input)),
-        ...macroNumbers,
-      ]);
+      const payload = payloadOf(input);
+      const problem = checkProse(
+        'Reason',
+        s.reason,
+        25,
+        [...collectNumbers(payload), ...macroNumbers],
+        collectFieldNames({ payload, macro: macroPayload(macro) }),
+      );
       if (problem) {
         rejected.push({ key, reason: problem });
         continue;

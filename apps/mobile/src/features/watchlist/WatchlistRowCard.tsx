@@ -65,6 +65,7 @@ export function WatchlistRowCard({
               {`${up ? '▲' : '▼'} ${formatPct(Math.abs(row.dayChangePct))}`}
             </Text>
           ) : null}
+          {row.note ? <Text style={styles.stale}>price from web</Text> : null}
           {row.stale ? <Text style={styles.stale}>older price</Text> : null}
         </View>
         <Pressable

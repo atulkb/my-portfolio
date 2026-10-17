@@ -67,3 +67,20 @@ export function formatPct(pct: number | null, opts: { readonly signed?: boolean 
 export function formatFxRate(usdInr: number): string {
   return Number.isFinite(usdInr) ? `1 USD ≈ ${MONEY.INR.format(usdInr)}` : '';
 }
+
+/**
+ * Hint under a price taken from the quote page (HLD D33): the close is newer than the bars the
+ * indicators use, e.g. "price from web · indicators as of 14 Oct". `null` for normal prices.
+ */
+export function priceSourceNote(
+  snap:
+    | {
+        readonly priceSource: 'BARS' | 'SCRAPE';
+        readonly indicatorsAsOf: IsoDate;
+      }
+    | null
+    | undefined,
+): string | null {
+  if (!snap || snap.priceSource !== 'SCRAPE') return null;
+  return `price from web · indicators as of ${formatDate(snap.indicatorsAsOf, { short: true })}`;
+}

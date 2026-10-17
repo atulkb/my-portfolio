@@ -6,7 +6,6 @@ import {
   type GenerateResult,
   type GenerativePort,
   type JsonSchemaSubset,
-  type ModelTier,
   type PromptTaskId,
   type SinglePromptTask,
 } from '@portfolio/core';
@@ -39,12 +38,17 @@ export type BatchRun<O> = {
   /** Why items are missing: a non-retryable stop (budget, rate limit…) or the last retryable error. */
   readonly error: AppError | null;
   readonly calls: number;
+  /** Model of the last answered request (HLD D36 chain); `null` when nothing was answered. */
+  readonly model: string | null;
 };
 
 /** Bounded Gemini loop (LLD §3.5 `AiClient.run`). */
 export type AiClient = {
   /** One input → one validated output; throws `AppError` (e.g. `AI_INVALID_OUTPUT` after the last attempt). */
-  runSingle<I, O>(task: SinglePromptTask<I, O>, input: I): Promise<{ value: O; calls: number }>;
+  runSingle<I, O>(
+    task: SinglePromptTask<I, O>,
+    input: I,
+  ): Promise<{ value: O; calls: number; model: string }>;
   /** Batched items; retries ask only for the missing/invalid items. */
   runBatch<Item, Shared, O>(
     task: BatchPromptTask<Item, Shared, O>,
@@ -89,41 +93,65 @@ export function createAiClient(deps: AiClientDeps): AiClient {
     if (ms > 0) await deps.sleep(ms);
   }
 
+  /** Request counter shared by the attempts of one run. */
+  type Counter = { calls: number; model: string | null };
+
   /**
-   * One request: budget, call, truncation check. Returns parsed JSON (or a problem for the retry).
-   * `counter.calls` counts requests actually sent (a budget refusal sends nothing).
+   * One request: picks the best model with quota left, calls it, checks truncation. A 429 puts
+   * that model on cooldown and a missing model (404) is skipped, then the next model in the chain
+   * is tried at once (HLD D36); the loop ends when the budget has no model left.
+   * `counter.calls` counts requests actually sent.
    */
   async function call(
-    task: { readonly id: PromptTaskId; readonly version: string; readonly model: ModelTier },
+    task: { readonly id: PromptTaskId; readonly version: string },
     responseSchema: JsonSchemaSubset,
     prompt: BuiltPrompt,
-    counter: { calls: number },
+    counter: Counter,
   ): Promise<{ raw: unknown; problem: string | null }> {
-    await usage.acquire();
-    counter.calls++;
-    const res: GenerateResult = await port.generate({
-      taskId: task.id,
-      model: task.model,
-      prompt,
-      responseSchema,
-      timeoutMs: config.requestTimeoutMs,
-    });
-    if (res.usage)
-      deps.log?.(
-        `${task.version} tokens in=${res.usage.promptTokens} out=${res.usage.outputTokens} thoughts=${res.usage.thoughtsTokens} finish=${res.finishReason ?? '-'}`,
-      );
-    if (res.finishReason === 'MAX_TOKENS')
-      return { raw: undefined, problem: 'The reply was cut off; keep it shorter.' };
-    const raw = parseModelJson(res.text);
-    return raw === undefined ? { raw, problem: 'The reply was not valid JSON.' } : { raw, problem: null };
+    for (;;) {
+      const model = await usage.acquire();
+      counter.calls++;
+      let res: GenerateResult;
+      try {
+        res = await port.generate({
+          taskId: task.id,
+          model,
+          prompt,
+          responseSchema,
+          timeoutMs: config.requestTimeoutMs,
+        });
+      } catch (e) {
+        const ae = toAppError(e);
+        if (ae.code === 'AI_RATE_LIMITED') {
+          usage.rateLimited(model);
+          deps.log?.(`${task.version} model=${model} rate-limited, trying the next model`);
+          continue;
+        }
+        if (ae.code === 'AI_UNAVAILABLE' && ae.context['status'] === 404) {
+          usage.unavailable(model);
+          deps.log?.(`${task.version} model=${model} not available, trying the next model`);
+          continue;
+        }
+        throw e;
+      }
+      counter.model = model;
+      if (res.usage)
+        deps.log?.(
+          `${task.version} model=${model} tokens in=${res.usage.promptTokens} out=${res.usage.outputTokens} thoughts=${res.usage.thoughtsTokens} finish=${res.finishReason ?? '-'}`,
+        );
+      if (res.finishReason === 'MAX_TOKENS')
+        return { raw: undefined, problem: 'The reply was cut off; keep it shorter.' };
+      const raw = parseModelJson(res.text);
+      return raw === undefined ? { raw, problem: 'The reply was not valid JSON.' } : { raw, problem: null };
+    }
   }
 
   async function runSingle<I, O>(
     task: SinglePromptTask<I, O>,
     input: I,
-  ): Promise<{ value: O; calls: number }> {
+  ): Promise<{ value: O; calls: number; model: string }> {
     const base = task.build(input);
-    const counter = { calls: 0 };
+    const counter: Counter = { calls: 0, model: null };
     let problems: string[] = [];
     let lastError: AppError | null = null;
     for (let attempt = 1; attempt <= attemptsMax; attempt++) {
@@ -139,7 +167,7 @@ export function createAiClient(deps: AiClientDeps): AiClient {
         const result = task.validate(input, raw);
         if (result.ok) {
           deps.log?.(`${task.version} ok attempts=${attempt}`);
-          return { value: result.value, calls: counter.calls };
+          return { value: result.value, calls: counter.calls, model: counter.model ?? '' };
         }
         problems = result.error;
         deps.log?.(`${task.version} attempt=${attempt} invalid (${problems.slice(0, 2).join('; ')})`);
@@ -169,7 +197,7 @@ export function createAiClient(deps: AiClientDeps): AiClient {
     const results = new Map<string, O | null>();
     for (const item of items) results.set(task.keyOf(item), null);
     const size = Math.max(1, Math.min(task.maxBatch, config.batchSize));
-    const counter = { calls: 0 };
+    const counter: Counter = { calls: 0, model: null };
     let lastError: AppError | null = null;
     for (let start = 0; start < items.length; start += size) {
       let pending = items.slice(start, start + size);
@@ -199,7 +227,7 @@ export function createAiClient(deps: AiClientDeps): AiClient {
           );
           if (!ae.retryable) {
             deps.log?.(`${task.version} stopped code=${ae.code}`);
-            return { results, error: ae, calls: counter.calls };
+            return { results, error: ae, calls: counter.calls, model: counter.model };
           }
           lastError = ae;
           problems = [];
@@ -207,7 +235,7 @@ export function createAiClient(deps: AiClientDeps): AiClient {
       }
     }
     const unanswered = [...results.values()].some((v) => v === null);
-    return { results, error: unanswered ? lastError : null, calls: counter.calls };
+    return { results, error: unanswered ? lastError : null, calls: counter.calls, model: counter.model };
   }
 
   return { runSingle, runBatch };

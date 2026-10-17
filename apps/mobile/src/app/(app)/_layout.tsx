@@ -2,15 +2,19 @@ import { Stack } from 'expo-router';
 import { useEffect } from 'react';
 import { AppState, View } from 'react-native';
 
+import { OfflineBanner } from '@/components/OfflineBanner';
 import { ToastHost } from '@/components/ToastHost';
 import { startAiSync } from '@/features/analysis/ai';
 import { startAnalysisSync } from '@/features/analysis/hooks';
 import { LoadingProfileScreen, ProfileErrorScreen } from '@/features/auth/GateScreens';
 import { hydrateMarket, refreshMissing, refreshPortfolio } from '@/features/portfolio/hooks';
 import { startRuleSync } from '@/features/rules/sync';
+import { LockScreen } from '@/features/settings/LockScreen';
 import {
   instrumentStore,
+  lockStore,
   portfolioStore,
+  useLock,
   usePortfolio,
   useSession,
   useWatchlists,
@@ -37,6 +41,7 @@ export default function AppLayout(): React.JSX.Element {
   const gate = useSession((s) => s.gate);
   const loadState = usePortfolio((s) => s.loadState);
   const transactions = usePortfolio((s) => s.transactions);
+  const locked = useLock((s) => s.locked);
   const watchState = useWatchlists((s) => s.loadState);
   const watchItems = useWatchlists((s) => s.itemsByList);
   // The first refresh waits for both collections so it prices holdings and watchlists together.
@@ -71,6 +76,7 @@ export default function AppLayout(): React.JSX.Element {
   // Foreground: a new session may have closed while the app was in the background (LLD §4.2).
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state) => {
+      lockStore.getState().onAppState(state);
       if (state === 'active' && portfolioStore.getState().loadState === 'ready') void refreshPortfolio(false);
     });
     return () => sub.remove();
@@ -84,6 +90,8 @@ export default function AppLayout(): React.JSX.Element {
         <Stack.Screen name="index" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="settings/index" />
+        <Stack.Screen name="settings/platforms" />
+        <Stack.Screen name="settings/legal/[doc]" />
         <Stack.Screen name="holding/[key]/edit" />
         <Stack.Screen name="sheets/add-buy" options={sheet()} />
         <Stack.Screen name="sheets/csv-result" options={sheet()} />
@@ -94,8 +102,11 @@ export default function AppLayout(): React.JSX.Element {
         <Stack.Screen name="sheets/watchlist-edit" options={sheet('fitToContents')} />
         <Stack.Screen name="sheets/watchlist-item" options={sheet()} />
         <Stack.Screen name="sheets/create-rule" options={sheet()} />
+        <Stack.Screen name="sheets/delete-account" options={sheet()} />
       </Stack>
+      <OfflineBanner />
       <ToastHost />
+      {locked ? <LockScreen /> : null}
     </View>
   );
 }

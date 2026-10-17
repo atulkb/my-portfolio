@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
+import { priceSourceNote } from '@/lib/format';
 import { userMessage } from '@/lib/messages';
 import { portfolioStore, sessionStore, toastStore, uiStore, useMarket, usePortfolio, useUi } from '@/stores';
 import { hasActiveFilters } from '@/stores/uiStore';
@@ -228,6 +229,7 @@ export function PortfolioScreen(): React.JSX.Element {
               <HoldingCard
                 holding={item}
                 stale={snapshots.get(item.key)?.stale ?? false}
+                note={priceSourceNote(snapshots.get(item.key))}
                 onPress={() =>
                   router.push({ pathname: '/sheets/holding-actions', params: { key: item.key } })
                 }

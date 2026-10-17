@@ -3,6 +3,8 @@ import { CurrencySchema, InstrumentKeySchema, PlatformSchema } from './primitive
 
 /** Default portfolio sort options (S09 "Sort holdings by default"). */
 export const DefaultSortSchema = z.enum(['VALUE_DESC', 'PNL_PCT_DESC', 'NAME_ASC']);
+/** Holdings sort used by default (S09). */
+export type DefaultSort = z.infer<typeof DefaultSortSchema>;
 
 /** Per-user settings synced across devices (LLD §1.4). Device-local settings live in MMKV. */
 export const UserSettingsSchema = z.object({

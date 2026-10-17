@@ -23,11 +23,14 @@ const signColor = (n: number | null): string =>
 export function HoldingCard({
   holding,
   stale,
+  note = null,
   onPress,
 }: {
   readonly holding: StockHolding;
   /** Price is older than the expected session (shows "as of …"). */
   readonly stale: boolean;
+  /** Price-source hint ("price from web · indicators as of 14 Oct"). */
+  readonly note?: string | null;
   readonly onPress: () => void;
 }): React.JSX.Element {
   const h = holding;
@@ -80,6 +83,7 @@ export function HoldingCard({
           {reason}
         </Text>
       ) : null}
+      {note ? <Text style={styles.stale}>{note}</Text> : null}
       {stale && h.priceDate ? (
         <Text style={styles.stale}>{`as of ${formatDate(h.priceDate, { short: true })}`}</Text>
       ) : null}

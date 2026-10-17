@@ -18,7 +18,7 @@ import type { NewRule, Rule, RulePatch, RuleResult } from './models/rule';
 import type { BuyTransaction, BuyTransactionPatch, NewBuyTransaction } from './models/transaction';
 import type { ProfileSeed, UserProfile, UserSettings } from './models/user';
 import type { NewWatchlistItem, Watchlist, WatchlistItem } from './models/watchlist';
-import type { BuiltPrompt, JsonSchemaSubset, ModelTier, PromptTaskId } from './prompts/types';
+import type { BuiltPrompt, JsonSchemaSubset, PromptTaskId } from './prompts/types';
 
 /** Result of reading a collection: invalid documents are skipped and counted, never thrown (LLD §3.7). */
 export type ReadResult<T> = { readonly items: T[]; readonly skipped: number };
@@ -116,7 +116,8 @@ export interface MarketDataProvider {
 /** One Gemini request (LLD §3.5). */
 export type GenerateRequest = {
   readonly taskId: PromptTaskId;
-  readonly model: ModelTier;
+  /** Gemini model ID chosen by the app's model chain (e.g. `gemini-3.8-flash`). */
+  readonly model: string;
   readonly prompt: BuiltPrompt;
   readonly responseSchema: JsonSchemaSubset;
   readonly timeoutMs: number;

@@ -22,7 +22,6 @@ import {
   type MacroAssessment,
   type MarketSentiment,
   type MarketSentimentInput,
-  type ModelTier,
   type PerformanceInput,
   type PerformanceRating,
   type RuleCompileInput,
@@ -32,7 +31,6 @@ import {
 } from '@portfolio/core';
 import { z } from 'zod';
 
-import { AI_CONFIG } from '@/config/ai';
 import type { AiClient } from './aiClient';
 import type { AiUsage } from './usage';
 
@@ -145,6 +143,10 @@ export type AiService = {
   prune(today: IsoDate): void;
   usedToday(): number;
   leftToday(): number;
+  /** Sum of the model chain's daily limits. */
+  dailyTotal(): number;
+  /** Model the next request would use (`null` = none left today). */
+  currentModel(): string | null;
 };
 
 /** Entries older than this many calendar days (≈ 3 sessions incl. a weekend) are pruned (LLD §3.5). */
@@ -176,13 +178,13 @@ export function createAiService(deps: AiServiceDeps): AiService {
   const entry = <T>(
     sessionDate: IsoDate,
     inputHash: string,
-    model: ModelTier,
+    model: string,
     version: string,
     value: T,
   ): AiEntry<T> => ({
     sessionDate,
     inputHash,
-    model: AI_CONFIG.models[model],
+    model,
     promptVersion: version,
     createdAt: clock.now(),
     value,
@@ -247,7 +249,7 @@ export function createAiService(deps: AiServiceDeps): AiService {
           map[it.key] = entry(
             it.sessionDate,
             perfHash(it.input),
-            performanceRatingTask.model,
+            run.model ?? '',
             performanceRatingTask.version,
             value,
           );
@@ -273,7 +275,7 @@ export function createAiService(deps: AiServiceDeps): AiService {
           map[it.key] = entry(
             it.sessionDate,
             signalHash(it.input, macro),
-            signalsTask.model,
+            run.model ?? '',
             signalsTask.version,
             value,
           );
@@ -288,11 +290,11 @@ export function createAiService(deps: AiServiceDeps): AiService {
       const hash = hashInput(item.input);
       const cached = kv.get(key, AnalysisEntrySchema);
       if (!force && cached && fresh(cached, item.sessionDate, hash, deepAnalysisTask.version)) return cached;
-      const { value } = await client.runSingle(deepAnalysisTask, item.input);
+      const { value, model } = await client.runSingle(deepAnalysisTask, item.input);
       const e = entry(
         item.sessionDate,
         hash,
-        deepAnalysisTask.model,
+        model,
         deepAnalysisTask.version,
         filterAlternatives(value, exists),
       );
@@ -304,17 +306,17 @@ export function createAiService(deps: AiServiceDeps): AiService {
       const hash = hashInput(input);
       const cached = kv.get(AI_KEYS.marketSentiment, SentimentEntrySchema);
       if (!force && cached && fresh(cached, sessionDate, hash, marketSentimentTask.version)) return cached;
-      const { value } = await client.runSingle(marketSentimentTask, input);
-      const e = entry(sessionDate, hash, marketSentimentTask.model, marketSentimentTask.version, value);
+      const { value, model } = await client.runSingle(marketSentimentTask, input);
+      const e = entry(sessionDate, hash, model, marketSentimentTask.version, value);
       kv.set(AI_KEYS.marketSentiment, e);
       return e;
     },
 
     async compileRule(input) {
-      const { value } = await client.runSingle(ruleCompileTask, input);
+      const { value, model } = await client.runSingle(ruleCompileTask, input);
       return {
         result: value,
-        model: AI_CONFIG.models[ruleCompileTask.model],
+        model,
         promptVersion: ruleCompileTask.version,
       };
     },
@@ -336,5 +338,7 @@ export function createAiService(deps: AiServiceDeps): AiService {
 
     usedToday: () => deps.usage.usedToday(),
     leftToday: () => deps.usage.leftToday(),
+    dailyTotal: () => deps.usage.dailyTotal(),
+    currentModel: () => deps.usage.currentModel(),
   };
 }

@@ -1,4 +1,4 @@
-import { performanceRatingTask } from '@portfolio/core';
+import { performanceRatingTask, ruleCompileTask } from '@portfolio/core';
 
 jest.mock('@react-native-firebase/app', () => ({ getApp: jest.fn() }));
 jest.mock('@react-native-firebase/auth', () => ({ getAuth: jest.fn() }));
@@ -17,9 +17,15 @@ jest.mock('@react-native-firebase/ai', () => {
 });
 
 // eslint-disable-next-line import/first -- must load after the mocks above
-import { AIError } from '@react-native-firebase/ai';
+import { AIError, getGenerativeModel } from '@react-native-firebase/ai';
 // eslint-disable-next-line import/first
-import { mapAiError, toSdkSchema } from './firebaseAi';
+import {
+  firebaseGenerativePort,
+  levelFor,
+  mapAiError,
+  rejectedThinkingLevel,
+  toSdkSchema,
+} from './firebaseAi';
 
 type MockAIError = new (code: string, message: string, data?: { status?: number }) => Error;
 const aiError = (code: string, status?: number) =>
@@ -50,5 +56,65 @@ describe('firebaseAi', () => {
     expect(mapAiError(aiError('api-not-enabled')).code).toBe('AI_NOT_AUTHORISED');
     const abort = Object.assign(new Error('aborted'), { name: 'AbortError' });
     expect(mapAiError(abort)).toMatchObject({ code: 'AI_TIMEOUT', retryable: true });
+  });
+});
+
+describe('thinking level rejection', () => {
+  it('reads the rejected level from the API message', () => {
+    expect(
+      rejectedThinkingLevel(
+        new Error(
+          '[400 ] Thinking level MINIMAL is not supported for this model. Please retry with other thinking level.',
+        ),
+      ),
+    ).toBe('MINIMAL');
+    expect(rejectedThinkingLevel(new Error('[400 ] Bad schema'))).toBeNull();
+    expect(rejectedThinkingLevel('nope')).toBeNull();
+  });
+});
+
+describe('thinking level per model (config in the repo, HLD D36)', () => {
+  const rejection = new Error('[400 ] Thinking level MINIMAL is not supported for this model.');
+  const req = {
+    taskId: 'ruleCompile' as const,
+    model: 'gemini-3.5-flash-lite',
+    prompt: { system: 's', user: 'u' },
+    responseSchema: ruleCompileTask.responseSchema,
+    timeoutMs: 1000,
+  };
+
+  /** Fakes the SDK: rejects MINIMAL, answers otherwise; records each thinking config sent. */
+  function fakeSdk(): unknown[] {
+    const sent: unknown[] = [];
+    jest.mocked(getGenerativeModel).mockImplementation((_ai, params) => {
+      const thinking = params.generationConfig?.thinkingConfig;
+      sent.push(thinking);
+      const generateContent = () =>
+        thinking?.thinkingLevel === 'MINIMAL'
+          ? Promise.reject(rejection)
+          : Promise.resolve({ response: { candidates: [{ content: { parts: [{ text: '{}' }] } }] } });
+      return { generateContent } as unknown as ReturnType<typeof getGenerativeModel>;
+    });
+    return sent;
+  }
+
+  it('raises the task level to the model minimum from the config', () => {
+    expect(levelFor('gemini-3.8-flash', 'signals')).toBe('LOW');
+    expect(levelFor('gemini-3.5-flash-lite', 'signals')).toBe('MINIMAL');
+    expect(levelFor('gemini-3.5-flash-lite', 'deepAnalysis')).toBe('LOW');
+    expect(levelFor('unknown-model', 'signals')).toBe('MINIMAL');
+  });
+
+  it('steps up a rejected level for that request only, without remembering it', async () => {
+    const sent = fakeSdk();
+    const signals = { ...req, taskId: 'signals' as const };
+    await firebaseGenerativePort.generate(signals);
+    await firebaseGenerativePort.generate(signals);
+    expect(sent).toEqual([
+      { thinkingLevel: 'MINIMAL' },
+      { thinkingLevel: 'LOW' },
+      { thinkingLevel: 'MINIMAL' },
+      { thinkingLevel: 'LOW' },
+    ]);
   });
 });

@@ -11,6 +11,7 @@ import {
   type WatchlistItem,
 } from '@portfolio/core';
 
+import { priceSourceNote } from '@/lib/format';
 import type { AiEntry } from '@/services/ai/aiService';
 import type { PricedSnapshot } from '@/services/market-data/marketDataService';
 import type { AnalysisEntry } from '@/stores/analysisStore';
@@ -31,6 +32,8 @@ export type WatchlistRow = {
   readonly close: number | null;
   readonly dayChangePct: number | null;
   readonly stale: boolean;
+  /** Price-source hint for a scraped close. */
+  readonly note: string | null;
   readonly spark: readonly number[];
   readonly health: Label | null;
   readonly healthScore: number | null;
@@ -80,6 +83,7 @@ export function buildWatchlistRows(src: WatchlistSources): WatchlistRow[] {
         close: snap?.close ?? null,
         dayChangePct: snap && prev ? ((snap.close - prev) / prev) * 100 : null,
         stale: snap?.stale ?? false,
+        note: priceSourceNote(snap),
         spark: snap ? snap.bars.slice(-SPARK_SESSIONS).map((b) => b.adjClose) : [],
         health: entry?.analysis.healthLabel ?? null,
         healthScore: entry?.analysis.healthScore ?? null,

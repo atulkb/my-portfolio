@@ -80,3 +80,24 @@ export function wipeUserData(): void {
   s.recrypt(key);
   SecureStore.setItem(KEY_NAME, key);
 }
+
+/** Prefixes removed by Settings → "Clear local cache" (LLD §4.4). The AI budget and cooldowns stay. */
+const CLEARABLE = ['market.', 'fx.', 'ai.'] as const;
+const KEEP = ['ai.usage.', 'ai.cooldown'] as const;
+
+const clearable = (k: string): boolean =>
+  CLEARABLE.some((p) => k.startsWith(p)) && !KEEP.some((p) => k.startsWith(p));
+
+/** Approximate size of the clearable cache in bytes (UTF-16 string length × 2). */
+export function clearableCacheBytes(): number {
+  const s = storage();
+  let bytes = 0;
+  for (const k of s.getAllKeys()) if (clearable(k)) bytes += (s.getString(k)?.length ?? 0) * 2;
+  return bytes;
+}
+
+/** Removes cached prices, FX and AI answers; the next refresh fetches them again. */
+export function clearMarketAndAiCache(): void {
+  const s = storage();
+  for (const k of s.getAllKeys()) if (clearable(k)) s.remove(k);
+}
