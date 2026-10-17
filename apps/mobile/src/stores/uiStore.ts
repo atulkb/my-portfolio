@@ -15,6 +15,7 @@ import { createStore, type StoreApi } from 'zustand/vanilla';
 const UI_PORTFOLIO_KEY = 'ui.portfolio';
 const UI_RESEARCH_KEY = 'ui.research';
 const UI_WATCHLIST_KEY = 'ui.watchlist';
+const UI_SUMMARY_HIDDEN_KEY = 'ui.summaryHidden';
 /** Recently viewed instruments kept on the Research start screen. */
 export const MAX_RECENT_RESEARCH = 10;
 const UiResearchSchema = z.object({ recent: z.array(InstrumentKeySchema) });
@@ -49,6 +50,9 @@ export type UiState = {
   /** Most recent first. */
   readonly recentResearch: readonly InstrumentKey[];
   readonly watchlistFilters: WatchlistFilters;
+  /** S02 Net portfolio worth figures masked (eye button, LLD §4.18); remembered across launches. */
+  readonly summaryHidden: boolean;
+  toggleSummaryHidden(): void;
   setWatchlistFilters(filters: WatchlistFilters): void;
   setPortfolioFilters(filters: PortfolioFilters): void;
   toggleSector(sector: string): void;
@@ -75,6 +79,7 @@ export function createUiStore(kv: KeyValueCache): StoreApi<UiState> {
   const saved = kv.get(UI_PORTFOLIO_KEY, UiPortfolioSchema);
   const research = kv.get(UI_RESEARCH_KEY, UiResearchSchema);
   const watch = kv.get(UI_WATCHLIST_KEY, WatchlistFiltersSchema);
+  const summaryHidden = kv.get(UI_SUMMARY_HIDDEN_KEY, z.boolean()) ?? false;
   return createStore<UiState>()((set, get) => {
     const persist = (): void => {
       const s = get();
@@ -85,6 +90,12 @@ export function createUiStore(kv: KeyValueCache): StoreApi<UiState> {
       collapsedSectors: saved?.collapsedSectors ?? [],
       recentResearch: research?.recent ?? [],
       watchlistFilters: watch ?? NO_WATCHLIST_FILTERS,
+      summaryHidden,
+      toggleSummaryHidden: () => {
+        const hidden = !get().summaryHidden;
+        set({ summaryHidden: hidden });
+        kv.set(UI_SUMMARY_HIDDEN_KEY, hidden);
+      },
       setWatchlistFilters: (watchlistFilters) => {
         set({ watchlistFilters });
         kv.set(UI_WATCHLIST_KEY, watchlistFilters);
@@ -110,6 +121,7 @@ export function createUiStore(kv: KeyValueCache): StoreApi<UiState> {
           collapsedSectors: [],
           recentResearch: [],
           watchlistFilters: NO_WATCHLIST_FILTERS,
+          summaryHidden: false,
         }),
     };
   });

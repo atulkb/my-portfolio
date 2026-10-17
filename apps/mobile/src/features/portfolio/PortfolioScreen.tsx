@@ -54,6 +54,7 @@ export function PortfolioScreen(): React.JSX.Element {
   const refresh = useMarket((s) => s.refresh);
   const filters = useUi((s) => s.portfolioFilters);
   const collapsed = useUi((s) => s.collapsedSectors);
+  const summaryHidden = useUi((s) => s.summaryHidden);
 
   const platforms = useMemo(
     () => new Set(transactions.map((t) => normalisePlatform(t.platform))).size,
@@ -112,7 +113,9 @@ export function PortfolioScreen(): React.JSX.Element {
     <View style={styles.headerBlock}>
       <SummaryCard
         summary={view.summary}
+        hidden={summaryHidden}
         onCurrencyChange={(c) => void sessionStore.getState().updateSettings({ summaryCurrency: c })}
+        onToggleHidden={() => uiStore.getState().toggleSummaryHidden()}
       />
       {staleCount > view.holdings.length / 2 && view.holdings.length > 0 ? (
         <Text style={styles.banner}>
