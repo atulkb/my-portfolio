@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type { MacroAssessment } from '../analysis/types';
 import { err, ok, type Result } from '../util/result';
 import { COMMON_RULES, dataBlock, r2 } from './common';
-import { checkProse, collectNumbers } from './grounding';
+import { checkProse, collectFieldNames, collectNumbers } from './grounding';
 import type { SinglePromptTask } from './types';
 
 /** Deterministic macro figures for the Watchlist market card (HLD D34). */
@@ -35,7 +35,7 @@ Describe conditions only. Never tell the reader to buy, sell, allocate, or set s
 /** Market-sentiment paragraph task (HLD D34): once per day, temperature 0.3. */
 export const marketSentimentTask: SinglePromptTask<MarketSentimentInput, MarketSentiment> = {
   id: 'marketSentiment',
-  version: 'market-sentiment@1',
+  version: 'market-sentiment@2',
   model: 'flash',
   responseSchema: {
     type: 'object',
@@ -53,9 +53,10 @@ export const marketSentimentTask: SinglePromptTask<MarketSentimentInput, MarketS
     if (!parsed.success) return err(['Response did not match the schema.']);
     const { headline, paragraph } = parsed.data;
     const allowed = collectNumbers(payloadOf(input));
+    const fieldNames = collectFieldNames(payloadOf(input));
     const problems = [
-      checkProse('Headline', headline, 8, allowed),
-      checkProse('Paragraph', paragraph, 50, allowed),
+      checkProse('Headline', headline, 8, allowed, fieldNames),
+      checkProse('Paragraph', paragraph, 50, allowed, fieldNames),
     ].filter((p): p is string => p !== null);
     if (BANNED_SENTIMENT_WORDS.test(`${headline} ${paragraph}`))
       problems.push('The note must not contain advice wording.');

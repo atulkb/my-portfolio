@@ -9,7 +9,7 @@ import type { Label } from '../market/types';
 import { ExchangeSchema, type Exchange } from '../models/primitives';
 import { err, ok, type Result } from '../util/result';
 import { COMMON_RULES, dataBlock, r2 } from './common';
-import { checkProse, collectNumbers } from './grounding';
+import { checkProse, collectFieldNames, collectNumbers } from './grounding';
 import type { SinglePromptTask } from './types';
 
 const PARAM_KEYS = [...TECHNICAL_PARAMS, ...FUNDAMENTAL_PARAMS] as const;
@@ -106,7 +106,7 @@ Do not give buy or sell instructions. Use the macro context to frame the market 
 /** Deep-analysis narrative task (S04 AI Verdict). */
 export const deepAnalysisTask: SinglePromptTask<DeepAnalysisInput, DeepAnalysis> = {
   id: 'deepAnalysis',
-  version: 'deep-analysis@1',
+  version: 'deep-analysis@2',
   model: 'flash',
   responseSchema: {
     type: 'object',
@@ -157,6 +157,7 @@ export const deepAnalysisTask: SinglePromptTask<DeepAnalysisInput, DeepAnalysis>
     if (!parsed.success) return err(['Response did not match the schema.']);
     const out = parsed.data;
     const allowed = collectNumbers(payloadOf(input));
+    const fieldNames = collectFieldNames(payloadOf(input));
     const good = new Set(input.params.filter((p) => p.level === 'GOOD').map((p) => p.key));
     const bad = new Set(input.params.filter((p) => p.level === 'BAD').map((p) => p.key));
     const problems: string[] = [];
@@ -174,7 +175,7 @@ export const deepAnalysisTask: SinglePromptTask<DeepAnalysisInput, DeepAnalysis>
       ...alternatives.map((a): [string, string, number] => ['Alternative reason', a.reason, 25]),
     ];
     for (const [field, text, max] of prose) {
-      const problem = checkProse(field, text, max, allowed);
+      const problem = checkProse(field, text, max, allowed, fieldNames);
       if (problem) problems.push(problem);
     }
     if (problems.length > 0) return err(problems);

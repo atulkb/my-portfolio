@@ -273,6 +273,7 @@ Encryption key: 32 random bytes generated on first launch, stored in `expo-secur
 | `market.bars.<InstrumentKey>` | daily OHLCV, ~260 sessions | market-data service (§3) | new session |
 | `market.fundamentals.<InstrumentKey>` | fundamentals snapshot | market-data service | 7 days |
 | `market.profile.<InstrumentKey>` | sector/industry from provider | market-data service | 30 days |
+| `market.scrape.<InstrumentKey>` | last-resort scraped close `{ sessionDate, close, fetchedAt }` (HLD D33) | market-data service | bars for that session arrive |
 | `market.macro` | indices, VIX snapshot | market-data service | new session |
 | `market.index.<NIFTY50\|SP500>` | index adjClose history back to the earliest buy (benchmark) | market-data service | extended, never discarded |
 | `fx.usdInr` | latest USD/INR + history | fx service | latest: new IN session; history: extended |
@@ -1509,6 +1510,37 @@ Recomputation is cheap (≤ 500 transactions, ≤ 150 instruments) and memoised 
   - "Health score above 70" compiled to `healthScore > 70`. The dry run matched NVDA (Health 80, watchlist) and none of the holdings.
   - The rule was saved and showed "Triggered today (NVDA)". The result was still there after a cold restart (read back from `ruleResults`).
 - **Later polish:** signal reasons sometimes quote raw parameter keys ("healthScore"); see the M7 note on prompt wording.
+
+### 4.16 Implementation notes (M9, 2026-10-17)
+
+- **S09 Settings** follows the Stitch layout: Account (initials, provider badge, Change password for email accounts → reset email), Display (summary currency; default sort, which also applies to the current holdings list), Security, AI, Data (stock list, market data, Platforms, Clear local cache with its size, Undo last import), About (version, Privacy policy, Disclaimer, Copy diagnostics), Sign out, Delete account.
+- **Platforms** (`settings/platforms`): rename rewrites every buy first (`portfolioStore.renamePlatform`, optimistic), then the managed list (`sessionStore.setPlatforms`). A platform can be removed only when no buy uses it. Names are unique ignoring case, at most 40 characters.
+- **Clear local cache:** removes `market.*`, `fx.*` and `ai.*` but keeps `ai.usage.*`, so the daily AI budget can't be reset this way. The instrument list, `device.*` and `ui.*` stay.
+- **Delete account (§1.12):**
+  - Order: re-authenticate first (Google sign-in again, or the password for email accounts), so the Auth delete can't fail after the data is gone.
+  - Then `ProfileRepository.deleteAccountData` deletes, in batches, ruleResults, rules, each watchlist's items, watchlists, transactions, then the profile. Then `AuthService.deleteUser`, then the sign-out wipe.
+  - Every step is idempotent; on failure the sheet shows the error and can be retried. The sheet needs the word DELETE typed and a connection.
+- **Biometric lock (§4.2):**
+  - `lockStore` with MMKV `device.biometricLock`. It locks on a cold start and after `APP_CONFIG.lockAfterBackgroundMs` (5 min) in the background.
+  - Turning it on needs one successful prompt, and fails with `DEVICE_BIOMETRIC_UNAVAILABLE` when nothing is enrolled. Turning it off needs no prompt.
+  - App-state changes caused by the prompt itself are ignored.
+  - Deviation: the lock is a full-screen overlay in the signed-in layout rather than a separate gate state; the effect is the same. The device PIN is the system fallback, and the lock screen has a sign-out link.
+- **Offline (§4.6):** `services/device/network.ts` (NetInfo) drives a banner above the tab bar ("Offline · showing data as of 16 Oct").
+  - While offline the AI sync, deep analysis, market note and forced AI refresh are skipped, because failed calls would still use the budget. The AI sync runs again when the connection returns.
+  - The rule dry test is disabled offline unless that sentence was compiled earlier.
+- **Diagnostics (§5.3):** `lib/log.ts` keeps a ring buffer of 200 entries in every build: refresh reports, AI client lines (task, attempts, tokens, error codes) and session error codes. Settings → Copy diagnostics copies it with the app version. No personal data is logged.
+- **Fallbacks (§3.3):**
+  - **Twelve Data:** fallback bars when Yahoo fails, enabled by `EXPO_PUBLIC_TWELVEDATA_KEY`. US only until spike S3 (`FEATURES.twelveDataIndia`). No adjusted close.
+    - Deviation: capped at 8 calls per rolling minute (the free-plan rate) instead of "16 per refresh". Beyond that the stale cache is used.
+  - **Finnhub:** US fundamentals and sector fallback (`EXPO_PUBLIC_FINNHUB_KEY`).
+  - Both providers are off without a key. Their parsers follow the documented response shapes; replace the test data with recorded answers once keys exist.
+  - **Quote page:** used for a stale snapshot only while its market is closed, at most once per refresh. Price, previous close and session move on; bars, indicators, Health and rules stay on the cached bars (`priceSource: 'SCRAPE'`, `indicatorsAsOf`).
+    - The scraped close is cached (`market.scrape.<key>`) until bars for that session arrive. Cards show "price from web · indicators as of …".
+    - The page changed since the LLD was written: there's no `data-last-price` attribute any more. The parser reads the headline price block and the "Oct 16, 3:30 PM GMT+5:30 · INR" status line (session date and currency check).
+    - BSE pages need the numeric scrip code (`500325:BOM`). Pinned by three recorded fixtures.
+- **AI wording:** a shared prompt rule bans data field names and double-negative percentages. The validator rejects prose that quotes a payload field name or parameter key, so the client retries with feedback. Prompt versions were bumped to `@2`, so cached answers refresh once.
+- **Gemini quota (finding):** on 2026-10-17 Gemini returned 429 "exceeded your current quota" after about 40 requests in the day, well below the app's own 500/day cap (`AI_CONFIG.rateLimit.dailyCap`). The app degraded as designed (one notice, older entries kept). Check the project's real free-tier limits at ai.dev/rate-limit and lower the cap to match.
+- **Not done in M9 (user decision):** the signed release APK and the manual checklist on a release build are deferred to a later session. They need a release keystore and the release SHA fingerprints registered in Firebase (Google sign-in).
 
 ### 4.13 Implementation notes (M6, 2026-10-16)
 
