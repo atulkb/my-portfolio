@@ -7,3 +7,5 @@ apps/mobile/ios/
 package-lock.json
 # Design docs are hand-formatted (tables / mermaid)
 docs/
+# Recorded provider responses are kept byte-exact (parser fixtures)
+**/__fixtures__/*.html
