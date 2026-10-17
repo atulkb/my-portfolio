@@ -20,7 +20,14 @@ import { Screen } from '@/components/Screen';
 import { refFor, useHolding } from '@/features/portfolio/hooks';
 import { useInstrumentRules, type InstrumentRuleRow } from '@/features/rules/hooks';
 import { useListsContaining } from '@/features/watchlist/hooks';
-import { formatDate, formatMoney, formatPct, formatQuantity, formatSignedMoney } from '@/lib/format';
+import {
+  formatDate,
+  formatMoney,
+  formatPct,
+  formatQuantity,
+  formatSignedMoney,
+  priceSourceNote,
+} from '@/lib/format';
 import { userMessage } from '@/lib/messages';
 import { getInstrumentIndex } from '@/services/instruments/instrumentIndex';
 import { marketStore, uiStore, useAi, useInstruments, useMarket, useSession } from '@/stores';
@@ -256,6 +263,9 @@ export function ResearchScreen({ instrumentKey }: { readonly instrumentKey: Inst
                 {`${snapshot.stale ? 'As of' : 'Close ·'} ${formatDate(snapshot.sessionDate, { short: true })}`}
               </Text>
             </View>
+            {priceSourceNote(snapshot) ? (
+              <Text style={[styles.asOf, { color: colors.caution }]}>{priceSourceNote(snapshot)}</Text>
+            ) : null}
             <PriceChart values={chart} />
             <RangeBar
               title="DAY RANGE"

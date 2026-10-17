@@ -13,6 +13,8 @@ import { pushAiDevLog } from '@/services/ai/devLog';
 import { createAiUsage } from '@/services/ai/usage';
 import { firebaseAuthService } from '@/services/auth/firebaseAuthService';
 import { APP_CONFIG } from '@/config/app';
+import { ENV } from '@/config/env';
+import { FEATURES } from '@/config/features';
 import { createKeyValueCache } from '@/services/cache/kv';
 import { deviceBiometrics } from '@/services/device/biometrics';
 import { mmkvRawStore, wipeUserData } from '@/services/cache/storage';
@@ -32,6 +34,9 @@ import { createPortfolioStore, type PortfolioState } from './portfolioStore';
 import { createFxService } from '@/services/fx/fxService';
 import { createHttpClient } from '@/services/http/httpClient';
 import { createMarketDataService } from '@/services/market-data/marketDataService';
+import { createFinnhubProvider } from '@/services/market-data/finnhub/finnhubProvider';
+import { createQuotePageProvider } from '@/services/market-data/quotepage/quotePageProvider';
+import { createTwelveDataProvider } from '@/services/market-data/twelvedata/twelveDataProvider';
 import { createYahooProvider } from '@/services/market-data/yahoo/yahooProvider';
 import { createRefreshService } from '@/services/refresh/refreshService';
 import { createAiStore, type AiState } from './aiStore';
@@ -77,6 +82,9 @@ const http = createHttpClient(
     'query2.finance.yahoo.com': { concurrency: 4, minIntervalMs: 200 },
     'fc.yahoo.com': { concurrency: 1, minIntervalMs: 1000 },
     'api.frankfurter.dev': { concurrency: 2, minIntervalMs: 500 },
+    'api.twelvedata.com': { concurrency: 1, minIntervalMs: 500 },
+    'finnhub.io': { concurrency: 2, minIntervalMs: 1100 },
+    'www.google.com': { concurrency: 2, minIntervalMs: 1000 },
   },
   __DEV__ ? (line) => console.log(`[http] ${line}`) : undefined,
 );
@@ -85,7 +93,17 @@ const http = createHttpClient(
 export const marketStore = createMarketStore({
   refresh: createRefreshService({
     http,
-    market: createMarketDataService({ providers: [createYahooProvider(http, clock)], kv, clock }),
+    market: createMarketDataService({
+      // Order = fallback chain per capability (LLD §3.3).
+      providers: [
+        createYahooProvider(http, clock),
+        createTwelveDataProvider(http, clock, { apiKey: ENV.twelveDataKey, india: FEATURES.twelveDataIndia }),
+        createFinnhubProvider(http, clock, ENV.finnhubKey),
+        createQuotePageProvider(http, clock, FEATURES.scrapeFallback),
+      ],
+      kv,
+      clock,
+    }),
     fx: createFxService({ http, kv, clock }),
     now: () => Date.now(),
   }),

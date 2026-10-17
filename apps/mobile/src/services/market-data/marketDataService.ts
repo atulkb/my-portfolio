@@ -1,6 +1,7 @@
 import {
   addDays,
   EXCHANGE_META,
+  isMarketClosed,
   sessionDateFor,
   type AppErrorCode,
   type BarsResult,
@@ -16,6 +17,7 @@ import {
   type MarketDataProvider,
   type MarketSnapshot,
 } from '@portfolio/core';
+import { z } from 'zod';
 
 import { isServiceError, toMarketErrorCode } from '../http/errors';
 import {
@@ -35,12 +37,21 @@ import {
   type CachedIndexHistory,
 } from './cache';
 
+/** A scraped latest close, kept until bars for that session arrive (LLD §3.3, HLD D33). */
+const ScrapedCloseSchema = z.object({
+  sessionDate: z.string(),
+  close: z.number().positive(),
+  fetchedAt: z.number(),
+});
+type ScrapedClose = z.infer<typeof ScrapedCloseSchema>;
+const scrapeKey = (key: string): string => `market.scrape.${key}`;
+
 /** A snapshot plus where it came from (LLD §3.3). */
 export type PricedSnapshot = MarketSnapshot & {
   /** Older than the expected session for its market (provider down or exchange holiday). */
   readonly stale: boolean;
   readonly provider: string;
-  /** 'SCRAPE' arrives with the M9 quote-page fallback. */
+  /** 'SCRAPE' = latest close from the quote page; indicators stay on the bars. */
   readonly priceSource: 'BARS' | 'SCRAPE';
   readonly indicatorsAsOf: IsoDate;
 };
@@ -133,6 +144,23 @@ function extendHistory(hist: CachedIndexHistory, recent: CachedBars | null): Cac
   return { ...hist, d: [...hist.d, ...recent.d.slice(start)], a: [...hist.a, ...recent.a.slice(start)] };
 }
 
+/**
+ * Applies a scraped close newer than the last bar: price, previous close (= last bar) and session
+ * move on; bars, and so indicators, Health and rules, stay as they were (`indicatorsAsOf`).
+ */
+function withScrape(snap: PricedSnapshot, scraped: ScrapedClose | null, expected: IsoDate): PricedSnapshot {
+  if (!scraped || scraped.sessionDate <= snap.sessionDate) return snap;
+  return {
+    ...snap,
+    close: scraped.close,
+    prevClose: snap.close,
+    sessionDate: scraped.sessionDate,
+    stale: scraped.sessionDate < expected,
+    provider: 'quotepage',
+    priceSource: 'SCRAPE',
+  };
+}
+
 function toSnapshot(key: InstrumentKey, cached: CachedBars, expected: IsoDate): PricedSnapshot | null {
   const bars = fromCachedBars(cached);
   const last = bars.at(-1);
@@ -151,8 +179,8 @@ function toSnapshot(key: InstrumentKey, cached: CachedBars, expected: IsoDate): 
 }
 
 /**
- * Creates the market-data service. Providers are tried in order (M5: Yahoo only; Twelve Data
- * joins in M9). A cached snapshot whose session is current is used without a network call, so
+ * Creates the market-data service. Providers are tried in order (Yahoo, then Twelve Data for
+ * bars and Finnhub for US fundamentals; the quote page for a stale latest close). A cached snapshot whose session is current is used without a network call, so
  * reopening the app the same evening costs nothing (LLD §3.8).
  */
 export function createMarketDataService(deps: {
@@ -162,6 +190,32 @@ export function createMarketDataService(deps: {
 }): MarketDataService {
   function readCache(key: InstrumentKey): CachedBars | null {
     return deps.kv.get(barsKey(key), CachedBarsSchema);
+  }
+
+  const readScrape = (key: InstrumentKey): ScrapedClose | null =>
+    deps.kv.get(scrapeKey(key), ScrapedCloseSchema);
+
+  /**
+   * Last resort for a stale snapshot (HLD D33): only while its market is closed, so the page
+   * shows that session's close, never an intraday price. At most one attempt per refresh.
+   */
+  async function scrapeIfStale(ref: InstrumentRef, snap: PricedSnapshot, expected: IsoDate, now: number) {
+    if (!snap.stale || !ref.exchange) return snap;
+    const cached = readScrape(snap.key);
+    if (cached && cached.sessionDate >= expected) return withScrape(snap, cached, expected);
+    if (!isMarketClosed(EXCHANGE_META[ref.exchange].market, now)) return withScrape(snap, cached, expected);
+    for (const p of deps.providers) {
+      if (!p.getLatestClose || !p.supports('LATEST_CLOSE', ref.exchange)) continue;
+      try {
+        const r = await p.getLatestClose(ref);
+        const scraped = { sessionDate: r.sessionDate, close: r.close, fetchedAt: now };
+        if (r.sessionDate > snap.sessionDate) deps.kv.set(scrapeKey(snap.key), scraped);
+        return withScrape(snap, scraped, expected);
+      } catch {
+        // Fragile by nature: keep the stale snapshot.
+      }
+    }
+    return withScrape(snap, cached, expected);
   }
 
   async function fetchBars(ref: InstrumentRef): Promise<CachedBars> {
@@ -221,8 +275,9 @@ export function createMarketDataService(deps: {
       for (const ref of refs) {
         const key = ref.key as InstrumentKey;
         const cached = readCache(key);
-        const snap = cached && toSnapshot(key, cached, expectedSession(ref, now));
-        if (snap) out.set(key, snap);
+        const expected = expectedSession(ref, now);
+        const snap = cached && toSnapshot(key, cached, expected);
+        if (snap) out.set(key, withScrape(snap, readScrape(key), expected));
       }
       return out;
     },
@@ -251,7 +306,16 @@ export function createMarketDataService(deps: {
             }
           }
           const snap = use && toSnapshot(key, use, expected);
-          if (snap) snapshots.set(key, snap);
+          if (snap) {
+            // Bars caught up with the scraped session: the scrape is no longer needed.
+            if (!snap.stale) deps.kv.delete(scrapeKey(key));
+            snapshots.set(
+              key,
+              opts.force || !fresh
+                ? await scrapeIfStale(ref, snap, expected, now)
+                : withScrape(snap, readScrape(key), expected),
+            );
+          }
           done += 1;
           opts.onProgress?.(done, refs.length);
         }),

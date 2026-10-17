@@ -27,3 +27,34 @@ export function yahooSymbol(ref: InstrumentRef): string {
       return ref.symbol.replace(/\./g, '-');
   }
 }
+
+/** Google Finance exchange codes for US listings (LLD §3.3). */
+const QUOTE_PAGE_US: Readonly<Record<string, string>> = {
+  NASDAQ: 'NASDAQ',
+  NYSE: 'NYSE',
+  NYSE_ARCA: 'NYSEARCA',
+  NYSE_AMERICAN: 'NYSEAMERICAN',
+  CBOE: 'BATS',
+};
+
+/**
+ * Quote-page symbol: `RELIANCE:NSE`; BSE needs the numeric scrip code (`500325:BOM`, verified
+ * 2026-10-17: the ticker form returns no price) → `null` without one; US `BRK.B:NYSE`.
+ */
+export function quotePageSymbol(ref: InstrumentRef): string | null {
+  if (ref.type === 'INDEX' || !ref.exchange) return null;
+  if (ref.exchange === 'NSE') return `${ref.symbol}:NSE`;
+  if (ref.exchange === 'BSE') return ref.bseCode ? `${ref.bseCode}:BOM` : null;
+  const ex = QUOTE_PAGE_US[ref.exchange];
+  return ex ? `${ref.symbol}:${ex}` : null;
+}
+
+/** Twelve Data symbol + exchange (US class shares keep the dot). */
+export function twelveDataSymbol(ref: InstrumentRef): { symbol: string; exchange: string } | null {
+  if (ref.type === 'INDEX' || !ref.exchange) return null;
+  if (ref.exchange === 'NSE' || ref.exchange === 'BSE') return { symbol: ref.symbol, exchange: ref.exchange };
+  return {
+    symbol: ref.symbol,
+    exchange: ref.exchange === 'NYSE_ARCA' ? 'NYSE' : ref.exchange.replace('_', ' '),
+  };
+}
