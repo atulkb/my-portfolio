@@ -138,6 +138,16 @@ describe('AI usage budget', () => {
     await t.usage.acquire();
     await expect(t.usage.acquire()).rejects.toMatchObject({ code: 'AI_BUDGET_EXCEEDED' });
   });
+
+  it('reserve counts a probe on the named model, even when it is used up', async () => {
+    const t = setup([], { rpm: 2, models: [{ id: 'small', dailyLimit: 1 }] });
+    await t.usage.acquire();
+    await t.usage.reserve('small');
+    await t.usage.reserve('small');
+    expect(t.sleeps).toEqual([60_000]);
+    expect(t.usage.usedToday()).toBe(3);
+    expect(t.usage.leftToday()).toBe(0);
+  });
 });
 
 /** Minimal task: any JSON reply is accepted. */

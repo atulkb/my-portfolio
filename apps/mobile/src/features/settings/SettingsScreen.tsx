@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import type { DefaultSort } from '@portfolio/core';
+import { toAppError, type DefaultSort } from '@portfolio/core';
 import * as Clipboard from 'expo-clipboard';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
@@ -16,6 +16,7 @@ import { clearableCacheBytes, clearMarketAndAiCache } from '@/services/cache/sto
 import {
   aiStore,
   lockStore,
+  probeAiModels,
   sessionStore,
   toastStore,
   uiStore,
@@ -141,6 +142,35 @@ export function SettingsScreen(): React.JSX.Element {
             aiStore.getState().reset();
             setCacheBytes(clearableCacheBytes());
             toastStore.getState().show('Local cache cleared.');
+          },
+        },
+      ],
+    );
+
+  const [probing, setProbing] = useState(false);
+  const testModels = (): void =>
+    Alert.alert(
+      'Test AI models',
+      'Sends one small request to each model in the chain (counts in today’s budget).',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Test',
+          onPress: () => {
+            setProbing(true);
+            probeAiModels()
+              .then((results) =>
+                Alert.alert(
+                  'AI models',
+                  results
+                    .map((r) => `${r.model}: ${r.outcome}${r.minLevel ? ` (min ${r.minLevel})` : ''}`)
+                    .join('\n'),
+                ),
+              )
+              .catch((e: unknown) =>
+                Alert.alert('AI models', userMessage(toAppError(e).code) ?? 'Probe failed.'),
+              )
+              .finally(() => setProbing(false));
           },
         },
       ],
@@ -288,6 +318,13 @@ export function SettingsScreen(): React.JSX.Element {
           subtitle="Recent events and error codes, no personal data"
           onPress={copyDiagnostics}
         />
+        {__DEV__ ? (
+          <LinkRow
+            title={probing ? 'Testing AI models…' : 'Test AI models (dev)'}
+            subtitle="One request per model: exists, quota, lowest thinking level"
+            onPress={probing ? () => undefined : testModels}
+          />
+        ) : null}
       </Section>
 
       <Button

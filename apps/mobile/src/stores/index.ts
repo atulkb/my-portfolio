@@ -8,7 +8,7 @@ import { devErrorDetail } from '@/lib/devError';
 import { userMessage } from '@/lib/messages';
 import { createAiClient } from '@/services/ai/aiClient';
 import { createAiService } from '@/services/ai/aiService';
-import { firebaseGenerativePort } from '@/services/ai/firebaseAi';
+import { firebaseGenerativePort, probeModel, type ModelProbeResult } from '@/services/ai/firebaseAi';
 import { pushAiDevLog } from '@/services/ai/devLog';
 import { createAiUsage } from '@/services/ai/usage';
 import { firebaseAuthService } from '@/services/auth/firebaseAuthService';
@@ -155,6 +155,26 @@ export const aiStore = createAiStore({
     if (message) toastStore.getState().show(message);
   },
 });
+
+/**
+ * Dev builds: sends one small request to every model of the chain (HLD D36) and reports whether
+ * it exists, its quota state and the lowest thinking level it accepts, so `AI_CONFIG.modelChain`
+ * can be corrected in the repo. Each request counts in the day's budget.
+ */
+export async function probeAiModels(): Promise<ModelProbeResult[]> {
+  const results: ModelProbeResult[] = [];
+  for (const m of AI_CONFIG.modelChain) {
+    await aiUsage.reserve(m.id);
+    const r = await probeModel(m.id);
+    if (r.outcome === 'RATE_LIMITED') aiUsage.rateLimited(m.id);
+    const line = `probe ${r.model} ${r.outcome} level=${r.minLevel ?? '-'} ${r.ms}ms ${r.detail}`;
+    log.info('ai', { line });
+    if (__DEV__) pushAiDevLog(line);
+    results.push(r);
+  }
+  aiStore.getState().refreshBudget();
+  return results;
+}
 
 /** Biometric app lock (LLD §4.2); its setting is per device and survives sign-out. */
 export const lockStore = createLockStore({

@@ -6,22 +6,40 @@
  * Firebase console (AI Logic) or Gemini API docs before first use. Later this
  * can be overridden at runtime via Firebase Remote Config.
  */
+/** Thinking level names of the SDK (`ThinkingLevel`), least to most. */
+export type ThinkingLevelName = 'MINIMAL' | 'LOW' | 'MEDIUM' | 'HIGH';
+
+/** One model of the chain and its model-specific settings. */
+export type ChainModel = {
+  readonly id: string;
+  /** Free-tier requests per day for this project. */
+  readonly dailyLimit: number;
+  /** Lowest thinking level the model accepts, when above MINIMAL (found with the dev model probe). */
+  readonly minThinkingLevel?: ThinkingLevelName;
+};
+
+/**
+ * Model chain, best first (HLD D36). Each model has its own free-tier "requests per day" quota,
+ * so the app uses the first model with quota left and steps down as each runs out; the order
+ * starts again at the top each quota day. Limits are the project's free-tier RPD as shown in
+ * Google AI Studio → Rate limits (checked 2026-10-17). Model-specific settings live here, in the
+ * repo — the app never learns them into the cache; re-run Settings → "Test AI models (dev)" after
+ * changing the list.
+ */
+const MODEL_CHAIN: readonly ChainModel[] = [
+  // Probed 2026-10-17: MINIMAL rejected ("Thinking level MINIMAL is not supported"), LOW accepted.
+  { id: 'gemini-3.8-flash', dailyLimit: 20, minThinkingLevel: 'LOW' },
+  { id: 'gemini-3.7-flash', dailyLimit: 20, minThinkingLevel: 'LOW' },
+  // gemini-2.5-flash (20/day in AI Studio) left out: the AI Logic endpoint answers 404 for this
+  // project (probed 2026-10-17). Gemini 2.5 would also need `thinkingBudget`, not `thinkingLevel`.
+  { id: 'gemini-3.5-flash-lite', dailyLimit: 500 },
+  { id: 'gemini-3.1-flash-lite', dailyLimit: 500 },
+];
+
 export const AI_CONFIG = {
   backend: 'googleAI', // Gemini Developer API (free tier) via Firebase AI Logic
-  /**
-   * Model chain, best first (HLD D36). Each model has its own free-tier "requests per day" quota,
-   * so the app uses the first model with quota left and steps down as each runs out; the order
-   * starts again at the top each quota day. Limits are the project's free-tier RPD as shown in
-   * Google AI Studio → Rate limits (checked 2026-10-17). `thinking` picks the SDK parameter:
-   * Gemini 3.x takes `thinkingLevel`, Gemini 2.5 takes `thinkingBudget`.
-   */
-  modelChain: [
-    { id: 'gemini-3.8-flash', dailyLimit: 20, thinking: 'level' },
-    { id: 'gemini-3.7-flash', dailyLimit: 20, thinking: 'level' },
-    { id: 'gemini-2.5-flash', dailyLimit: 20, thinking: 'budget' },
-    { id: 'gemini-3.5-flash-lite', dailyLimit: 500, thinking: 'level' },
-    { id: 'gemini-3.1-flash-lite', dailyLimit: 500, thinking: 'level' },
-  ],
+  /** Model chain, best first (HLD D36): see {@link MODEL_CHAIN}. */
+  modelChain: MODEL_CHAIN,
   /** Gemini free-tier daily quotas reset at midnight Pacific time; counters follow that day. */
   quotaTimeZone: 'America/Los_Angeles',
   /**
@@ -46,7 +64,7 @@ export const AI_CONFIG = {
   },
   /**
    * Thinking level per task (SDK `ThinkingLevel` values); the tasks explain supplied numbers only.
-   * Gemini 2.5 models get the matching `thinkingBudget` from {@link THINKING_BUDGET}.
+   * Raised to a model's `minThinkingLevel` where it has one.
    */
   thinkingLevel: {
     performanceRating: 'MINIMAL',
@@ -68,9 +86,3 @@ export const AI_CONFIG = {
 } as const;
 
 export type AiConfig = typeof AI_CONFIG;
-
-/** One model of the chain. */
-export type ChainModel = (typeof AI_CONFIG.modelChain)[number];
-
-/** `thinkingBudget` tokens for Gemini 2.5 models, per thinking level. */
-export const THINKING_BUDGET = { MINIMAL: 0, LOW: 512 } as const;

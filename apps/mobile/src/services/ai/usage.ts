@@ -21,6 +21,12 @@ export type AiUsage = {
    * used up, cooling down or unavailable, or the wait would be too long.
    */
   acquire(): Promise<string>;
+  /**
+   * Dev model probe: waits for a per-minute slot and counts one request on `model`, even when it
+   * is used up or cooling down (the probe checks exactly that). Throws `AI_BUDGET_EXCEEDED` when
+   * the wait would be too long.
+   */
+  reserve(model: string): Promise<void>;
   /** A 429 from `model`: skip it for the cooldown (its quota may be gone before our count says so). */
   rateLimited(model: string): void;
   /** `model` doesn't exist for this project (404): skip it until the app restarts. */
@@ -70,24 +76,44 @@ export function createAiUsage(deps: AiUsageDeps): AiUsage {
     return deps.models.find((m) => usable(m, c, cool)) ?? null;
   }
 
+  /** 0 and takes the slot when one is free this minute, else ms until the oldest one frees up. */
+  function slotWait(): number {
+    const now = clock.now();
+    while (recent.length > 0 && (recent[0] ?? 0) <= now - 60_000) recent.shift();
+    if (recent.length < limits.rpm) {
+      recent.push(now);
+      return 0;
+    }
+    return (recent[0] ?? now) + 60_000 - now;
+  }
+
+  function count(model: string): void {
+    const c = counts();
+    kv.set(dayKey(), { ...c, [model]: (c[model] ?? 0) + 1 });
+  }
+
   return {
     async acquire() {
       const started = clock.now();
       for (;;) {
         const model = pick();
         if (!model) throw new AppError('AI_BUDGET_EXCEEDED');
-        const now = clock.now();
-        while (recent.length > 0 && (recent[0] ?? 0) <= now - 60_000) recent.shift();
-        if (recent.length < limits.rpm) {
-          recent.push(now);
-          const c = counts();
-          kv.set(dayKey(), { ...c, [model.id]: (c[model.id] ?? 0) + 1 });
+        const wait = slotWait();
+        if (wait === 0) {
+          count(model.id);
           return model.id;
         }
-        const wait = (recent[0] ?? now) + 60_000 - now;
-        if (now + wait - started > limits.maxWaitMs) throw new AppError('AI_BUDGET_EXCEEDED');
+        if (clock.now() + wait - started > limits.maxWaitMs) throw new AppError('AI_BUDGET_EXCEEDED');
         await deps.sleep(wait);
       }
+    },
+    async reserve(model) {
+      const started = clock.now();
+      for (let wait = slotWait(); wait > 0; wait = slotWait()) {
+        if (clock.now() + wait - started > limits.maxWaitMs) throw new AppError('AI_BUDGET_EXCEEDED');
+        await deps.sleep(wait);
+      }
+      count(model);
     },
     rateLimited(model) {
       kv.set(COOLDOWN_KEY, { ...cooldowns(), [model]: clock.now() + limits.cooldownMs });
