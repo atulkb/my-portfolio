@@ -3,10 +3,13 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { Button } from '@/components/Button';
 import { userMessage } from '@/lib/messages';
 import { useSession } from '@/stores';
-import { colors, spacing, typography } from '@/theme/tokens';
+import { spacing, typography } from '@/theme/tokens';
+import { makeStyles, useTheme } from '@/theme/theme';
 
 /** Shown while the profile is created/loaded after sign-in. */
 export function LoadingProfileScreen(): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   return (
     <View style={styles.center}>
       <ActivityIndicator color={colors.gain} size="large" />
@@ -17,6 +20,7 @@ export function LoadingProfileScreen(): React.JSX.Element {
 
 /** Shown when the profile could not be loaded; offers retry and sign-out. */
 export function ProfileErrorScreen(): React.JSX.Element {
+  const styles = useStyles();
   const error = useSession((s) => s.error);
   const detail = useSession((s) => s.errorDetail);
   const retry = useSession((s) => s.retryProfile);
@@ -32,16 +36,18 @@ export function ProfileErrorScreen(): React.JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.lg,
-    padding: spacing.margin,
-    backgroundColor: colors.canvas,
-  },
-  title: { ...typography.headlineSm, color: colors.textPrimary },
-  body: { ...typography.bodyLg, color: colors.textSecondary, textAlign: 'center' },
-  dev: { ...typography.labelSm, color: colors.caution, textAlign: 'center' },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    center: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.lg,
+      padding: spacing.margin,
+      backgroundColor: colors.canvas,
+    },
+    title: { ...typography.headlineSm, color: colors.textPrimary },
+    body: { ...typography.bodyLg, color: colors.textSecondary, textAlign: 'center' },
+    dev: { ...typography.labelSm, color: colors.caution, textAlign: 'center' },
+  }),
+);

@@ -4,7 +4,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ExchangeBadge, LabelBadge, MarketBadge, SignalBadge, SymbolTile } from '@/components/Badges';
 import { PriceChart } from '@/components/PriceChart';
 import { formatMoney, formatPct } from '@/lib/format';
-import { colors, radii, spacing, typography } from '@/theme/tokens';
+import { radii, spacing, typography } from '@/theme/tokens';
+import { makeStyles, useTheme } from '@/theme/theme';
 import type { WatchlistRow } from './rows';
 
 /**
@@ -21,6 +22,8 @@ export function WatchlistRowCard({
   /** Long-press / ⋮: edit targets and notes, copy or move, remove. */
   readonly onMore: () => void;
 }): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const up = (row.dayChangePct ?? 0) >= 0;
   const { targetEntryPrice: entry, targetExitPrice: exit } = row.item;
   const targets = [
@@ -107,33 +110,35 @@ export function WatchlistRowCard({
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface1,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.xl,
-    padding: spacing.gutter,
-    gap: spacing.sm,
-  },
-  pressed: { backgroundColor: colors.surface2 },
-  top: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  main: { flex: 1, gap: 2 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  symbol: { ...typography.metricMd, color: colors.textPrimary },
-  name: { ...typography.bodyMd, color: colors.textSecondary },
-  price: { alignItems: 'flex-end', gap: 2 },
-  close: { ...typography.metricMd, color: colors.textPrimary },
-  dayChip: {
-    ...typography.labelSm,
-    paddingHorizontal: spacing.xs,
-    borderRadius: radii.base,
-    overflow: 'hidden',
-  },
-  stale: { ...typography.labelSm, color: colors.caution },
-  middle: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  badges: { flex: 1, gap: spacing.xs },
-  target: { ...typography.labelMd, color: colors.textPrimary },
-  spark: { width: 110 },
-  reason: { ...typography.labelMd, color: colors.textSecondary },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: colors.surface1,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.xl,
+      padding: spacing.gutter,
+      gap: spacing.sm,
+    },
+    pressed: { backgroundColor: colors.surface2 },
+    top: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+    main: { flex: 1, gap: 2 },
+    row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    symbol: { ...typography.metricMd, color: colors.textPrimary },
+    name: { ...typography.bodyMd, color: colors.textSecondary },
+    price: { alignItems: 'flex-end', gap: 2 },
+    close: { ...typography.metricMd, color: colors.textPrimary },
+    dayChip: {
+      ...typography.labelSm,
+      paddingHorizontal: spacing.xs,
+      borderRadius: radii.base,
+      overflow: 'hidden',
+    },
+    stale: { ...typography.labelSm, color: colors.caution },
+    middle: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+    badges: { flex: 1, gap: spacing.xs },
+    target: { ...typography.labelMd, color: colors.textPrimary },
+    spark: { width: 110 },
+    reason: { ...typography.labelMd, color: colors.textSecondary },
+  }),
+);

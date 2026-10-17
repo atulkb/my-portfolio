@@ -8,7 +8,8 @@ import { Button } from '@/components/Button';
 import { userMessage } from '@/lib/messages';
 import { formatDate, formatQuantity } from '@/lib/format';
 import { toastStore } from '@/stores';
-import { colors, radii, spacing, typography } from '@/theme/tokens';
+import { radii, spacing, typography } from '@/theme/tokens';
+import { makeStyles, useTheme } from '@/theme/theme';
 import { useCsvSheetContent } from './csvImport';
 
 /** "file · line 12 · RELIANCEIND · NSE · 2024-03-15" (LLD §2.9). */
@@ -29,6 +30,8 @@ function IssueRow({
   readonly issue: CsvIssue;
   readonly warning?: boolean;
 }): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   return (
     <View style={styles.issue}>
       <Text style={styles.location}>{issueLocation(issue)}</Text>
@@ -42,6 +45,8 @@ function IssueRow({
 
 /** S05 result sheet: blocking issues (nothing imported) or the duplicate review (LLD §4.4). */
 export function CsvResultSheet(): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const content = useCsvSheetContent();
 
   const header = (title: string, subtitle: string): React.JSX.Element => (
@@ -127,32 +132,34 @@ export function CsvResultSheet(): React.JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: { gap: spacing.md },
-  flex: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
-  title: { ...typography.headlineSm, color: colors.textPrimary },
-  sub: { ...typography.labelMd, color: colors.textSecondary },
-  section: { ...typography.labelSm, color: colors.caution, marginTop: spacing.sm },
-  issue: {
-    gap: 2,
-    padding: spacing.gutter,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface1,
-  },
-  location: { ...typography.labelSm, color: colors.textSecondary },
-  message: { ...typography.bodyMd, color: colors.textPrimary },
-  fix: { ...typography.labelMd, color: colors.gain },
-  group: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.gutter,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface1,
-  },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    wrap: { gap: spacing.md },
+    flex: { flex: 1 },
+    header: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
+    title: { ...typography.headlineSm, color: colors.textPrimary },
+    sub: { ...typography.labelMd, color: colors.textSecondary },
+    section: { ...typography.labelSm, color: colors.caution, marginTop: spacing.sm },
+    issue: {
+      gap: 2,
+      padding: spacing.gutter,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface1,
+    },
+    location: { ...typography.labelSm, color: colors.textSecondary },
+    message: { ...typography.bodyMd, color: colors.textPrimary },
+    fix: { ...typography.labelMd, color: colors.gain },
+    group: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      padding: spacing.gutter,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface1,
+    },
+  }),
+);

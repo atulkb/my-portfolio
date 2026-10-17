@@ -10,7 +10,8 @@ import { Fab } from '@/components/Fab';
 import { formatDate } from '@/lib/format';
 import { userMessage } from '@/lib/messages';
 import { rulesStore, toastStore, useRules } from '@/stores';
-import { colors, radii, spacing, typography } from '@/theme/tokens';
+import { radii, spacing, typography, type Palette } from '@/theme/tokens';
+import { makeStyles, useTheme } from '@/theme/theme';
 import {
   filterRuleCards,
   splitReadBack,
@@ -43,6 +44,7 @@ function Tile({
   readonly sub: string;
   readonly accent?: string;
 }): React.JSX.Element {
+  const styles = useStyles();
   return (
     <View style={styles.tile} accessible accessibilityLabel={`${label}: ${value}. ${sub}`}>
       <Text style={styles.tileLabel}>{label}</Text>
@@ -54,7 +56,11 @@ function Tile({
   );
 }
 
-function statusLine(c: RuleCardModel, lastEvaluatedAt: number | null): { text: string; color: string } {
+function statusLine(
+  colors: Palette,
+  c: RuleCardModel,
+  lastEvaluatedAt: number | null,
+): { text: string; color: string } {
   if (!c.valid)
     return { text: 'This rule no longer passes validation. Edit and re-test it.', color: colors.caution };
   if (!c.rule.enabled) return { text: 'Paused', color: colors.textMuted };
@@ -82,8 +88,10 @@ function RuleCard({
   readonly card: RuleCardModel;
   readonly lastEvaluatedAt: number | null;
 }): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const { rule } = card;
-  const status = statusLine(card, lastEvaluatedAt);
+  const status = statusLine(colors, card, lastEvaluatedAt);
   const parts = splitReadBack(rule.readBack, rule.variables);
   const confirmDelete = (): void =>
     Alert.alert(`Delete “${rule.name}”?`, 'Its results are removed from the Rules hub.', [
@@ -146,6 +154,8 @@ function RuleCard({
 
 /** S08 Rules hub (LLD §4.4). */
 export function RulesScreen(): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const summary = useRuleSummary();
   const loadState = useRules((s) => s.loadState);
   const error = useRules((s) => s.error);
@@ -250,110 +260,112 @@ export function RulesScreen(): React.JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.canvas },
-  flex: { flex: 1 },
-  appBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.margin,
-    paddingVertical: spacing.md,
-  },
-  brand: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  logo: {
-    width: 36,
-    height: 36,
-    borderRadius: radii.md,
-    backgroundColor: colors.surface1,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  appTitle: { ...typography.headlineSm, color: colors.textPrimary },
-  list: { padding: spacing.margin, paddingBottom: 120 },
-  headerBlock: { gap: spacing.lg },
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  title: { ...typography.headlineMd, color: colors.textPrimary },
-  activePill: {
-    ...typography.microBadge,
-    color: colors.gain,
-    backgroundColor: colors.gainTint,
-    borderWidth: 1,
-    borderColor: colors.gain,
-    borderRadius: radii.full,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    overflow: 'hidden',
-  },
-  tiles: { flexDirection: 'row', gap: spacing.sm },
-  tile: {
-    flex: 1,
-    backgroundColor: colors.surface1,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    padding: spacing.gutter,
-    gap: 2,
-  },
-  tileLabel: { ...typography.microBadge, color: colors.textSecondary },
-  tileValue: { ...typography.metricMd, color: colors.textPrimary },
-  tileSub: { ...typography.labelSm, color: colors.textSecondary },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  item: { marginTop: spacing.md },
-  card: {
-    backgroundColor: colors.surface1,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.xl,
-    padding: spacing.lg,
-    gap: spacing.md,
-  },
-  cardPaused: { opacity: 0.7 },
-  cardTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  state: {
-    ...typography.microBadge,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: radii.full,
-    overflow: 'hidden',
-  },
-  stateOn: { color: colors.gain, backgroundColor: colors.gainTint },
-  stateOff: { color: colors.textSecondary, backgroundColor: colors.surface2 },
-  iconBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    minHeight: 36,
-    minWidth: 36,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.sm,
-    borderRadius: radii.md,
-    backgroundColor: colors.surface2,
-  },
-  iconText: { ...typography.labelMd, color: colors.textPrimary },
-  name: { ...typography.labelMd, color: colors.textSecondary },
-  readBack: { ...typography.bodyLg, color: colors.textPrimary },
-  variable: { color: colors.gain, fontFamily: 'monospace' },
-  cardBottom: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.sm },
-  tag: {
-    ...typography.labelSm,
-    color: colors.textPrimary,
-    backgroundColor: colors.canvas,
-    borderRadius: radii.base,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    overflow: 'hidden',
-  },
-  status: { ...typography.labelSm, flexShrink: 1 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg, padding: spacing.xl },
-  emptyTitle: { ...typography.headlineSm, color: colors.textPrimary },
-  body: { ...typography.bodyLg, color: colors.textSecondary, textAlign: 'center' },
-  disclaimer: {
-    ...typography.labelSm,
-    color: colors.textMuted,
-    textAlign: 'center',
-    marginTop: spacing.xl,
-  },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: colors.canvas },
+    flex: { flex: 1 },
+    appBar: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: spacing.margin,
+      paddingVertical: spacing.md,
+    },
+    brand: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+    logo: {
+      width: 36,
+      height: 36,
+      borderRadius: radii.md,
+      backgroundColor: colors.surface1,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    appTitle: { ...typography.headlineSm, color: colors.textPrimary },
+    list: { padding: spacing.margin, paddingBottom: 120 },
+    headerBlock: { gap: spacing.lg },
+    titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+    title: { ...typography.headlineMd, color: colors.textPrimary },
+    activePill: {
+      ...typography.microBadge,
+      color: colors.gain,
+      backgroundColor: colors.gainTint,
+      borderWidth: 1,
+      borderColor: colors.gain,
+      borderRadius: radii.full,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 2,
+      overflow: 'hidden',
+    },
+    tiles: { flexDirection: 'row', gap: spacing.sm },
+    tile: {
+      flex: 1,
+      backgroundColor: colors.surface1,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.lg,
+      padding: spacing.gutter,
+      gap: 2,
+    },
+    tileLabel: { ...typography.microBadge, color: colors.textSecondary },
+    tileValue: { ...typography.metricMd, color: colors.textPrimary },
+    tileSub: { ...typography.labelSm, color: colors.textSecondary },
+    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+    item: { marginTop: spacing.md },
+    card: {
+      backgroundColor: colors.surface1,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.xl,
+      padding: spacing.lg,
+      gap: spacing.md,
+    },
+    cardPaused: { opacity: 0.7 },
+    cardTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    state: {
+      ...typography.microBadge,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 2,
+      borderRadius: radii.full,
+      overflow: 'hidden',
+    },
+    stateOn: { color: colors.gain, backgroundColor: colors.gainTint },
+    stateOff: { color: colors.textSecondary, backgroundColor: colors.surface2 },
+    iconBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      minHeight: 36,
+      minWidth: 36,
+      justifyContent: 'center',
+      paddingHorizontal: spacing.sm,
+      borderRadius: radii.md,
+      backgroundColor: colors.surface2,
+    },
+    iconText: { ...typography.labelMd, color: colors.textPrimary },
+    name: { ...typography.labelMd, color: colors.textSecondary },
+    readBack: { ...typography.bodyLg, color: colors.textPrimary },
+    variable: { color: colors.gain, fontFamily: 'monospace' },
+    cardBottom: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.sm },
+    tag: {
+      ...typography.labelSm,
+      color: colors.textPrimary,
+      backgroundColor: colors.canvas,
+      borderRadius: radii.base,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 2,
+      overflow: 'hidden',
+    },
+    status: { ...typography.labelSm, flexShrink: 1 },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg, padding: spacing.xl },
+    emptyTitle: { ...typography.headlineSm, color: colors.textPrimary },
+    body: { ...typography.bodyLg, color: colors.textSecondary, textAlign: 'center' },
+    disclaimer: {
+      ...typography.labelSm,
+      color: colors.textMuted,
+      textAlign: 'center',
+      marginTop: spacing.xl,
+    },
+  }),
+);

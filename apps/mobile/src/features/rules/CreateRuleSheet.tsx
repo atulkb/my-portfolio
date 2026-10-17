@@ -20,7 +20,8 @@ import { userMessage } from '@/lib/messages';
 import type { CompiledRule } from '@/services/ai/aiService';
 import { useOnline } from '@/services/device/network';
 import { rulesStore, useRules } from '@/stores';
-import { colors, radii, spacing, typography } from '@/theme/tokens';
+import { radii, spacing, typography } from '@/theme/tokens';
+import { makeStyles, useTheme } from '@/theme/theme';
 import { splitReadBack } from './hooks';
 import { currentRuleCandidates } from './sync';
 
@@ -62,6 +63,8 @@ function ToggleRow({
   readonly value: boolean;
   readonly onChange: (v: boolean) => void;
 }): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   return (
     <View style={styles.toggle}>
       <Text style={styles.toggleLabel}>{label}</Text>
@@ -76,6 +79,7 @@ function ToggleRow({
 }
 
 function Matches({ title, items }: { readonly title: string; readonly items: DryRunResult['matches'] }) {
+  const styles = useStyles();
   if (items.length === 0) return null;
   return (
     <View style={styles.matchBlock}>
@@ -93,6 +97,8 @@ function Matches({ title, items }: { readonly title: string; readonly items: Dry
  * test of the current text and scopes, and stores the read-back the user saw.
  */
 export function CreateRuleSheet({ ruleId }: { readonly ruleId: string | null }): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const existing = useRules((s) => (ruleId ? (s.rules.find((r) => r.id === ruleId) ?? null) : null));
   const existingValid = useRules((s) => (ruleId ? (s.valid.get(ruleId) ?? null) : null));
   const ruleCount = useRules((s) => s.rules.length);
@@ -348,69 +354,71 @@ export function CreateRuleSheet({ ruleId }: { readonly ruleId: string | null }):
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: { gap: spacing.md },
-  flex: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
-  title: { ...typography.headlineSm, color: colors.textPrimary },
-  section: { ...typography.microBadge, color: colors.textSecondary, marginTop: spacing.sm },
-  editor: {
-    borderWidth: 1,
-    borderColor: colors.gain,
-    borderRadius: radii.lg,
-    backgroundColor: colors.surface1,
-    padding: spacing.gutter,
-    gap: spacing.sm,
-  },
-  editorTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  editorLabel: { ...typography.microBadge, color: colors.gain },
-  clear: { ...typography.labelMd, color: colors.textSecondary },
-  input: {
-    ...typography.bodyLg,
-    color: colors.textPrimary,
-    minHeight: 96,
-    textAlignVertical: 'top',
-    padding: 0,
-  },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  example: {
-    paddingHorizontal: spacing.md,
-    minHeight: 32,
-    justifyContent: 'center',
-    borderRadius: radii.md,
-    backgroundColor: colors.surface2,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  exampleText: { ...typography.labelMd, color: colors.textPrimary },
-  toggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 56,
-    paddingHorizontal: spacing.gutter,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface1,
-  },
-  toggleLabel: { ...typography.bodyLg, color: colors.textPrimary },
-  cadence: { ...typography.labelMd, color: colors.textSecondary },
-  problem: { gap: spacing.xs },
-  result: {
-    gap: spacing.sm,
-    padding: spacing.gutter,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface1,
-  },
-  outdated: { opacity: 0.6 },
-  readBack: { ...typography.bodyLg, color: colors.textPrimary },
-  variable: { color: colors.gain, fontFamily: 'monospace' },
-  matchBlock: { gap: 2 },
-  body: { ...typography.bodyMd, color: colors.textPrimary },
-  muted: { ...typography.labelSm, color: colors.textMuted },
-  warn: { ...typography.labelMd, color: colors.caution },
-  error: { ...typography.labelMd, color: colors.loss },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    wrap: { gap: spacing.md },
+    flex: { flex: 1 },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+    title: { ...typography.headlineSm, color: colors.textPrimary },
+    section: { ...typography.microBadge, color: colors.textSecondary, marginTop: spacing.sm },
+    editor: {
+      borderWidth: 1,
+      borderColor: colors.gain,
+      borderRadius: radii.lg,
+      backgroundColor: colors.surface1,
+      padding: spacing.gutter,
+      gap: spacing.sm,
+    },
+    editorTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+    editorLabel: { ...typography.microBadge, color: colors.gain },
+    clear: { ...typography.labelMd, color: colors.textSecondary },
+    input: {
+      ...typography.bodyLg,
+      color: colors.textPrimary,
+      minHeight: 96,
+      textAlignVertical: 'top',
+      padding: 0,
+    },
+    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+    example: {
+      paddingHorizontal: spacing.md,
+      minHeight: 32,
+      justifyContent: 'center',
+      borderRadius: radii.md,
+      backgroundColor: colors.surface2,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    exampleText: { ...typography.labelMd, color: colors.textPrimary },
+    toggle: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      minHeight: 56,
+      paddingHorizontal: spacing.gutter,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface1,
+    },
+    toggleLabel: { ...typography.bodyLg, color: colors.textPrimary },
+    cadence: { ...typography.labelMd, color: colors.textSecondary },
+    problem: { gap: spacing.xs },
+    result: {
+      gap: spacing.sm,
+      padding: spacing.gutter,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface1,
+    },
+    outdated: { opacity: 0.6 },
+    readBack: { ...typography.bodyLg, color: colors.textPrimary },
+    variable: { color: colors.gain, fontFamily: 'monospace' },
+    matchBlock: { gap: 2 },
+    body: { ...typography.bodyMd, color: colors.textPrimary },
+    muted: { ...typography.labelSm, color: colors.textMuted },
+    warn: { ...typography.labelMd, color: colors.caution },
+    error: { ...typography.labelMd, color: colors.loss },
+  }),
+);

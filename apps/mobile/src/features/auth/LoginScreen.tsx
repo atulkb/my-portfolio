@@ -7,7 +7,8 @@ import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
 import { useSession } from '@/stores';
-import { colors, spacing, typography } from '@/theme/tokens';
+import { spacing, typography } from '@/theme/tokens';
+import { makeStyles, useTheme } from '@/theme/theme';
 import { AuthHeader, OrDivider } from './AuthHeader';
 import { ErrorText } from './ErrorText';
 import { ForgotPasswordSheet } from './ForgotPasswordSheet';
@@ -18,6 +19,8 @@ import { looksLikeEmail } from './validation';
  * an existing session, M9) and no "remember device" (sessions persist by default).
  */
 export function LoginScreen(): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [resetOpen, setResetOpen] = useState(false);
@@ -93,9 +96,11 @@ export function LoginScreen(): React.JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({
-  forgotRow: { alignItems: 'flex-end', marginTop: -spacing.sm },
-  link: { ...typography.labelMd, color: colors.gain },
-  footer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: spacing.sm },
-  muted: { ...typography.bodyMd, color: colors.textSecondary },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    forgotRow: { alignItems: 'flex-end', marginTop: -spacing.sm },
+    link: { ...typography.labelMd, color: colors.gain },
+    footer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: spacing.sm },
+    muted: { ...typography.bodyMd, color: colors.textSecondary },
+  }),
+);

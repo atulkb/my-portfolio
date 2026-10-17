@@ -3,7 +3,8 @@ import type { Currency, SectorGroup } from '@portfolio/core';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { formatMoney, formatPct, formatSignedMoney } from '@/lib/format';
-import { colors, radii, spacing, typography } from '@/theme/tokens';
+import { radii, spacing, typography } from '@/theme/tokens';
+import { makeStyles, useTheme } from '@/theme/theme';
 
 /** Collapsible sector header (S02): name, count, value, P/L and weight in the summary currency. */
 export function SectorHeader({
@@ -17,6 +18,8 @@ export function SectorHeader({
   readonly collapsed: boolean;
   readonly onToggle: () => void;
 }): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const up = group.pnl >= 0;
   return (
     <Pressable
@@ -46,30 +49,32 @@ export function SectorHeader({
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    padding: spacing.gutter,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface2,
-    marginTop: spacing.md,
-  },
-  name: { ...typography.metricMd, color: colors.textPrimary, flexShrink: 1 },
-  count: {
-    ...typography.microBadge,
-    color: colors.textSecondary,
-    backgroundColor: colors.surface1,
-    paddingHorizontal: spacing.xs,
-    paddingVertical: 2,
-    borderRadius: radii.base,
-    overflow: 'hidden',
-  },
-  right: { marginLeft: 'auto', alignItems: 'flex-end' },
-  value: { ...typography.labelMd, color: colors.textPrimary },
-  small: { ...typography.labelSm },
-  weight: { color: colors.textSecondary },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      padding: spacing.gutter,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface2,
+      marginTop: spacing.md,
+    },
+    name: { ...typography.metricMd, color: colors.textPrimary, flexShrink: 1 },
+    count: {
+      ...typography.microBadge,
+      color: colors.textSecondary,
+      backgroundColor: colors.surface1,
+      paddingHorizontal: spacing.xs,
+      paddingVertical: 2,
+      borderRadius: radii.base,
+      overflow: 'hidden',
+    },
+    right: { marginLeft: 'auto', alignItems: 'flex-end' },
+    value: { ...typography.labelMd, color: colors.textPrimary },
+    small: { ...typography.labelSm },
+    weight: { color: colors.textSecondary },
+  }),
+);

@@ -4,13 +4,16 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { refreshPortfolio } from '@/features/portfolio/hooks';
 import { formatDate } from '@/lib/format';
 import { useMarket } from '@/stores';
-import { colors, radii, spacing, typography } from '@/theme/tokens';
+import { radii, spacing, typography } from '@/theme/tokens';
+import { makeStyles, useTheme } from '@/theme/theme';
 
 /**
  * "Market data · Prices as of 15 Oct close · Refresh" (LLD §4.4 S09): a forced refresh that
  * refetches every price, ignoring the same-session cache.
  */
 export function MarketDataCard(): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const snapshots = useMarket((s) => s.snapshots);
   const running = useMarket((s) => s.refresh.running);
   const latest = useMemo(() => {
@@ -40,18 +43,20 @@ export function MarketDataCard(): React.JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface1,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    padding: spacing.gutter,
-    gap: spacing.md,
-  },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  title: { ...typography.headlineSm, color: colors.textPrimary },
-  sub: { ...typography.bodyMd, color: colors.textSecondary },
-  link: { ...typography.labelMd, color: colors.info },
-  disabled: { opacity: 0.5 },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: colors.surface1,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.lg,
+      padding: spacing.gutter,
+      gap: spacing.md,
+    },
+    row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    title: { ...typography.headlineSm, color: colors.textPrimary },
+    sub: { ...typography.bodyMd, color: colors.textSecondary },
+    link: { ...typography.labelMd, color: colors.info },
+    disabled: { opacity: 0.5 },
+  }),
+);

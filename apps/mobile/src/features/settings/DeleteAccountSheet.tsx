@@ -7,7 +7,8 @@ import { TextField } from '@/components/TextField';
 import { userMessage } from '@/lib/messages';
 import { useOnline } from '@/services/device/network';
 import { sessionStore, useSession } from '@/stores';
-import { colors, spacing, typography } from '@/theme/tokens';
+import { spacing, typography } from '@/theme/tokens';
+import { makeStyles } from '@/theme/theme';
 
 /** Text the user types to confirm (LLD §4.4). */
 const CONFIRM_WORD = 'DELETE';
@@ -17,6 +18,7 @@ const CONFIRM_WORD = 'DELETE';
  * Google accounts sign in with Google again. Deletes everything, then signs out.
  */
 export function DeleteAccountSheet(): React.JSX.Element {
+  const styles = useStyles();
   const profile = useSession((s) => s.profile);
   const busy = useSession((s) => s.busy);
   const error = useSession((s) => s.error);
@@ -76,11 +78,13 @@ export function DeleteAccountSheet(): React.JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: { gap: spacing.lg },
-  title: { ...typography.headlineSm, color: colors.loss },
-  body: { ...typography.bodyLg, color: colors.textPrimary },
-  muted: { ...typography.bodyMd, color: colors.textSecondary },
-  warn: { ...typography.labelMd, color: colors.caution },
-  error: { ...typography.labelMd, color: colors.loss },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    wrap: { gap: spacing.lg },
+    title: { ...typography.headlineSm, color: colors.loss },
+    body: { ...typography.bodyLg, color: colors.textPrimary },
+    muted: { ...typography.bodyMd, color: colors.textSecondary },
+    warn: { ...typography.labelMd, color: colors.caution },
+    error: { ...typography.labelMd, color: colors.loss },
+  }),
+);

@@ -6,7 +6,8 @@ import { syncAi } from '@/features/analysis/ai';
 import { userMessage } from '@/lib/messages';
 import { getAiDevLog, subscribeAiDevLog } from '@/services/ai/devLog';
 import { useAi, useSession } from '@/stores';
-import { colors, radii, spacing, typography } from '@/theme/tokens';
+import { radii, spacing, typography } from '@/theme/tokens';
+import { makeStyles, useTheme } from '@/theme/theme';
 
 function lastRated(ms: number | null): string {
   if (ms === null) return 'Not rated yet';
@@ -24,6 +25,8 @@ function lastRated(ms: number | null): string {
  * is off), "Refresh AI ratings now" (forced, still within the daily budget) and requests left today.
  */
 export function AiCard(): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const enabled = useSession((s) => s.profile?.settings.aiSuggestions ?? false);
   const updateSettings = useSession((s) => s.updateSettings);
   const perf = useAi((s) => s.status.performance);
@@ -86,22 +89,24 @@ export function AiCard(): React.JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface1,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    padding: spacing.gutter,
-    gap: spacing.md,
-  },
-  flex: { flex: 1, gap: 2 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.md },
-  title: { ...typography.headlineSm, color: colors.textPrimary },
-  label: { ...typography.bodyMd, color: colors.textPrimary },
-  sub: { ...typography.bodyMd, color: colors.textSecondary },
-  warn: { ...typography.bodyMd, color: colors.caution },
-  link: { ...typography.labelMd, color: colors.info },
-  disabled: { opacity: 0.5 },
-  dev: { ...typography.labelSm, color: colors.textMuted, fontFamily: 'monospace' },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: colors.surface1,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.lg,
+      padding: spacing.gutter,
+      gap: spacing.md,
+    },
+    flex: { flex: 1, gap: 2 },
+    row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.md },
+    title: { ...typography.headlineSm, color: colors.textPrimary },
+    label: { ...typography.bodyMd, color: colors.textPrimary },
+    sub: { ...typography.bodyMd, color: colors.textSecondary },
+    warn: { ...typography.bodyMd, color: colors.caution },
+    link: { ...typography.labelMd, color: colors.info },
+    disabled: { opacity: 0.5 },
+    dev: { ...typography.labelSm, color: colors.textMuted, fontFamily: 'monospace' },
+  }),
+);

@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "portfolioanalyzer",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "automatic",
     "android": {
       "package": "com.myportfoliotracker.app",
       "adaptiveIcon": {
@@ -23,9 +23,13 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#0D0F12",
+          "backgroundColor": "#F4F5F7",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 160
+          "imageWidth": 160,
+          "dark": {
+            "backgroundColor": "#0D0F12",
+            "image": "./assets/images/splash-icon.png"
+          }
         }
       ],
       "@react-native-firebase/app",

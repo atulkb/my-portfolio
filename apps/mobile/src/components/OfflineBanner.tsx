@@ -5,13 +5,15 @@ import { formatDate } from '@/lib/format';
 import { userMessage } from '@/lib/messages';
 import { useOnline } from '@/services/device/network';
 import { useMarket } from '@/stores';
-import { colors, radii, spacing, typography } from '@/theme/tokens';
+import { radii, spacing, typography } from '@/theme/tokens';
+import { makeStyles } from '@/theme/theme';
 
 /** Height of the bottom tab bar the banner sits above. */
 const TAB_BAR = 64;
 
 /** "Offline · showing data as of 15 Oct" (LLD §4.6), above the tab bar while offline. */
 export function OfflineBanner(): React.JSX.Element | null {
+  const styles = useStyles();
   const online = useOnline();
   const insets = useSafeAreaInsets();
   const latest = useMarket((s) => {
@@ -34,20 +36,22 @@ export function OfflineBanner(): React.JSX.Element | null {
   );
 }
 
-const styles = StyleSheet.create({
-  banner: {
-    position: 'absolute',
-    left: spacing.margin,
-    right: spacing.margin,
-    ...typography.labelMd,
-    color: colors.caution,
-    backgroundColor: colors.surface2,
-    borderWidth: 1,
-    borderColor: colors.caution,
-    borderRadius: radii.lg,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    overflow: 'hidden',
-    textAlign: 'center',
-  },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    banner: {
+      position: 'absolute',
+      left: spacing.margin,
+      right: spacing.margin,
+      ...typography.labelMd,
+      color: colors.caution,
+      backgroundColor: colors.surface2,
+      borderWidth: 1,
+      borderColor: colors.caution,
+      borderRadius: radii.lg,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+      overflow: 'hidden',
+      textAlign: 'center',
+    },
+  }),
+);

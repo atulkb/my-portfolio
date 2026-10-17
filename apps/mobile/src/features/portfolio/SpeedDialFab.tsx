@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, radii, spacing, typography } from '@/theme/tokens';
+import { radii, spacing, typography } from '@/theme/tokens';
+import { makeStyles, useTheme } from '@/theme/theme';
 
 type IconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
@@ -12,6 +13,8 @@ export type FabAction = { readonly label: string; readonly icon: IconName; reado
 
 /** Floating + button that expands into labelled actions (S02: Add stock / Upload CSV, LLD §4.1). */
 export function SpeedDialFab({ actions }: { readonly actions: readonly FabAction[] }): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const [open, setOpen] = useState(false);
   const insets = useSafeAreaInsets();
   return (
@@ -56,27 +59,29 @@ export function SpeedDialFab({ actions }: { readonly actions: readonly FabAction
   );
 }
 
-const styles = StyleSheet.create({
-  scrim: { flex: 1, backgroundColor: colors.scrim },
-  wrap: { position: 'absolute', right: spacing.margin, alignItems: 'flex-end', gap: spacing.md },
-  fab: {
-    width: 56,
-    height: 56,
-    borderRadius: radii.xl,
-    backgroundColor: colors.gain,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  action: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    minHeight: 44,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radii.full,
-    backgroundColor: colors.surface2,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  actionText: { ...typography.labelMd, color: colors.textPrimary },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    scrim: { flex: 1, backgroundColor: colors.scrim },
+    wrap: { position: 'absolute', right: spacing.margin, alignItems: 'flex-end', gap: spacing.md },
+    fab: {
+      width: 56,
+      height: 56,
+      borderRadius: radii.xl,
+      backgroundColor: colors.gain,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    action: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      minHeight: 44,
+      paddingHorizontal: spacing.lg,
+      borderRadius: radii.full,
+      backgroundColor: colors.surface2,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    actionText: { ...typography.labelMd, color: colors.textPrimary },
+  }),
+);

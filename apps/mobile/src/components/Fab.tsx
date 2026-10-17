@@ -2,7 +2,8 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Pressable, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, radii, spacing } from '@/theme/tokens';
+import { radii, spacing } from '@/theme/tokens';
+import { makeStyles, useTheme } from '@/theme/theme';
 
 /** Floating + button with one action (S07 add stock, S08 create rule, LLD §4.1). */
 export function Fab({
@@ -12,6 +13,8 @@ export function Fab({
   readonly accessibilityLabel: string;
   readonly onPress: () => void;
 }): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const insets = useSafeAreaInsets();
   return (
     <Pressable
@@ -29,15 +32,17 @@ export function Fab({
   );
 }
 
-const styles = StyleSheet.create({
-  fab: {
-    position: 'absolute',
-    right: spacing.margin,
-    width: 56,
-    height: 56,
-    borderRadius: radii.xl,
-    backgroundColor: colors.gain,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    fab: {
+      position: 'absolute',
+      right: spacing.margin,
+      width: 56,
+      height: 56,
+      borderRadius: radii.xl,
+      backgroundColor: colors.gain,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+  }),
+);

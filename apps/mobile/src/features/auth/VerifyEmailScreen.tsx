@@ -4,7 +4,8 @@ import { StyleSheet, Text } from 'react-native';
 import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { useSession } from '@/stores';
-import { colors, typography } from '@/theme/tokens';
+import { typography } from '@/theme/tokens';
+import { makeStyles } from '@/theme/theme';
 import { AuthHeader } from './AuthHeader';
 import { ErrorText } from './ErrorText';
 
@@ -12,6 +13,7 @@ const RESEND_COOLDOWN_S = 60;
 
 /** S01b Verify email (not in Stitch; Obsidian style). The profile is created only after verification. */
 export function VerifyEmailScreen(): React.JSX.Element {
+  const styles = useStyles();
   const email = useSession((s) => s.user?.email ?? '');
   const busy = useSession((s) => s.busy);
   const error = useSession((s) => s.error);
@@ -46,6 +48,8 @@ export function VerifyEmailScreen(): React.JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({
-  hint: { ...typography.bodyMd, color: colors.textSecondary, textAlign: 'center' },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    hint: { ...typography.bodyMd, color: colors.textSecondary, textAlign: 'center' },
+  }),
+);

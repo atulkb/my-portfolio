@@ -9,7 +9,8 @@ import { Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
 import { userMessage } from '@/lib/messages';
 import { portfolioStore, sessionStore, toastStore, usePortfolio, useSession } from '@/stores';
-import { colors, radii, spacing, typography } from '@/theme/tokens';
+import { radii, spacing, typography } from '@/theme/tokens';
+import { makeStyles, useTheme } from '@/theme/theme';
 
 /** Platform name limit (matches the transaction schema). */
 const MAX_NAME = 40;
@@ -39,6 +40,8 @@ function PlatformRow({
   readonly holdings: number;
   readonly platforms: readonly string[];
 }): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(name);
   const [saving, setSaving] = useState(false);
@@ -140,6 +143,8 @@ function PlatformRow({
 
 /** S09 → Platforms (LLD §4.1): rename (rewrites every buy) or remove unused broker names. */
 export function PlatformsScreen(): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const platforms = useSession((s) => s.profile?.platforms ?? []);
   const transactions = usePortfolio((s) => s.transactions);
   const counts = useMemo(() => {
@@ -183,21 +188,23 @@ export function PlatformsScreen(): React.JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  appBar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  title: { ...typography.headlineMd, color: colors.textPrimary },
-  card: {
-    backgroundColor: colors.surface1,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    padding: spacing.gutter,
-    gap: spacing.md,
-  },
-  row: { flexDirection: 'row', alignItems: 'center' },
-  actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.md },
-  icon: { padding: spacing.sm },
-  name: { ...typography.bodyLg, color: colors.textPrimary },
-  sub: { ...typography.labelMd, color: colors.textSecondary },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    flex: { flex: 1 },
+    appBar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+    title: { ...typography.headlineMd, color: colors.textPrimary },
+    card: {
+      backgroundColor: colors.surface1,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.lg,
+      padding: spacing.gutter,
+      gap: spacing.md,
+    },
+    row: { flexDirection: 'row', alignItems: 'center' },
+    actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.md },
+    icon: { padding: spacing.sm },
+    name: { ...typography.bodyLg, color: colors.textPrimary },
+    sub: { ...typography.labelMd, color: colors.textSecondary },
+  }),
+);

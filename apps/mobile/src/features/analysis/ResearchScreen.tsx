@@ -31,7 +31,8 @@ import {
 import { userMessage } from '@/lib/messages';
 import { getInstrumentIndex } from '@/services/instruments/instrumentIndex';
 import { marketStore, uiStore, useAi, useInstruments, useMarket, useSession } from '@/stores';
-import { colors, labelColors, radii, spacing, typography } from '@/theme/tokens';
+import { radii, spacing, typography, type Palette } from '@/theme/tokens';
+import { makeStyles, useTheme } from '@/theme/theme';
 import { useAiSuggestions, useDeepAnalysis } from './ai';
 import { AiVerdictCard, AlternativesCard } from './AiVerdict';
 import { MarketContextCard } from './MarketContext';
@@ -50,15 +51,17 @@ const TABS: readonly { value: Tab; label: string }[] = [
   { value: 'RULES', label: 'Rules' },
 ];
 
-const OUTCOME: Readonly<Record<InstrumentRuleRow['outcome'], { text: string; color: string }>> = {
-  MATCH: { text: 'Match', color: colors.gain },
-  NO_MATCH: { text: 'No match', color: colors.textSecondary },
-  INSUFFICIENT_DATA: { text: 'Insufficient data', color: colors.caution },
-  INVALID: { text: 'Needs attention', color: colors.caution },
+const OUTCOME: Readonly<Record<InstrumentRuleRow['outcome'], { text: string; tone: keyof Palette }>> = {
+  MATCH: { text: 'Match', tone: 'gain' },
+  NO_MATCH: { text: 'No match', tone: 'textSecondary' },
+  INSUFFICIENT_DATA: { text: 'Insufficient data', tone: 'caution' },
+  INVALID: { text: 'Needs attention', tone: 'caution' },
 };
 
 /** S04 Rules tab: enabled rules covering this stock, evaluated live on today's data. */
 function RulesTab({ instrumentKey }: { readonly instrumentKey: InstrumentKey }): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const { rows, inScope } = useInstrumentRules(instrumentKey);
   return (
     <Card>
@@ -74,7 +77,7 @@ function RulesTab({ instrumentKey }: { readonly instrumentKey: InstrumentKey }):
           <View key={r.rule.id} style={styles.param}>
             <View style={styles.paramTop}>
               <Text style={styles.paramName}>{r.rule.name}</Text>
-              <Text style={[styles.outcome, { color: OUTCOME[r.outcome].color }]}>
+              <Text style={[styles.outcome, { color: colors[OUTCOME[r.outcome].tone] }]}>
                 {OUTCOME[r.outcome].text}
               </Text>
             </View>
@@ -94,7 +97,7 @@ const LEVEL_TEXT: Readonly<Record<ParamLevel, string>> = {
   NA: 'No data',
 };
 
-const signColor = (n: number | null): string =>
+const signColor = (colors: Palette, n: number | null): string =>
   n === null || n === 0 ? colors.textSecondary : n > 0 ? colors.gain : colors.loss;
 
 function goBack(): void {
@@ -103,10 +106,13 @@ function goBack(): void {
 }
 
 function Card({ children }: { readonly children: React.ReactNode }): React.JSX.Element {
+  const styles = useStyles();
   return <View style={styles.card}>{children}</View>;
 }
 
 function ParamRow({ p, currency }: { readonly p: ParamResult; readonly currency: Currency }) {
+  const { labelColors } = useTheme();
+  const styles = useStyles();
   const c = labelColors[p.level === 'NA' ? 'NONE' : p.level];
   return (
     <View
@@ -133,6 +139,7 @@ function Stat({
   readonly value: string;
   readonly color?: string;
 }) {
+  const styles = useStyles();
   return (
     <View style={styles.stat}>
       <Text style={styles.caption}>{label}</Text>
@@ -148,6 +155,8 @@ function Stat({
  * held stocks.
  */
 export function ResearchScreen({ instrumentKey }: { readonly instrumentKey: InstrumentKey | null }) {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const key = instrumentKey;
   const [tab, setTab] = useState<Tab>('VERDICT');
   const listVersion = useInstruments((s) => s.meta?.version);
@@ -254,7 +263,7 @@ export function ResearchScreen({ instrumentKey }: { readonly instrumentKey: Inst
               <View style={styles.flex}>
                 <Text style={styles.price}>{formatMoney(snapshot.close, currency)}</Text>
                 {dayChange !== null ? (
-                  <Text style={[styles.change, { color: signColor(dayChange) }]}>
+                  <Text style={[styles.change, { color: signColor(colors, dayChange) }]}>
                     {`${dayChange >= 0 ? '▲' : '▼'} ${formatSignedMoney(dayChange, currency)} (${formatPct(dayPct, { signed: true })})`}
                   </Text>
                 ) : null}
@@ -391,17 +400,17 @@ export function ResearchScreen({ instrumentKey }: { readonly instrumentKey: Inst
             <Stat
               label="TOTAL RETURN"
               value={`${formatSignedMoney(holding.pnl, currency)} (${formatPct(holding.pnlPct, { signed: true })})`}
-              color={signColor(holding.pnl)}
+              color={signColor(colors, holding.pnl)}
             />
             <Stat
               label="CAGR"
               value={holding.xirrPct === null ? '— (< 1 yr)' : formatPct(holding.xirrPct, { signed: true })}
-              color={signColor(holding.xirrPct)}
+              color={signColor(colors, holding.xirrPct)}
             />
             <Stat
               label={`${bench?.name.toUpperCase() ?? 'INDEX'} (PRICE INDEX)`}
               value={formatPct(bench?.returnPct ?? null, { signed: true })}
-              color={signColor(bench?.returnPct ?? null)}
+              color={signColor(colors, bench?.returnPct ?? null)}
             />
             <Stat
               label="VS INDEX"
@@ -410,7 +419,7 @@ export function ResearchScreen({ instrumentKey }: { readonly instrumentKey: Inst
                   ? '—'
                   : `${bench.excessPp >= 0 ? '+' : '−'}${Math.abs(bench.excessPp).toFixed(2)} pp`
               }
-              color={signColor(bench?.excessPp ?? null)}
+              color={signColor(colors, bench?.excessPp ?? null)}
             />
             <Stat label="HELD (AVG)" value={`${holding.holdingDays} days`} />
           </View>
@@ -429,56 +438,58 @@ export function ResearchScreen({ instrumentKey }: { readonly instrumentKey: Inst
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  rowBetween: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  symbol: { ...typography.headlineSm, color: colors.textPrimary },
-  muted: { ...typography.bodyMd, color: colors.textSecondary },
-  card: {
-    backgroundColor: colors.surface1,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.xl,
-    padding: spacing.lg,
-    gap: spacing.md,
-  },
-  cardTitle: { ...typography.headlineSm, color: colors.textPrimary },
-  priceRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
-  price: { ...typography.displayHero, color: colors.textPrimary },
-  change: { ...typography.labelMd },
-  asOf: { ...typography.labelSm, color: colors.textSecondary },
-  tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  param: { gap: 2, paddingBottom: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
-  paramTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  paramName: { ...typography.labelMd, color: colors.textPrimary, flex: 1 },
-  paramValue: { ...typography.metricMd, color: colors.textPrimary },
-  level: {
-    ...typography.microBadge,
-    paddingHorizontal: spacing.xs,
-    paddingVertical: 2,
-    borderRadius: radii.base,
-    overflow: 'hidden',
-    minWidth: 56,
-    textAlign: 'center',
-  },
-  reason: { ...typography.bodyMd, color: colors.textSecondary },
-  statGrid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: spacing.md },
-  stat: { width: '50%', gap: 2, paddingRight: spacing.sm },
-  caption: { ...typography.microBadge, color: colors.textMuted },
-  statValue: { ...typography.metricMd, color: colors.textPrimary },
-  bullet: { ...typography.bodyMd, color: colors.textPrimary },
-  outcome: { ...typography.labelMd },
-  disclaimer: {
-    ...typography.labelSm,
-    color: colors.textMuted,
-    textAlign: 'center',
-    marginBottom: spacing.lg,
-  },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    flex: { flex: 1 },
+    header: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+    row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    rowBetween: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.sm,
+    },
+    symbol: { ...typography.headlineSm, color: colors.textPrimary },
+    muted: { ...typography.bodyMd, color: colors.textSecondary },
+    card: {
+      backgroundColor: colors.surface1,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.xl,
+      padding: spacing.lg,
+      gap: spacing.md,
+    },
+    cardTitle: { ...typography.headlineSm, color: colors.textPrimary },
+    priceRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+    price: { ...typography.displayHero, color: colors.textPrimary },
+    change: { ...typography.labelMd },
+    asOf: { ...typography.labelSm, color: colors.textSecondary },
+    tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+    param: { gap: 2, paddingBottom: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
+    paramTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    paramName: { ...typography.labelMd, color: colors.textPrimary, flex: 1 },
+    paramValue: { ...typography.metricMd, color: colors.textPrimary },
+    level: {
+      ...typography.microBadge,
+      paddingHorizontal: spacing.xs,
+      paddingVertical: 2,
+      borderRadius: radii.base,
+      overflow: 'hidden',
+      minWidth: 56,
+      textAlign: 'center',
+    },
+    reason: { ...typography.bodyMd, color: colors.textSecondary },
+    statGrid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: spacing.md },
+    stat: { width: '50%', gap: 2, paddingRight: spacing.sm },
+    caption: { ...typography.microBadge, color: colors.textMuted },
+    statValue: { ...typography.metricMd, color: colors.textPrimary },
+    bullet: { ...typography.bodyMd, color: colors.textPrimary },
+    outcome: { ...typography.labelMd },
+    disclaimer: {
+      ...typography.labelSm,
+      color: colors.textMuted,
+      textAlign: 'center',
+      marginBottom: spacing.lg,
+    },
+  }),
+);

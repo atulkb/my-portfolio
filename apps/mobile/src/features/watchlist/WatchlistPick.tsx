@@ -11,7 +11,8 @@ import { TextField } from '@/components/TextField';
 import { userMessage } from '@/lib/messages';
 import { getInstrumentIndex } from '@/services/instruments/instrumentIndex';
 import { instrumentStore, toastStore, useInstruments, useWatchlists, watchlistStore } from '@/stores';
-import { colors, MIN_TOUCH, radii, spacing, typography } from '@/theme/tokens';
+import { MIN_TOUCH, radii, spacing, typography } from '@/theme/tokens';
+import { makeStyles, useTheme } from '@/theme/theme';
 import { useListsContaining } from './hooks';
 
 const SEARCH_DEBOUNCE_MS = 150;
@@ -22,6 +23,7 @@ const MARKETS: readonly { label: string; value: Market | null }[] = [
 ];
 
 function SearchStep({ onPick }: { readonly onPick: (key: InstrumentKey) => void }): React.JSX.Element {
+  const styles = useStyles();
   const [query, setQuery] = useState('');
   const [debounced, setDebounced] = useState('');
   const [market, setMarket] = useState<Market | null>(null);
@@ -90,6 +92,8 @@ function SearchStep({ onPick }: { readonly onPick: (key: InstrumentKey) => void 
 }
 
 function ListsStep({ instrumentKey }: { readonly instrumentKey: InstrumentKey }): React.JSX.Element | null {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const watchlists = useWatchlists((s) => s.watchlists);
   const itemsByList = useWatchlists((s) => s.itemsByList);
   const activeId = useWatchlists((s) => s.activeListId);
@@ -189,28 +193,30 @@ export function WatchlistPick({
   return key ? <ListsStep instrumentKey={key} /> : <SearchStep onPick={setKey} />;
 }
 
-const styles = StyleSheet.create({
-  wrap: { gap: spacing.md },
-  flex: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  inline: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  chips: { flexDirection: 'row', gap: spacing.sm },
-  section: { ...typography.microBadge, color: colors.textMuted, marginTop: spacing.sm },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    minHeight: MIN_TOUCH + 8,
-    paddingHorizontal: spacing.gutter,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface1,
-  },
-  pressed: { backgroundColor: colors.surface2 },
-  symbol: { ...typography.metricMd, color: colors.textPrimary },
-  listName: { ...typography.bodyMd, color: colors.textPrimary },
-  muted: { ...typography.bodyMd, color: colors.textSecondary },
-  error: { ...typography.labelMd, color: colors.loss },
-});
+const useStyles = makeStyles((colors) =>
+  StyleSheet.create({
+    wrap: { gap: spacing.md },
+    flex: { flex: 1 },
+    header: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+    inline: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    chips: { flexDirection: 'row', gap: spacing.sm },
+    section: { ...typography.microBadge, color: colors.textMuted, marginTop: spacing.sm },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      minHeight: MIN_TOUCH + 8,
+      paddingHorizontal: spacing.gutter,
+      paddingVertical: spacing.sm,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface1,
+    },
+    pressed: { backgroundColor: colors.surface2 },
+    symbol: { ...typography.metricMd, color: colors.textPrimary },
+    listName: { ...typography.bodyMd, color: colors.textPrimary },
+    muted: { ...typography.bodyMd, color: colors.textSecondary },
+    error: { ...typography.labelMd, color: colors.loss },
+  }),
+);
